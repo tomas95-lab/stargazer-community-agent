@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.browser-profile/
+output/*.md
+output/*.txt
+output/*.png
+output/*.html
+!output/.gitkeep
+ui/node_modules/
+ui/dist/
+.DS_Store
+env

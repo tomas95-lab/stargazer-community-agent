@@ -1,0 +1,32 @@
+{
+  "name": "daily-thread-bot",
+  "version": "1.0.0",
+  "description": "Automation tool for publishing Stargazer Axiom daily threads",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "daily": "tsc && node dist/index.js",
+    "daily:dev": "npx tsx src/index.ts",
+    "server": "npx tsx server/index.ts",
+    "ui:dev": "cd ui && npm run dev",
+    "ui:build": "cd ui && npm run build",
+    "dev": "npx tsx server/index.ts & cd ui && npm run dev",
+    "start": "cd ui && npm run build && cd .. && npx tsx server/index.ts"
+  },
+  "keywords": [],
+  "license": "PRIVATE",
+  "dependencies": {
+    "clipboardy": "^4.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.5.0",
+    "express": "^5.2.1",
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}
