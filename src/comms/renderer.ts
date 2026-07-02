@@ -1,11 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import { CommsTemplate } from './types';
-
-const TEMPLATES_PATH = path.resolve(__dirname, '../../data/comms-templates.json');
+import rawTemplates from '../../data/comms-templates.json';
 
 export function loadTemplates(): CommsTemplate[] {
-  return JSON.parse(fs.readFileSync(TEMPLATES_PATH, 'utf-8'));
+  return rawTemplates as CommsTemplate[];
 }
 
 export function getTemplate(id: string): CommsTemplate | undefined {
