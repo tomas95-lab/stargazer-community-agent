@@ -1,1 +1,29 @@
-[]
+[
+  {
+    "title": "Onboarding Webinar",
+    "date": "2026-07-03",
+    "timeUtc": "15:00",
+    "timeLabel": "12:00 ARG",
+    "link": "https://outlier-ai.zoom.us/j/96985589608?pwd=La26UGz9Y4nG06SHS74ayCSPuJHB6E.1",
+    "invitees": [
+      "pilots-coder172@remotasks.com+outlier",
+      "latam.coder787@remotasks.com+outlier",
+      "latam.coder2609@outlier.ai+outlier",
+      "latam.coder2551@outlier.ai+outlier",
+      "latam.coder2366@outlier.ai+outlier",
+      "latam.coder2348@outlier.ai+outlier",
+      "latam.coder2324@outlier.ai+outlier",
+      "latam.coder2306@outlier.ai+outlier",
+      "latam.coder2268@outlier.ai+outlier",
+      "latam.coder2260@outlier.ai+outlier",
+      "latam.coder2190@outlier.ai+outlier",
+      "latam.coder2184@outlier.ai+outlier",
+      "latam.coder2113@outlier.ai+outlier",
+      "latam.coder2002@outlier.ai+outlier",
+      "latam.coder1989@outlier.ai+outlier",
+      "latam.coder1844@remotasks.com+outlier",
+      "latam.coder056@remotasks.com+outlier"
+    ],
+    "id": "1783022906990"
+  }
+]
