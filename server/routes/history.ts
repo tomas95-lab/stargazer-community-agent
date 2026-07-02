@@ -1,34 +1,27 @@
 import { Router, Request, Response } from 'express';
-import * as fs from 'fs';
-import * as path from 'path';
-import { PATHS } from '../../src/config';
+import { listDirectory, readFile } from '../../src/github-storage';
 
 const router = Router();
 
-router.get('/', (_req: Request, res: Response) => {
-  const dir = PATHS.output;
-  if (!fs.existsSync(dir)) {
+router.get('/', async (_req: Request, res: Response) => {
+  try {
+    const files = await listDirectory('output');
+    const sorted = files
+      .filter((f) => !f.name.startsWith('.'))
+      .sort((a, b) => b.name.localeCompare(a.name));
+    res.json(sorted.map((f) => ({ name: f.name, size: f.size, modified: '' })));
+  } catch {
     res.json([]);
-    return;
   }
-  const files = fs.readdirSync(dir)
-    .filter((f) => !f.startsWith('.'))
-    .map((name) => {
-      const stat = fs.statSync(path.join(dir, name));
-      return { name, size: stat.size, modified: stat.mtime.toISOString() };
-    })
-    .sort((a, b) => b.modified.localeCompare(a.modified));
-  res.json(files);
 });
 
-router.get('/:filename', (req: Request, res: Response) => {
-  const filePath = path.join(PATHS.output, req.params.filename);
-  if (!fs.existsSync(filePath)) {
+router.get('/:filename', async (req: Request, res: Response) => {
+  try {
+    const content = await readFile(`output/${req.params.filename}`);
+    res.json({ name: req.params.filename, content });
+  } catch {
     res.status(404).json({ error: 'File not found' });
-    return;
   }
-  const content = fs.readFileSync(filePath, 'utf-8');
-  res.json({ name: req.params.filename, content });
 });
 
 export default router;

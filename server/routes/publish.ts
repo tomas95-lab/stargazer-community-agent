@@ -1,32 +1,35 @@
 import { Router, Request, Response } from 'express';
-import { loadTopics, formatPostTitle, saveFile } from '../../src/utils';
 import { renderDailyThread, renderAnnouncement } from '../../src/templates';
+import { formatPostTitle } from '../../src/utils';
 import { loadBotConfig } from '../../src/config';
 import { CommunityBot } from '../../src/communityBot';
+import { readJSON, writeJSON } from '../../src/github-storage';
+import { DailyThreadConfig } from '../../src/config';
 
 const router = Router();
 
 router.post('/:date', async (req: Request, res: Response) => {
-  const topics = loadTopics();
-  const topic = topics.find((t) => t.date === req.params.date);
-  if (!topic) {
-    res.status(404).json({ error: 'Topic not found' });
-    return;
-  }
-
-  const postChat = req.body.postChat !== false;
-
   try {
+    const { data: topics } = await readJSON<DailyThreadConfig[]>('data/topics.json');
+    const topic = topics.find((t) => t.date === req.params.date);
+    if (!topic) {
+      res.status(404).json({ error: 'Topic not found' });
+      return;
+    }
+
+    const postChat = req.body.postChat !== false;
     const botConfig = loadBotConfig();
     const postTitle = formatPostTitle(topic.date);
     const threadContent = renderDailyThread(topic);
 
-    saveFile(`daily-thread-${topic.date}.md`, threadContent);
-
     const bot = new CommunityBot(botConfig);
     const publishedUrl = await bot.publishDailyThread(postTitle, threadContent, topic.tags);
 
-    saveFile(`published-url-${topic.date}.txt`, publishedUrl);
+    await writeJSON(
+      `output/published-url-${topic.date}.txt`,
+      { url: publishedUrl, date: topic.date, publishedAt: new Date().toISOString() },
+      `published thread for ${topic.date}`
+    );
 
     if (postChat) {
       const announcementText = renderAnnouncement(topic, publishedUrl);

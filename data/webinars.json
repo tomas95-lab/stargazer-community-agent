@@ -1,6 +1,6 @@
 [
   {
-    "title": "Onboarding Webinar",
+    "title": "Onboarding",
     "date": "2026-07-03",
     "timeUtc": "15:00",
     "timeLabel": "12:00 ARG",
@@ -24,6 +24,7 @@
       "latam.coder1844@remotasks.com+outlier",
       "latam.coder056@remotasks.com+outlier"
     ],
-    "id": "1783022906990"
+    "id": "1783022906990",
+    "type": "onboarding"
   }
 ]

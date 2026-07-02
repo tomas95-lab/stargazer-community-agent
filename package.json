@@ -17,6 +17,7 @@
   "keywords": [],
   "license": "PRIVATE",
   "dependencies": {
+    "@octokit/rest": "^22.0.1",
     "clipboardy": "^4.0.0",
     "cors": "^2.8.6",
     "dotenv": "^16.5.0",

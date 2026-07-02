@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
-import * as fs from 'fs';
-import * as path from 'path';
+import { readJSON, writeJSON } from '../../src/github-storage';
 
 const router = Router();
-const WEBINARS_PATH = path.resolve(__dirname, '../../data/webinars.json');
+const FILE = 'data/webinars.json';
 
 export interface Webinar {
   id: string;
@@ -16,51 +15,64 @@ export interface Webinar {
   invitees: string[];
 }
 
-function readWebinars(): Webinar[] {
-  if (!fs.existsSync(WEBINARS_PATH)) return [];
-  return JSON.parse(fs.readFileSync(WEBINARS_PATH, 'utf-8'));
+async function readWebinars(): Promise<Webinar[]> {
+  try {
+    const { data } = await readJSON<Webinar[]>(FILE);
+    return data;
+  } catch {
+    return [];
+  }
 }
 
-function writeWebinars(webinars: Webinar[]): void {
-  fs.writeFileSync(WEBINARS_PATH, JSON.stringify(webinars, null, 2), 'utf-8');
-}
-
-router.get('/', (_req: Request, res: Response) => {
-  res.json(readWebinars());
-});
-
-router.post('/', (req: Request, res: Response) => {
-  const webinars = readWebinars();
-  const webinar: Webinar = {
-    ...req.body,
-    id: Date.now().toString(),
-  };
-  webinars.push(webinar);
-  writeWebinars(webinars);
-  res.json(webinar);
-});
-
-router.put('/:id', (req: Request, res: Response) => {
-  const webinars = readWebinars();
-  const idx = webinars.findIndex((w) => w.id === req.params.id);
-  if (idx === -1) {
-    res.status(404).json({ error: 'Not found' });
-    return;
+router.get('/', async (_req: Request, res: Response) => {
+  try {
+    res.json(await readWebinars());
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
-  webinars[idx] = { ...webinars[idx], ...req.body, id: req.params.id };
-  writeWebinars(webinars);
-  res.json(webinars[idx]);
 });
 
-router.delete('/:id', (req: Request, res: Response) => {
-  const webinars = readWebinars();
-  const filtered = webinars.filter((w) => w.id !== req.params.id);
-  if (filtered.length === webinars.length) {
-    res.status(404).json({ error: 'Not found' });
-    return;
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const webinars = await readWebinars();
+    const webinar: Webinar = { ...req.body, id: Date.now().toString() };
+    webinars.push(webinar);
+    await writeJSON(FILE, webinars, `add ${webinar.type} on ${webinar.date}`);
+    res.json(webinar);
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
-  writeWebinars(filtered);
-  res.json({ ok: true });
+});
+
+router.put('/:id', async (req: Request, res: Response) => {
+  try {
+    const webinars = await readWebinars();
+    const idx = webinars.findIndex((w) => w.id === req.params.id);
+    if (idx === -1) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+    webinars[idx] = { ...webinars[idx], ...req.body, id: req.params.id };
+    await writeJSON(FILE, webinars, `update session ${req.params.id}`);
+    res.json(webinars[idx]);
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const webinars = await readWebinars();
+    const filtered = webinars.filter((w) => w.id !== req.params.id);
+    if (filtered.length === webinars.length) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+    await writeJSON(FILE, filtered, `delete session ${req.params.id}`);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
 });
 
 export default router;

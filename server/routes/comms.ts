@@ -1,18 +1,17 @@
 import { Router, Request, Response } from 'express';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as dotenv from 'dotenv';
 import { loadTemplates, renderTemplate } from '../../src/comms/renderer';
-
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+import { readJSON, writeJSON } from '../../src/github-storage';
 
 const router = Router();
+const LINKS_FILE = 'data/links.json';
 
-const LINKS_PATH = path.resolve(__dirname, '../../data/links.json');
-
-function readLinks(): Record<string, string> {
-  if (!fs.existsSync(LINKS_PATH)) return {};
-  return JSON.parse(fs.readFileSync(LINKS_PATH, 'utf-8'));
+async function readLinks(): Promise<Record<string, string>> {
+  try {
+    const { data } = await readJSON<Record<string, string>>(LINKS_FILE);
+    return data;
+  } catch {
+    return {};
+  }
 }
 
 router.get('/templates', (_req: Request, res: Response) => {
@@ -96,14 +95,23 @@ router.post('/send', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/links', (_req: Request, res: Response) => {
-  res.json(readLinks());
+router.get('/links', async (_req: Request, res: Response) => {
+  try {
+    res.json(await readLinks());
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
 });
 
-router.put('/links', (req: Request, res: Response) => {
-  const updated = { ...readLinks(), ...req.body };
-  fs.writeFileSync(LINKS_PATH, JSON.stringify(updated, null, 2), 'utf-8');
-  res.json(updated);
+router.put('/links', async (req: Request, res: Response) => {
+  try {
+    const current = await readLinks();
+    const updated = { ...current, ...req.body };
+    await writeJSON(LINKS_FILE, updated, 'update links');
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
 });
 
 export default router;
