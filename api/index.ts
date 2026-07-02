@@ -1,3 +1,26 @@
-import app from '../server/app';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
+import cors from 'cors';
+import topicsRouter from '../server/routes/topics';
+import previewRouter from '../server/routes/preview';
+import publishRouter from '../server/routes/publish';
+import configRouter from '../server/routes/config';
+import historyRouter from '../server/routes/history';
+import commsRouter from '../server/routes/comms';
+import webinarsRouter from '../server/routes/webinars';
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/topics', topicsRouter);
+app.use('/api/preview', previewRouter);
+app.use('/api/publish', publishRouter);
+app.use('/api/config', configRouter);
+app.use('/api/history', historyRouter);
+app.use('/api/comms', commsRouter);
+app.use('/api/webinars', webinarsRouter);
 
 export default app;
