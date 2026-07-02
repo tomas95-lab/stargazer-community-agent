@@ -45,6 +45,7 @@ export interface HistoryFile {
 
 export interface Webinar {
   id: string;
+  type: 'webinar' | 'onboarding';
   title: string;
   date: string;
   timeUtc: string;

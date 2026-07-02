@@ -269,31 +269,34 @@
   {
     "id": "onboarding_tomorrow",
     "category": "onboarding",
-    "name": "Onboarding Tomorrow",
-    "description": "Invite a contributor to an onboarding session happening tomorrow",
+    "name": "Onboarding Session",
+    "description": "Invite a group of new contributors to an onboarding session",
     "defaultTone": "friendly",
     "supportedTones": ["friendly", "firm"],
     "audience": ["new_contributors"],
     "variables": [
-      { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" },
+      { "key": "date", "label": "Date", "required": true, "placeholder": "e.g. tomorrow / Friday July 4th" },
       { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 10:00 AM ARG" },
-      { "key": "webinarLink", "label": "Session Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+      { "key": "webinarLink", "label": "Session Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" },
+      { "key": "inviteeList", "label": "Invited Contributors", "required": false, "placeholder": "- @name1\n- @name2", "defaultValue": "" }
     ],
-    "body": "Hi {{name}}! 👋\n\nWe have an onboarding session scheduled for tomorrow at **{{timeLabel}}**.\n\nSession link:\n{{webinarLink}}\n\nThis is a great opportunity to get up to speed with the project expectations and ask any questions you have. Hope to see you there! 🙌"
+    "body": "👋 Hi team!\n\nWe have an onboarding session scheduled for **{{date}}** at **{{timeLabel}}**.\n\nThis is for:\n\n{{inviteeList}}\n\nSession link:\n{{webinarLink}}\n\nThis is a great opportunity to get up to speed with the project expectations and ask any questions you have. Hope to see you there! 🙌"
   },
   {
     "id": "mandatory_onboarding",
     "category": "onboarding",
     "name": "Mandatory Onboarding",
-    "description": "Require a contributor to attend a mandatory onboarding session",
+    "description": "Require a group of contributors to attend a mandatory onboarding session",
     "defaultTone": "firm",
     "supportedTones": ["firm", "formal"],
     "audience": ["new_contributors"],
     "variables": [
-      { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" },
-      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 10:00 AM ARG" }
+      { "key": "date", "label": "Date", "required": true, "placeholder": "e.g. tomorrow / Friday July 4th" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 10:00 AM ARG" },
+      { "key": "webinarLink", "label": "Session Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" },
+      { "key": "inviteeList", "label": "Invited Contributors", "required": false, "placeholder": "- @name1\n- @name2", "defaultValue": "" }
     ],
-    "body": "Hi {{name}}! 👋\n\nYou'll need to attend the project onboarding tomorrow at **{{timeLabel}}**.\n\nThe goal of the session is to reinforce some important project points and help improve task quality for upcoming submissions.\n\nPlease try to be on time. Thank you! 🙏"
+    "body": "🚨 **Mandatory onboarding session — {{date}} at {{timeLabel}}**\n\nThis is for:\n\n{{inviteeList}}\n\nSession link:\n{{webinarLink}}\n\nThe goal of this session is to reinforce important project points and help improve task quality for upcoming submissions.\n\nAttendance is required. Please be on time. Thank you! 🙏"
   },
   {
     "id": "onboarding_no_show",

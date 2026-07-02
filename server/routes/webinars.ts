@@ -7,6 +7,7 @@ const WEBINARS_PATH = path.resolve(__dirname, '../../data/webinars.json');
 
 export interface Webinar {
   id: string;
+  type: 'webinar' | 'onboarding';
   title: string;
   date: string;
   timeUtc: string;

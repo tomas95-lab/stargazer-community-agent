@@ -6,6 +6,7 @@ dotenv.config();
 
 interface Webinar {
   id: string;
+  type: 'webinar' | 'onboarding';
   title: string;
   date: string;
   timeUtc: string;
@@ -58,14 +59,19 @@ async function sendToChat(message: string): Promise<void> {
   }
 }
 
-function buildReminderMessage(webinar: Webinar, minutesLeft: number): string {
+function buildReminderMessage(session: Webinar, minutesLeft: number): string {
   const roundedMin = Math.round(minutesLeft);
-  const inviteeSection = webinar.invitees.length > 0
-    ? `\nThis is for:\n${webinar.invitees.join('\n')}\n`
+  const inviteeSection = session.invitees.length > 0
+    ? `\nThis is for:\n${session.invitees.join('\n')}\n`
     : '';
 
-  return `⏰ **Reminder — ${webinar.title} starts in ~${roundedMin} minutes** (${webinar.timeLabel})\n${inviteeSection}
-Zoom link:\n${webinar.link}\n\nPlease join on time 🙏`;
+  if (session.type === 'onboarding') {
+    return `🎓 **Reminder — Onboarding session: ${session.title} starts in ~${roundedMin} minutes** (${session.timeLabel})\n${inviteeSection}
+Session link:\n${session.link}\n\nPlease join on time 🙏`;
+  }
+
+  return `⏰ **Reminder — ${session.title} starts in ~${roundedMin} minutes** (${session.timeLabel})\n${inviteeSection}
+Zoom link:\n${session.link}\n\nPlease join on time 🙏`;
 }
 
 async function main(): Promise<void> {

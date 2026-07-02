@@ -36,6 +36,7 @@ function SyncButton() {
 }
 
 const EMPTY: Omit<Webinar, 'id'> = {
+  type: 'webinar',
   title: '',
   date: '',
   timeUtc: '',
@@ -64,7 +65,7 @@ export default function WebinarScheduler() {
   };
 
   const startEdit = (w: Webinar) => {
-    setForm({ title: w.title, date: w.date, timeUtc: w.timeUtc, timeLabel: w.timeLabel, link: w.link, invitees: w.invitees });
+    setForm({ type: w.type, title: w.title, date: w.date, timeUtc: w.timeUtc, timeLabel: w.timeLabel, link: w.link, invitees: w.invitees });
     setInviteesRaw(w.invitees.join('\n'));
     setEditingId(w.id);
   };
@@ -110,8 +111,8 @@ export default function WebinarScheduler() {
     <div className="p-8 max-w-4xl mx-auto space-y-8">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Webinar Scheduler</h1>
-          <p className="text-gray-400 text-sm mt-1">Schedule webinars — reminder auto-sends 1 hour before via GitHub Actions.</p>
+          <h1 className="text-2xl font-bold text-white">Session Scheduler</h1>
+          <p className="text-gray-400 text-sm mt-1">Schedule webinars & onboardings — reminder auto-sends 1 hour before via GitHub Actions.</p>
         </div>
         <SyncButton />
       </div>
@@ -121,10 +122,25 @@ export default function WebinarScheduler() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
+            <label className="block text-xs text-gray-400 mb-1">Type</label>
+            <div className="flex gap-2">
+              {(['webinar', 'onboarding'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setForm({ ...form, type: t })}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${form.type === t ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                >
+                  {t === 'webinar' ? '🎥 Webinar' : '🎓 Onboarding'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="col-span-2">
             <label className="block text-xs text-gray-400 mb-1">Title</label>
             <input
               className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
-              placeholder="Alignment Webinar"
+              placeholder={form.type === 'onboarding' ? 'New Contributor Onboarding' : 'Alignment Webinar'}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
@@ -220,7 +236,7 @@ export default function WebinarScheduler() {
       )}
 
       {webinars.length === 0 && (
-        <p className="text-gray-500 text-sm text-center py-8">No webinars scheduled yet.</p>
+        <p className="text-gray-500 text-sm text-center py-8">No sessions scheduled yet.</p>
       )}
     </div>
   );
@@ -230,8 +246,11 @@ function WebinarCard({ webinar, onEdit, onDelete, dim }: { webinar: Webinar; onE
   return (
     <div className={`bg-gray-800 border rounded-xl p-4 flex items-start justify-between gap-4 ${dim ? 'border-gray-700 opacity-50' : 'border-gray-600'}`}>
       <div className="space-y-1 min-w-0">
+      <div className="flex items-center gap-2">
+        <span className="text-sm">{webinar.type === 'onboarding' ? '🎓' : '🎥'}</span>
         <p className="text-white font-medium">{webinar.title}</p>
-        <p className="text-gray-400 text-sm">{webinar.date} · {webinar.timeLabel}</p>
+      </div>
+      <p className="text-gray-400 text-sm">{webinar.date} · {webinar.timeLabel}</p>
         <p className="text-indigo-400 text-xs truncate">{webinar.link}</p>
         {webinar.invitees.length > 0 && (
           <p className="text-gray-500 text-xs">{webinar.invitees.length} invitee{webinar.invitees.length > 1 ? 's' : ''}</p>

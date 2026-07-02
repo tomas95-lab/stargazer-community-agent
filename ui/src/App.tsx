@@ -27,7 +27,7 @@ function Nav() {
       {link('/', 'Dashboard')}
       {link('/topics', 'Topics')}
       {link('/comms', 'Comms')}
-      {link('/webinars', 'Webinars')}
+      {link('/webinars', 'Sessions')}
       {link('/links', 'Links')}
       {link('/history', 'History')}
       {link('/settings', 'Settings')}
