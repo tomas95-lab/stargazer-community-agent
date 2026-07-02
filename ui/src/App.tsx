@@ -5,6 +5,7 @@ import History from './pages/History';
 import Settings from './pages/Settings';
 import CommsAutomator from './pages/CommsAutomator';
 import LinkManager from './pages/LinkManager';
+import WebinarScheduler from './pages/WebinarScheduler';
 
 function Nav() {
   const link = (to: string, label: string) => (
@@ -26,6 +27,7 @@ function Nav() {
       {link('/', 'Dashboard')}
       {link('/topics', 'Topics')}
       {link('/comms', 'Comms')}
+      {link('/webinars', 'Webinars')}
       {link('/links', 'Links')}
       {link('/history', 'History')}
       {link('/settings', 'Settings')}
@@ -42,6 +44,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/topics" element={<TopicEditor />} />
           <Route path="/comms" element={<CommsAutomator />} />
+          <Route path="/webinars" element={<WebinarScheduler />} />
           <Route path="/links" element={<LinkManager />} />
           <Route path="/history" element={<History />} />
           <Route path="/settings" element={<Settings />} />

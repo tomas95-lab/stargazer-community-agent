@@ -90,4 +90,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ message, channelId }),
     }),
+  getWebinars: () => request<Webinar[]>('/webinars'),
+  createWebinar: (w: Omit<Webinar, 'id'>) => request<Webinar>('/webinars', { method: 'POST', body: JSON.stringify(w) }),
+  updateWebinar: (id: string, w: Partial<Webinar>) => request<Webinar>(`/webinars/${id}`, { method: 'PUT', body: JSON.stringify(w) }),
+  deleteWebinar: (id: string) => request<{ ok: boolean }>(`/webinars/${id}`, { method: 'DELETE' }),
 };
+
+export interface Webinar {
+  id: string;
+  title: string;
+  date: string;
+  timeUtc: string;
+  timeLabel: string;
+  link: string;
+  invitees: string[];
+}
