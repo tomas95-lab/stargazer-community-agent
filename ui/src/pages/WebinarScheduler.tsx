@@ -1,5 +1,39 @@
 import { useEffect, useState } from 'react';
-import { api, Webinar } from '../api';
+import { api } from '../api';
+import type { Webinar } from '../api';
+
+function SyncButton() {
+
+  const [status, setStatus] = useState<'idle' | 'syncing' | 'ok' | 'error'>('idle');
+  const [msg, setMsg] = useState('');
+
+  const sync = async () => {
+    setStatus('syncing');
+    try {
+      const res = await api.syncToGitHub();
+      setMsg(res.message);
+      setStatus('ok');
+      setTimeout(() => setStatus('idle'), 4000);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 5000);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      {msg && <span className={`text-xs ${status === 'error' ? 'text-red-400' : 'text-green-400'}`}>{msg}</span>}
+      <button
+        onClick={sync}
+        disabled={status === 'syncing'}
+        className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 border border-gray-600 text-gray-200 text-sm font-medium rounded-xl transition-colors"
+      >
+        {status === 'syncing' ? 'Syncing...' : '↑ Sync to GitHub'}
+      </button>
+    </div>
+  );
+}
 
 const EMPTY: Omit<Webinar, 'id'> = {
   title: '',
@@ -74,9 +108,12 @@ export default function WebinarScheduler() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Webinar Scheduler</h1>
-        <p className="text-gray-400 text-sm mt-1">Schedule webinars — reminder auto-sends 1 hour before via GitHub Actions.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Webinar Scheduler</h1>
+          <p className="text-gray-400 text-sm mt-1">Schedule webinars — reminder auto-sends 1 hour before via GitHub Actions.</p>
+        </div>
+        <SyncButton />
       </div>
 
       <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 space-y-4">

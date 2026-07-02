@@ -8,6 +8,7 @@ import configRouter from './routes/config';
 import historyRouter from './routes/history';
 import commsRouter from './routes/comms';
 import webinarsRouter from './routes/webinars';
+import syncRouter from './routes/sync';
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
@@ -22,6 +23,7 @@ app.use('/api/config', configRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/comms', commsRouter);
 app.use('/api/webinars', webinarsRouter);
+app.use('/api/sync', syncRouter);
 
 const uiBuild = path.resolve(__dirname, '../ui/dist');
 app.use(express.static(uiBuild));

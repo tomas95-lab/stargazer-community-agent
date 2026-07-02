@@ -43,6 +43,16 @@ export interface HistoryFile {
   modified: string;
 }
 
+export interface Webinar {
+  id: string;
+  title: string;
+  date: string;
+  timeUtc: string;
+  timeLabel: string;
+  link: string;
+  invitees: string[];
+}
+
 export interface TemplateVariable {
   key: string;
   label: string;
@@ -94,14 +104,5 @@ export const api = {
   createWebinar: (w: Omit<Webinar, 'id'>) => request<Webinar>('/webinars', { method: 'POST', body: JSON.stringify(w) }),
   updateWebinar: (id: string, w: Partial<Webinar>) => request<Webinar>(`/webinars/${id}`, { method: 'PUT', body: JSON.stringify(w) }),
   deleteWebinar: (id: string) => request<{ ok: boolean }>(`/webinars/${id}`, { method: 'DELETE' }),
+  syncToGitHub: () => request<{ ok: boolean; message: string }>('/sync', { method: 'POST' }),
 };
-
-export interface Webinar {
-  id: string;
-  title: string;
-  date: string;
-  timeUtc: string;
-  timeLabel: string;
-  link: string;
-  invitees: string[];
-}
