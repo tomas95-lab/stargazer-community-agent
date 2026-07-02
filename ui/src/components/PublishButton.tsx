@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
 interface Props {
   date: string;
@@ -6,62 +6,36 @@ interface Props {
 }
 
 export default function PublishButton({ date, disabled }: Props) {
-  const [logs, setLogs] = useState<string[]>([]);
   const [status, setStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
   const [publishedUrl, setPublishedUrl] = useState('');
-  const logRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState('');
 
-  const publish = () => {
+  const publish = async () => {
     setStatus('running');
-    setLogs([]);
     setPublishedUrl('');
+    setError('');
 
-    const evtSource = new EventSource(`/api/publish/${date}?_method=POST`);
+    try {
+      const res = await fetch(`/api/publish/${date}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postChat: true }),
+      });
 
-    fetch(`/api/publish/${date}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ postChat: true }),
-    }).then(async (res) => {
-      const reader = res.body?.getReader();
-      if (!reader) return;
-      const decoder = new TextDecoder();
-      let buffer = '';
+      const data = await res.json() as { ok?: boolean; url?: string; error?: string };
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const data = JSON.parse(line.slice(6));
-            if (data.type === 'log' || data.type === 'error') {
-              setLogs((prev) => [...prev, data.message]);
-              setTimeout(() => logRef.current?.scrollTo(0, logRef.current.scrollHeight), 50);
-            }
-            if (data.type === 'published' || data.type === 'done') {
-              setPublishedUrl(data.url || '');
-              if (data.type === 'done') setStatus('done');
-            }
-            if (data.type === 'error') {
-              setStatus('error');
-            }
-          } catch { /* skip malformed lines */ }
-        }
+      if (!res.ok || !data.ok) {
+        setError(data.error || 'Unknown error');
+        setStatus('error');
+        return;
       }
 
-      if (status === 'running') setStatus('done');
-    }).catch((err) => {
-      setLogs((prev) => [...prev, `Error: ${err.message}`]);
+      setPublishedUrl(data.url || '');
+      setStatus('done');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
       setStatus('error');
-    });
-
-    evtSource.close();
+    }
   };
 
   return (
@@ -83,11 +57,9 @@ export default function PublishButton({ date, disabled }: Props) {
         </div>
       )}
 
-      {logs.length > 0 && (
-        <div ref={logRef} className="bg-gray-900 border border-gray-700 rounded-xl p-4 max-h-72 overflow-auto font-mono text-xs text-gray-300 space-y-1">
-          {logs.map((l, i) => (
-            <div key={i}>{l}</div>
-          ))}
+      {status === 'error' && (
+        <div className="bg-red-950/50 border border-red-700 rounded-xl p-3 text-red-400 text-sm">
+          {error}
         </div>
       )}
     </div>

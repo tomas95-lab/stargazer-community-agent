@@ -6,14 +6,13 @@ const router = Router();
 
 const ENV_PATH = path.resolve(__dirname, '../../.env');
 const SAFE_KEYS = [
-  'HEADLESS',
-  'SLOW_MO',
   'COMMUNITY_BASE_URL',
-  'COMMUNITY_NEW_TOPIC_URL',
   'COMMUNITY_CATEGORY_ID',
   'COMMUNITY_CATEGORY_SLUG',
-  'COMMUNITY_CHAT_URL',
-  'BROWSER_PROFILE_PATH',
+  'COMMUNITY_CHAT_CHANNEL_ID',
+  'DISCOURSE_API_KEY',
+  'DISCOURSE_API_CLIENT_ID',
+  'DISCOURSE_USERNAME',
 ];
 
 function parseEnv(): Record<string, string> {

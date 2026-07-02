@@ -3,6 +3,8 @@ import Dashboard from './pages/Dashboard';
 import TopicEditor from './pages/TopicEditor';
 import History from './pages/History';
 import Settings from './pages/Settings';
+import CommsAutomator from './pages/CommsAutomator';
+import LinkManager from './pages/LinkManager';
 
 function Nav() {
   const link = (to: string, label: string) => (
@@ -20,9 +22,11 @@ function Nav() {
 
   return (
     <nav className="flex items-center gap-2 px-6 py-4 border-b border-gray-800 bg-gray-900/80 backdrop-blur sticky top-0 z-50">
-      <span className="text-lg font-bold text-indigo-400 mr-6">Daily Thread Bot</span>
+      <span className="text-lg font-bold text-indigo-400 mr-6">Stargazer Comms</span>
       {link('/', 'Dashboard')}
       {link('/topics', 'Topics')}
+      {link('/comms', 'Comms')}
+      {link('/links', 'Links')}
       {link('/history', 'History')}
       {link('/settings', 'Settings')}
     </nav>
@@ -37,6 +41,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/topics" element={<TopicEditor />} />
+          <Route path="/comms" element={<CommsAutomator />} />
+          <Route path="/links" element={<LinkManager />} />
           <Route path="/history" element={<History />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

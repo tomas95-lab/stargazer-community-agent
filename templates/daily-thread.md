@@ -4,6 +4,12 @@
 
 Daily **Stargazer Axiom** thread is up. Use this thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts.
 
+---
+
+> ## 🚨 MODEL REMINDER
+> **Do NOT use Qwen.** The only approved model for this project is **Sonnet 4.6**.
+> Please double-check your model before starting or continuing any task.
+
 {{webinarSection}}
 
 ---

@@ -45,7 +45,7 @@ async function main(): Promise<void> {
 
   try {
     await bot.launch();
-    console.log('🌐 Browser launched');
+    console.log('🌐 Connected to Discourse API');
 
     const publishedUrl = await bot.publishDailyThread(postTitle, threadContent, topic.tags);
 
@@ -77,13 +77,12 @@ async function main(): Promise<void> {
   }
 }
 
-function showPreview(config: DailyThreadConfig, body: string, botConfig: { communityNewTopicUrl: string; communityChatUrl: string }): void {
+function showPreview(config: DailyThreadConfig, body: string, botConfig: { communityBaseUrl: string }): void {
   console.log('\n' + '='.repeat(60));
   console.log('PREVIEW');
   console.log('='.repeat(60));
   console.log(`Title:    ${formatPostTitle(config.date)}`);
-  console.log(`Thread →  ${botConfig.communityNewTopicUrl}`);
-  console.log(`Chat →    ${botConfig.communityChatUrl}`);
+  console.log(`Target →  ${botConfig.communityBaseUrl}`);
   console.log(`Webinar:  ${config.webinar?.enabled ? `YES (${config.webinar.timeLabel})` : 'No'}`);
   console.log('-'.repeat(60));
   console.log(body.slice(0, 500));

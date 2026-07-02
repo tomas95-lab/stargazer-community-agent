@@ -102,6 +102,16 @@ export default function TopicForm({ topic, onSave, onCancel }: Props) {
               <label className={labelCls}>Link</label>
               <input value={form.webinar?.link || ''} onChange={(e) => setWebinar('link', e.target.value)} className={inputCls} />
             </div>
+            <div className="col-span-3">
+              <label className={labelCls}>Invited Emails (one per line)</label>
+              <textarea
+                value={(form.webinar?.invitees || []).join('\n')}
+                onChange={(e) => setWebinar('invitees', e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
+                className={inputCls}
+                rows={3}
+                placeholder="email1@example.com&#10;email2@example.com"
+              />
+            </div>
           </div>
         )}
       </div>

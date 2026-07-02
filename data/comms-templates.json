@@ -1,0 +1,456 @@
+[
+  {
+    "id": "model_update",
+    "category": "urgent_alert",
+    "name": "Model Update Alert",
+    "description": "Notify team to stop using an old model and switch to a new one",
+    "defaultTone": "urgent",
+    "supportedTones": ["urgent", "firm", "formal"],
+    "audience": ["all_contributors"],
+    "variables": [
+      { "key": "oldModel", "label": "Old Model", "required": true, "defaultValue": "Qwen", "placeholder": "e.g. Qwen" },
+      { "key": "newModel", "label": "New Model", "required": true, "defaultValue": "Sonnet 4.6", "placeholder": "e.g. Sonnet 4.6" },
+      { "key": "project", "label": "Project", "required": true, "defaultValue": "Stargazer Axiom", "placeholder": "e.g. Stargazer Axiom" }
+    ],
+    "body": "🚨 **IMPORTANT MODEL UPDATE — PLEASE READ** 🚨\n\nTeam, quick reminder: **do not use {{oldModel}} anymore for {{project}} tasks.**\n\nFrom now on, please use **{{newModel}}**.\n\nThis applies to all new attempts moving forward. Please double-check your model before starting or continuing a task.\n\nThank you!"
+  },
+  {
+    "id": "generic_alert",
+    "category": "urgent_alert",
+    "name": "Generic Urgent Alert",
+    "description": "General-purpose urgent message for the whole team",
+    "defaultTone": "urgent",
+    "supportedTones": ["urgent", "firm", "formal"],
+    "audience": ["all_contributors"],
+    "variables": [
+      { "key": "message", "label": "Message", "required": true, "placeholder": "What should the team know?" }
+    ],
+    "body": "🚨 **IMPORTANT UPDATE — PLEASE READ** 🚨\n\nTeam, quick reminder: {{message}}\n\nThis applies to all new attempts moving forward. Please double-check before starting or continuing a task.\n\nThank you!"
+  },
+  {
+    "id": "webinar_today",
+    "category": "webinar_alignment",
+    "name": "Mandatory Webinar Today",
+    "description": "Announce a mandatory alignment webinar happening today",
+    "defaultTone": "urgent",
+    "supportedTones": ["urgent", "firm", "formal"],
+    "audience": ["all_contributors", "invited_contributors"],
+    "variables": [
+      { "key": "date", "label": "Date", "required": true, "placeholder": "e.g. Friday July 4th" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 3:00 PM ARG" },
+      { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" },
+      { "key": "inviteeList", "label": "Invited Contributors", "required": false, "placeholder": "- @name1\n- @name2", "defaultValue": "" }
+    ],
+    "body": "🚨 **Mandatory alignment webinar — {{date}} at {{timeLabel}}** 🚨\n\nTeam, we'll have a mandatory alignment webinar on **{{date}}** at **{{timeLabel}}**.\n\nWebinar link:\n{{webinarLink}}\n\nThis is for:\n\n{{inviteeList}}\n\nIf you were invited, attendance is required. Please join on time so we can align on review/task quality expectations and current project standards."
+  },
+  {
+    "id": "webinar_live_now",
+    "category": "webinar_alignment",
+    "name": "Webinar Starting Now",
+    "description": "Ping that the webinar is currently live",
+    "defaultTone": "urgent",
+    "supportedTones": ["urgent", "slack_casual"],
+    "audience": ["invited_contributors"],
+    "variables": [
+      { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" },
+      { "key": "inviteeList", "label": "Invitee List", "required": false, "placeholder": "- @name1\n- @name2", "defaultValue": "" }
+    ],
+    "body": "# Alignment webinar is live now 🚨\n\nTeam, we're currently in the reviewer alignment webinar.\n\nZoom link:\n{{webinarLink}}\n\nThis is for:\n\n{{inviteeList}}\n\nPlease join now if you're listed above 🙏"
+  },
+  {
+    "id": "webinar_reminder_15min",
+    "category": "webinar_alignment",
+    "name": "Reminder — 15 Minutes Before",
+    "description": "15-minute heads-up before a webinar starts",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual", "urgent"],
+    "audience": ["invited_contributors"],
+    "variables": [
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 3:00 PM ARG" },
+      { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "⏰ Just a reminder — the alignment webinar starts in **15 minutes** at {{timeLabel}}.\n\nWebinar link:\n{{webinarLink}}\n\nPlease make sure you're ready to join on time 🙏"
+  },
+  {
+    "id": "attendance_required",
+    "category": "webinar_alignment",
+    "name": "Attendance Required Notice",
+    "description": "Reminder that attendance is mandatory for invited contributors",
+    "defaultTone": "firm",
+    "supportedTones": ["firm", "formal"],
+    "audience": ["invited_contributors"],
+    "variables": [
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 3:00 PM ARG" },
+      { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Hi team 👋\n\nJust a reminder that attendance is required for the alignment webinar today at **{{timeLabel}}**.\n\nWebinar link:\n{{webinarLink}}\n\nPlease join on time so we can align on review/task quality expectations and current project standards. Thank you! 🙏"
+  },
+  {
+    "id": "post_webinar_followup",
+    "category": "webinar_alignment",
+    "name": "Post-Webinar Follow-Up",
+    "description": "Message after a webinar wraps up",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["all_contributors"],
+    "variables": [
+      { "key": "recordingLink", "label": "Recording Link", "required": false, "defaultValue": "", "placeholder": "https://..." },
+      { "key": "keyPoints", "label": "Key Points", "required": false, "defaultValue": "", "placeholder": "- Point 1\n- Point 2" }
+    ],
+    "body": "Thanks everyone for joining the alignment webinar! 🙌\n\nHere's a quick recap of what we covered:\n\n{{keyPoints}}\n\n{{recordingLink}}If you missed it, please reach out in the War Room and we'll get you up to speed.\n\nLet's keep the quality bar high — great work everyone 🚀"
+  },
+  {
+    "id": "webinar_no_show",
+    "category": "webinar_alignment",
+    "name": "No-Show Follow-Up",
+    "description": "Follow-up message for contributors who missed the webinar",
+    "defaultTone": "firm",
+    "supportedTones": ["firm", "friendly"],
+    "audience": ["specific_users"],
+    "variables": [
+      { "key": "name", "label": "Name", "required": false, "defaultValue": "Hi", "placeholder": "e.g. @username" },
+      { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Hi {{name}}! Just wanted to follow up — we noticed you didn't make it to today's alignment webinar.\n\nAttendance was required for invited contributors. If something came up, please let us know.\n\nWar Room link:\n{{webinarLink}}\n\nPlease make sure to join the next one so you stay aligned with the project expectations 🙏"
+  },
+  {
+    "id": "war_room_join_for_context",
+    "category": "war_room",
+    "name": "Join War Room for Context",
+    "description": "Redirect someone to the War Room for a deeper conversation",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["specific_users"],
+    "variables": [
+      { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Hi! It's better to discuss this kind of thing in the War Room so we can have more context. Could you join?\n\nWar Room link:\n{{warRoomLink}}"
+  },
+  {
+    "id": "war_room_open_now",
+    "category": "war_room",
+    "name": "War Room Is Open",
+    "description": "Let contributors know the War Room is available",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["all_contributors"],
+    "variables": [
+      { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Hey team! The War Room is open if you have any questions, blockers, or need support.\n\nWar Room link:\n{{warRoomLink}}\n\nFeel free to drop in 🙌"
+  },
+  {
+    "id": "war_room_support_hours",
+    "category": "war_room",
+    "name": "QM Support Hours",
+    "description": "Explain when QM support is available in the War Room",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "formal"],
+    "audience": ["all_contributors"],
+    "variables": [
+      { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Team, quick reminder!\n\nThe War Room is usually open throughout the day, but QM support is normally available Monday to Friday, from **10:30 AM to 7:00 PM ARG time**.\n\nWar Room link:\n{{warRoomLink}}\n\nTime zones:\n\n10:30 AM - 7:00 PM ARG\n9:30 AM - 6:00 PM ET / CLT\n8:30 AM - 5:00 PM COT / PET\n7:30 AM - 4:00 PM Mexico City / Central America\n6:30 AM - 3:00 PM PT\n\nBefore or after that window, there may not be a QM available, but some experienced contributors from the project may still be around and willing to help with general questions.\n\nFor access issues, Cursor setup problems, onboarding/reactivation, or anything that needs QM support, please try to join during the QM coverage window so we can help you faster 🙏"
+  },
+  {
+    "id": "war_room_access_setup",
+    "category": "war_room",
+    "name": "Access / Setup Support",
+    "description": "Direct someone to the War Room for access or Cursor setup help",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["specific_users"],
+    "variables": [
+      { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Hi! For access issues or Cursor setup, the best place to get help is the War Room where we can walk you through it live.\n\nWar Room link:\n{{warRoomLink}}\n\nFeel free to drop in during QM support hours (Mon–Fri, 10:30 AM–7:00 PM ARG) 🙏"
+  },
+  {
+    "id": "explain_throttle",
+    "category": "throttle_quality",
+    "name": "Explain Throttle",
+    "description": "Explain how the throttle system works to a contributor",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual", "formal"],
+    "audience": ["specific_users"],
+    "variables": [],
+    "body": "Hi! The throttle works automatically.\n\nFor now, you'll have up to **1 task available every 24 hours** while your initial quality is being reviewed. Once you complete around **3 tasks**, your quality metrics will be evaluated and, based on the results, we can make a decision.\n\nThe goal is to make sure the first tasks are aligned with the project standards before enabling more volume."
+  },
+  {
+    "id": "one_task_24h",
+    "category": "throttle_quality",
+    "name": "1 Task Every 24 Hours",
+    "description": "Short message explaining the 1-task-per-24h limit",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["specific_users"],
+    "variables": [],
+    "body": "Hi! Right now you have access to **1 task every 24 hours** while your initial quality is being reviewed. This will be adjusted based on your quality metrics after the first few tasks. Keep up the good work! 🚀"
+  },
+  {
+    "id": "access_adjusted_quality",
+    "category": "throttle_quality",
+    "name": "Access Adjusted Based on Quality",
+    "description": "Explain that access was adjusted due to quality metrics",
+    "defaultTone": "firm",
+    "supportedTones": ["firm", "formal"],
+    "audience": ["specific_users"],
+    "variables": [
+      { "key": "name", "label": "Name", "required": false, "defaultValue": "Hi", "placeholder": "e.g. @username" }
+    ],
+    "body": "Hi {{name}}! We wanted to let you know that your task access has been adjusted based on your current quality metrics.\n\nPlease review the project guidelines and make sure your submissions are aligned with the expected standards before continuing.\n\nIf you have questions, feel free to join the War Room and we'll help you get back on track 🙏"
+  },
+  {
+    "id": "added_as_reviewer",
+    "category": "reviewer_qma_allocation",
+    "name": "Added as Reviewer",
+    "description": "Congratulate a contributor who was added as a reviewer",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["specific_users"],
+    "variables": [
+      { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" }
+    ],
+    "body": "Hi {{name}}! 👋\n\nYou were added as a **reviewer for Stargazer Axiom** based on the quality of your recent work.\n\nCongrats! We really appreciate the work you've been doing 🚀"
+  },
+  {
+    "id": "reviewer_alignment_invite",
+    "category": "reviewer_qma_allocation",
+    "name": "Reviewer Alignment Invite",
+    "description": "Invite a reviewer to an alignment session",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "formal"],
+    "audience": ["reviewers_only"],
+    "variables": [
+      { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 3:00 PM ARG" },
+      { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Hi {{name}}! 👋\n\nWe'd like to invite you to a reviewer alignment session today at **{{timeLabel}}**.\n\nZoom link:\n{{webinarLink}}\n\nThis session is specifically for reviewers and will cover current quality expectations and rubric standards. Attendance is highly recommended 🙏"
+  },
+  {
+    "id": "qma_quality_concern",
+    "category": "reviewer_qma_allocation",
+    "name": "QMA Quality Concern",
+    "description": "Flag a QMA quality concern to the right person",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "formal"],
+    "audience": ["qma_only"],
+    "variables": [
+      { "key": "managerName", "label": "Manager Name (OOO)", "required": true, "placeholder": "e.g. John" }
+    ],
+    "body": "Hi! Not sure if I'm the right person to ask, and since {{managerName}} is OOO I'm not 100% sure who to reach out to haha, but I wanted to flag this with you.\n\nWe've been noticing that this QMA may not be fully aligned with the project quality expectations right now. Some of the tasks have required a lot of follow-up, so we're wondering if there might be another project where he could be a better fit.\n\nDo you know who would be the right person to contact for this type of request?\n\nThank you!"
+  },
+  {
+    "id": "qma_follow_up_context",
+    "category": "reviewer_qma_allocation",
+    "name": "QMA Follow-Up Context",
+    "description": "Provide context after initial QMA quality concern was raised",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["qma_only"],
+    "variables": [],
+    "body": "Yes, exactly. We did provide follow-up and tried to align him on the project expectations, but even after that, the quality did not improve enough for the current bar.\n\nThe main issue is not just one isolated task, but a repeated pattern of tasks needing significant rework/follow-up and not being fully aligned with the project.\n\nAlso, for extra context, he was previously an attempter on the project as well, and at that stage he was also struggling to meet the expected quality standards.\n\nFrom our side, it seems like this may not be the best fit for him right now."
+  },
+  {
+    "id": "onboarding_course_complete",
+    "category": "onboarding",
+    "name": "Congrats — Course Complete",
+    "description": "Congratulate a new contributor who completed the course",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["new_contributors"],
+    "variables": [
+      { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" },
+      { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Hi {{name}}! 👋\n\nCongrats on completing the course! 🎉\n\nNext step: please join the War Room so we can help you request/check your Cursor access and make sure your setup is ready for tasking.\n\nWar Room link:\n{{warRoomLink}}\n\nThank you! 🙌"
+  },
+  {
+    "id": "onboarding_tomorrow",
+    "category": "onboarding",
+    "name": "Onboarding Tomorrow",
+    "description": "Invite a contributor to an onboarding session happening tomorrow",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "firm"],
+    "audience": ["new_contributors"],
+    "variables": [
+      { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 10:00 AM ARG" },
+      { "key": "webinarLink", "label": "Session Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Hi {{name}}! 👋\n\nWe have an onboarding session scheduled for tomorrow at **{{timeLabel}}**.\n\nSession link:\n{{webinarLink}}\n\nThis is a great opportunity to get up to speed with the project expectations and ask any questions you have. Hope to see you there! 🙌"
+  },
+  {
+    "id": "mandatory_onboarding",
+    "category": "onboarding",
+    "name": "Mandatory Onboarding",
+    "description": "Require a contributor to attend a mandatory onboarding session",
+    "defaultTone": "firm",
+    "supportedTones": ["firm", "formal"],
+    "audience": ["new_contributors"],
+    "variables": [
+      { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 10:00 AM ARG" }
+    ],
+    "body": "Hi {{name}}! 👋\n\nYou'll need to attend the project onboarding tomorrow at **{{timeLabel}}**.\n\nThe goal of the session is to reinforce some important project points and help improve task quality for upcoming submissions.\n\nPlease try to be on time. Thank you! 🙏"
+  },
+  {
+    "id": "onboarding_no_show",
+    "category": "onboarding",
+    "name": "No-Show Onboarding Context",
+    "description": "Flag contributors who didn't show up to onboarding",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["qma_only"],
+    "variables": [
+      { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" }
+    ],
+    "body": "Hi {{name}}! Just wanted to give you some context: this morning we set up onboarding sessions for the contributors, but no one joined either session.\n\nMy suspicion is that they may not be active or may not be following the project communications, so I wanted to flag it in case it's worth checking their status before we keep coordinating new onboarding sessions."
+  },
+  {
+    "id": "cursor_access_check",
+    "category": "access_cursor_setup",
+    "name": "Cursor Access Check",
+    "description": "Help a contributor check or request their Cursor access",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["specific_users"],
+    "variables": [
+      { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
+    ],
+    "body": "Hi! For Cursor access issues, the best next step is to join the War Room so we can check your access status and help you get set up.\n\nWar Room link:\n{{warRoomLink}}\n\nDrop in during QM support hours (Mon–Fri, 10:30 AM–7:00 PM ARG) and we'll sort it out 🙏"
+  },
+  {
+    "id": "platform_issue_task",
+    "category": "access_cursor_setup",
+    "name": "Platform Issue — Task Upload",
+    "description": "Help a contributor handle a platform issue with a task upload",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "formal"],
+    "audience": ["specific_users"],
+    "variables": [
+      { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" },
+      { "key": "taskId", "label": "Task ID", "required": true, "placeholder": "e.g. abc-123" },
+      { "key": "fileName", "label": "File Name", "required": true, "placeholder": "e.g. solution.py" }
+    ],
+    "body": "Hi {{name}}! Thanks for sharing the context and the task ID.\n\nIf you can still access the project, task normally, and use Community, it does not sound like you are actually banned. It may be the support bot showing an incorrect status, which we've seen happen before.\n\nFor the task issue, please raise the ticket if possible and include the task ID: `{{taskId}}`, plus a short note that `{{fileName}}` was not uploaded due to a platform issue. I'll also flag the context on my side so the team is aware.\n\nSorry that happened, especially after spending so many hours on it. For now, please continue with your next task if you still have access, and make sure to double-check the uploads before submitting."
+  },
+  {
+    "id": "model_failure_invalid",
+    "category": "quality_feedback_escalation",
+    "name": "Model Failure Invalid",
+    "description": "Explain that a model failure is not a valid task failure",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["reviewers_only", "qma_only"],
+    "variables": [],
+    "body": "The model failure here does not qualify as a valid task failure. A valid failure means the model attempts the task in good faith and produces a reasonable but incomplete or incorrect solution. In this case, the failure is caused by the task constraints making a correct implementation impossible, not by a model limitation.\n\nPlease revise the task to ensure any capable model can attempt it — the failure should come from missing edge cases or quality gaps, not from an impossible prompt."
+  },
+  {
+    "id": "f2p_issue",
+    "category": "quality_feedback_escalation",
+    "name": "F2P Issue",
+    "description": "Flag an issue with an F2P test",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["reviewers_only"],
+    "variables": [],
+    "body": "The F2P test has an issue: it appears to pass in Phase 1 before the gold patch is applied, which means it is not functioning as a true F2P test.\n\nA valid F2P test must fail in Phase 1 (before the fix) and pass in Phase 2 (after the fix). Please review the assertion — it may be too loose, or the test may not be targeting the correct behavior described in the prompt."
+  },
+  {
+    "id": "p2p_issue",
+    "category": "quality_feedback_escalation",
+    "name": "P2P Issue",
+    "description": "Flag an issue with a P2P test",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["reviewers_only"],
+    "variables": [],
+    "body": "The P2P test has an issue: it does not appear to pass reliably in both phases, or it is testing trivial behavior that does not represent a meaningful regression risk.\n\nP2P tests should guard pre-existing functionality that could be accidentally broken by the gold patch. Please revise to ensure the test targets real behavior that is adjacent to the changes made."
+  },
+  {
+    "id": "rubric_atomicity",
+    "category": "quality_feedback_escalation",
+    "name": "Rubric Atomicity Fail",
+    "description": "Flag a rubric criterion that combines multiple checks",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["reviewers_only"],
+    "variables": [],
+    "body": "This rubric criterion is not atomic because it combines multiple independent requirements into one check. If one part could pass while another fails, the criterion should be split.\n\nPlease separate each distinct behavior into its own criterion so QC can assign scores independently."
+  },
+  {
+    "id": "rubric_self_contained",
+    "category": "quality_feedback_escalation",
+    "name": "Rubric Self-Containment Fail",
+    "description": "Flag a rubric criterion that references external context",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["reviewers_only"],
+    "variables": [],
+    "body": "This rubric criterion is not self-contained. It references external context such as 'existing behavior', 'original implementation', or 'previous state' without providing the concrete expected value.\n\nA grader cannot open the codebase to understand what 'existing' means. Please replace the relative reference with the specific, concrete expected value so the criterion can be evaluated in isolation."
+  },
+  {
+    "id": "coupled_test",
+    "category": "quality_feedback_escalation",
+    "name": "Implementation-Coupled Test",
+    "description": "Flag a test that is coupled to a specific implementation",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["reviewers_only"],
+    "variables": [],
+    "body": "This test is coupled to a specific implementation detail — it references a method, class, or property name that is not mentioned in the prompt.\n\nA different developer could build a correct solution using different method names, and their solution would fail this test. Please revise to test observable behavior (return values, UI output, API responses) rather than internal implementation."
+  },
+  {
+    "id": "static_test",
+    "category": "quality_feedback_escalation",
+    "name": "Static Test Issue",
+    "description": "Flag a test that reads source code instead of executing it",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["reviewers_only"],
+    "variables": [],
+    "body": "The issue is that this test validates a static implementation detail instead of the actual user-facing behavior. A model could satisfy the test by matching the expected code pattern while still failing to fix the bug described in the prompt.\n\nTests must execute the code and assert on an observable result. Please remove any use of `fs.readFileSync`, regex on source files, or export name checks."
+  },
+  {
+    "id": "prompt_rubric_mismatch",
+    "category": "quality_feedback_escalation",
+    "name": "Prompt / Rubric Mismatch",
+    "description": "Flag a mismatch between the prompt requirements and rubric criteria",
+    "defaultTone": "formal",
+    "supportedTones": ["formal", "firm"],
+    "audience": ["reviewers_only"],
+    "variables": [],
+    "body": "There is a mismatch between the prompt requirements and the rubric criteria. Every explicit requirement in the prompt must have a corresponding rubric criterion, and every rubric criterion must trace back to something the prompt asked for.\n\nPlease review both documents and ensure full alignment: each requirement maps to a criterion, and each criterion maps to a requirement. Orphan criteria or uncovered requirements should be resolved before submission."
+  },
+  {
+    "id": "daily_thread_announcement",
+    "category": "daily_thread_announcement",
+    "name": "Daily Thread Announcement",
+    "description": "Reusable chat announcement for the daily thread",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["all_contributors"],
+    "variables": [
+      { "key": "dailyThreadUrl", "label": "Daily Thread URL", "required": true, "placeholder": "https://community.outlier.ai/t/..." },
+      { "key": "topic", "label": "Topic", "required": true, "placeholder": "e.g. Rubric Quality" },
+      { "key": "reminderTitle", "label": "Reminder Title", "required": true, "placeholder": "e.g. One criterion = one thing" },
+      { "key": "quickRule", "label": "Quick Rule", "required": true, "placeholder": "e.g. If your criterion has AND, split it." }
+    ],
+    "body": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**]({{dailyThreadUrl}}) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **{{topic}}**, with a reminder about **{{reminderTitle}}**.\n\nQuick rule: {{quickRule}}\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌"
+  },
+  {
+    "id": "custom_message",
+    "category": "custom",
+    "name": "Custom Message",
+    "description": "Write a fully custom message with your own variables",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual", "firm", "urgent", "formal"],
+    "audience": ["all_contributors"],
+    "variables": [
+      { "key": "message", "label": "Your Message", "required": true, "placeholder": "Write your message here. Use {{variable}} syntax for placeholders." }
+    ],
+    "body": "{{message}}"
+  }
+]

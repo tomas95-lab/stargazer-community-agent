@@ -27,6 +27,7 @@ export interface Topic {
     mandatory: boolean;
     timeLabel: string;
     link: string;
+    invitees?: string[];
   };
 }
 
@@ -42,6 +43,26 @@ export interface HistoryFile {
   modified: string;
 }
 
+export interface TemplateVariable {
+  key: string;
+  label: string;
+  required: boolean;
+  defaultValue?: string;
+  placeholder?: string;
+}
+
+export interface CommsTemplate {
+  id: string;
+  category: string;
+  name: string;
+  description: string;
+  defaultTone: string;
+  supportedTones: string[];
+  audience: string[];
+  variables: TemplateVariable[];
+  body: string;
+}
+
 export const api = {
   getTopics: () => request<Topic[]>('/topics'),
   getToday: () => request<{ date: string; topic: Topic | null }>('/topics/today'),
@@ -53,4 +74,20 @@ export const api = {
   getHistoryFile: (name: string) => request<{ name: string; content: string }>(`/history/${name}`),
   getConfig: () => request<Record<string, string>>('/config'),
   updateConfig: (cfg: Record<string, string>) => request<Record<string, string>>('/config', { method: 'PUT', body: JSON.stringify(cfg) }),
+  getCommsTemplates: (category?: string) =>
+    request<CommsTemplate[]>(`/comms/templates${category ? `?category=${category}` : ''}`),
+  getCommsTemplate: (id: string) => request<CommsTemplate>(`/comms/templates/${id}`),
+  renderComms: (id: string, variables: Record<string, string>) =>
+    request<{ output: string } | { errors: string[] }>('/comms/render', {
+      method: 'POST',
+      body: JSON.stringify({ id, variables }),
+    }),
+  getLinks: () => request<Record<string, string>>('/comms/links'),
+  updateLinks: (links: Record<string, string>) =>
+    request<Record<string, string>>('/comms/links', { method: 'PUT', body: JSON.stringify(links) }),
+  sendToChat: (message: string, channelId?: string) =>
+    request<{ ok: boolean; message_id: number }>('/comms/send', {
+      method: 'POST',
+      body: JSON.stringify({ message, channelId }),
+    }),
 };

@@ -24,7 +24,10 @@ We'll have a **${mandatoryWord} alignment webinar today at ${config.webinar.time
 ${mandatoryNote}
 
 Webinar link:
-${config.webinar.link}`;
+${config.webinar.link}${config.webinar.invitees && config.webinar.invitees.length > 0 ? `
+
+**Invited contributors:**
+${config.webinar.invitees.map((e) => `- ${e}`).join('\n')}` : ''}`;
 }
 
 function buildWebinarAnnouncement(config: DailyThreadConfig): string {
@@ -36,6 +39,10 @@ function buildWebinarAnnouncement(config: DailyThreadConfig): string {
 
   if (config.webinar.mandatory) {
     text += '\n\nAttendance is required for invited contributors. Please make sure to join on time 🙏';
+  }
+
+  if (config.webinar.invitees && config.webinar.invitees.length > 0) {
+    text += `\n\n**Invited:** ${config.webinar.invitees.join(', ')}`;
   }
 
   return text;

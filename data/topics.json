@@ -8,8 +8,15 @@
     "badExample": "// ❌ Two independent checks in one criterion\n\"The solution increments the like counter AND removes the like button after clicking\"",
     "goodExample": "// ✅ Two separate atomic criteria\n\"Clicking the like button increments the displayed like count by 1\"\n\n\"After clicking the like button, the button is no longer visible on the page\"",
     "quickRule": "If your criterion has AND, split it into two.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-02",
@@ -20,8 +27,18 @@
     "badExample": "// ❌ Grader doesn't know what 'existing behavior' means\n\"The existing cart total calculation behavior is preserved\"",
     "goodExample": "// ✅ Concrete expected value embedded in the criterion\n\"CartComponent.total() returns the sum of (item.price × item.quantity) for all items in the cart\"",
     "quickRule": "If your criterion requires the grader to check the codebase to know what 'existing' means, rewrite it.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": true,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": "",
+      "invitees": [
+        "email@example.com"
+      ]
+    }
   },
   {
     "date": "2026-07-03",
@@ -32,8 +49,18 @@
     "badExample": "// ❌ Method name not in prompt → gold-patch coupling\n\"themeService.toggleDarkMode() is called when the toggle is clicked\"",
     "goodExample": "// ✅ Observable behavior any valid implementation passes\n\"Clicking the dark mode toggle switches the page color scheme between light and dark\"",
     "quickRule": "If a method, class, or file isn't in the prompt, it can't be in the rubric.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": true,
+      "mandatory": true,
+      "timeLabel": "12:00 ARG ",
+      "link": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success",
+      "invitees": [
+        "1312312321@gremotask.com"
+      ]
+    }
   },
   {
     "date": "2026-07-06",
@@ -44,8 +71,15 @@
     "badExample": "// ❌ 'Correctly' tells the grader nothing\n\"The checkout form correctly handles validation errors\"",
     "goodExample": "// ✅ Concrete observable outcome\n\"Submitting the checkout form with an empty email field displays the text 'Email is required' below the email input\"",
     "quickRule": "Replace any vague word with the concrete observable outcome.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-07",
@@ -56,8 +90,15 @@
     "badExample": "Prompt requires: (1) dark mode toggle, (2) localStorage persistence, (3) system preference detection\n\nRubric only covers:\n\"toggle switches theme\" ✅\n\"preference saved to localStorage\" ✅\n// Missing: system preference detection ← model can skip this entirely",
     "goodExample": "Prompt requires: (1) dark mode toggle, (2) localStorage persistence, (3) system preference detection\n\nRubric covers all three:\n\"toggle switches theme\" ✅\n\"preference saved to localStorage\" ✅\n\"on first load, theme matches prefers-color-scheme\" ✅",
     "quickRule": "List every prompt requirement. Verify each has a rubric criterion. No gaps allowed.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-08",
@@ -68,8 +109,15 @@
     "badExample": "// ❌ Passes in Phase 1 assertion too loose\ntest('cart has items', () => {\n  cart.addItem({ id: 'A1', quantity: 1 });\n  cart.addItem({ id: 'A1', quantity: 1 });\n  expect(cart.items.length).toBeGreaterThan(0); // true even with bug (2 items)\n});",
     "goodExample": "// ✅ Fails Phase 1 (bug: 2 entries), passes Phase 2 (merged to 1)\ntest('adding same item twice merges quantity', () => {\n  cart.addItem({ id: 'A1', quantity: 1 });\n  cart.addItem({ id: 'A1', quantity: 1 });\n  expect(cart.items.length).toBe(1);\n  expect(cart.items[0].quantity).toBe(2);\n});",
     "quickRule": "If your F2P test passes before the gold patch, it's not an F2P test.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-09",
@@ -80,8 +128,15 @@
     "badExample": "// ❌ toggleDarkMode() is not in the prompt\ntest('toggle switches theme', () => {\n  themeService.toggleDarkMode();\n  expect(document.body.classList.contains('dark')).toBe(true);\n});",
     "goodExample": "// ✅ Tests observable behavior any valid implementation passes\ntest('toggle switches theme', () => {\n  document.querySelector('[data-testid=\"theme-toggle\"]').click();\n  expect(document.body.classList.contains('dark')).toBe(true);\n});",
     "quickRule": "If the method name isn't in the prompt, don't call it in a test.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-10",
@@ -92,8 +147,15 @@
     "badExample": "// ❌ Trivially passes regardless clearCart always empties\ntest('clearCart removes all items', () => {\n  cart.addItem({ id: 'A1', quantity: 1 });\n  cart.addItem({ id: 'A1', quantity: 1 }); // triggers bug\n  cart.clearCart();\n  expect(cart.items.length).toBe(0); // always true\n});",
     "goodExample": "// ✅ Meaningful regression guard on unrelated functionality\ntest('removeItem removes only the specified item', () => {\n  cart.addItem({ id: 'A1', name: 'Apple', quantity: 1 });\n  cart.addItem({ id: 'B2', name: 'Banana', quantity: 1 });\n  cart.removeItem('A1');\n  expect(cart.items.length).toBe(1);\n  expect(cart.items[0].id).toBe('B2');\n});",
     "quickRule": "P2P tests must pass before AND after the gold patch. Test real regressions, not trivialities.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-13",
@@ -104,8 +166,15 @@
     "badExample": "// ❌ Reads source code instead of running it\ntest('uses debounce', () => {\n  const src = fs.readFileSync('src/search.js', 'utf8');\n  expect(src).toContain('debounce');\n});\n\n// ❌ Checks export name, not behavior\ntest('CartService is exported', () => {\n  const mod = require('./cartService');\n  expect(mod.CartService).toBeDefined();\n});",
     "goodExample": "// ✅ Executes code, asserts on observable behavior\ntest('search input is debounced', async () => {\n  const handler = jest.fn();\n  render(<SearchBar onSearch={handler} />);\n  await userEvent.type(screen.getByRole('searchbox'), 'hello');\n  await waitFor(() => expect(handler).toHaveBeenCalledTimes(1));\n});",
     "quickRule": "Tests must run the code, not read it. No grep, no readFileSync, no regex on source files.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-14",
@@ -116,8 +185,15 @@
     "badExample": "// ❌ Spec sheet model passes by transcription, not reasoning\nImplement the following:\n1. Create ThemeService in src/services/theme.service.ts\n2. Add toggleDarkMode() method that updates body class\n3. Add getTheme() method that reads localStorage\n4. Register ThemeService in app.module.ts\n5. Add a toggle button with id=\"theme-toggle\"",
     "goodExample": "// ✅ Developer voice model has to reason about implementation\nThe app has no dark mode. Add a user-controlled toggle in the header that switches between light and dark themes. The user's preference should persist across page reloads.",
     "quickRule": "Would a senior dev write this in a GitHub issue? If it looks like a homework assignment, rewrite it.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-15",
@@ -128,8 +204,15 @@
     "badExample": "// ❌ 12 requirements model just follows the list\nAdd a search feature:\n- Create SearchService in src/services/search.service.ts\n- Add search() method filtering by name and category\n- Add 300ms debounce in SearchComponent\n- Use RxJS fromEvent on the input\n- Emit results to a BehaviorSubject\n- Subscribe in template with async pipe\n- Add loading state during search\n- Show 'No results found' when empty\n- Highlight matching text\n- Add keyboard navigation\n- Write unit tests for SearchService\n- Add error handling for failed requests",
     "goodExample": "// ✅ 2 requirements model has to architect the solution\nThe product list has no search functionality. Add a search bar that filters visible products by name in real time. Results should update as the user types.",
     "quickRule": "If the model doesn't need to think to implement your prompt, it's over-specified.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-16",
@@ -140,8 +223,15 @@
     "badExample": "// Task type: New Feature Request\n// ❌ Bug-fix language for a new feature\n\"Fix the broken search functionality. The search bar is not filtering products correctly when users type. Make sure it works properly.\"",
     "goodExample": "// Task type: New Feature Request\n// ✅ Correct new feature framing\n\"The product list has no search functionality. Add a search bar that filters visible products by name as the user types.\"",
     "quickRule": "Bug fix language in a New Feature prompt = automatic rejection.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-17",
@@ -152,8 +242,15 @@
     "badExample": "// ❌ Vague prompt → developer opens gold patch to write tests\nPrompt: \"Improve the cart so it handles duplicates better.\"\n\n// Developer reads gold patch, sees mergeItem(), writes:\ntest('cart merges items', () => {\n  cart.mergeItem('A1', 2); // ← coupled, not in prompt\n  expect(cart.items[0].quantity).toBe(3);\n});",
     "goodExample": "// ✅ Specific prompt → tests writable from prompt alone\nPrompt: \"Fix the bug in CartService.addItem() where adding an existing item creates a duplicate entry instead of incrementing its quantity.\"\n\n// Tests write themselves:\ntest('addItem merges quantity for existing item', () => {\n  cart.addItem({ id: 'A1', quantity: 2 });\n  cart.addItem({ id: 'A1', quantity: 1 });\n  expect(cart.items.length).toBe(1);\n  expect(cart.items[0].quantity).toBe(3);\n});",
     "quickRule": "Write your F2P tests before touching the gold patch. If you can't, the prompt needs more behavioral specificity.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-20",
@@ -164,8 +261,15 @@
     "badExample": "# instance.Dockerfile ❌\nFROM stargazer-my-repo-base\n\nRUN apt-get install -y some-dep\n\nENTRYPOINT [\"/bin/bash\"]   # ← WRONG: belongs only in base.Dockerfile",
     "goodExample": "# instance.Dockerfile ✅\nFROM stargazer-my-repo-base\n\n# PROJECT DEPENDENCIES AND CONFIGURATION\nRUN --mount=type=bind,source=patches/basetoinstance.patch,target=/tmp/basetoinstance.patch \\\n    if [ -s /tmp/basetoinstance.patch ]; then git apply --whitespace=fix /tmp/basetoinstance.patch; fi\n\n# No ENTRYPOINT here it's defined in base.Dockerfile",
     "quickRule": "ENTRYPOINT in instance.Dockerfile = instant template violation.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-21",
@@ -176,8 +280,15 @@
     "badExample": "# base.Dockerfile ❌\nFROM node:20\nWORKDIR /app\nRUN git clone https://github.com/org/repo.git .\n\n# Creating test config WRONG\nRUN echo '{\"test\":{\"environment\":\"jsdom\"}}' > vitest.config.ts\nRUN npm install --save-dev jest @testing-library/react\n\nENTRYPOINT [\"/bin/bash\"]",
     "goodExample": "# base.Dockerfile ✅\nFROM node:20\nWORKDIR /app\nRUN git clone https://$PAT@github.com/org/repo.git .\nRUN git checkout $(git rev-list -n 1 HEAD)\nRUN npm install\n\nENTRYPOINT [\"/bin/bash\"]",
     "quickRule": "If it's not in the official template, it doesn't belong in base.Dockerfile.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-22",
@@ -188,8 +299,15 @@
     "badExample": "# run_script.sh ❌ parsing results inside the script\napply_patch() { ... }\n\n# Phase 1\napply_patch test_patch.patch\nnpx jest --json > /tmp/results-phase1.json\nnode -e \"const r=require('/tmp/results-phase1.json'); ...\"",
     "goodExample": "# run_script.sh ✅ apply and run only\napply_patch() { ... }\n\necho '=== PHASE 1 START ===' | tee -a \"$RAW_OUTPUT_FILE\"\napply_patch patches/test_patch.patch\nnpx jest 2>&1 | tee -a \"$RAW_OUTPUT_FILE\"\n\necho '=== PHASE 2 START ===' | tee -a \"$RAW_OUTPUT_FILE\"\napply_patch patches/gold_patch.patch\nnpx jest 2>&1 | tee -a \"$RAW_OUTPUT_FILE\"",
     "quickRule": "run_script.sh applies patches and runs tests. Everything else is wrong.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-23",
@@ -200,8 +318,15 @@
     "badExample": "# parse_results.sh ❌ Node.js called from bash\n#!/bin/bash\nRAW=$(cat \"$RAW_OUTPUT_FILE\")\n\nRESULT=$(node -e \"\n  const raw = '$RAW';\n  const passed = (raw.match(/PASS/g) || []).length;\n  console.log(passed);\n\")",
     "goodExample": "# parse_results.sh ✅ pure bash\n#!/bin/bash\nPHASE1=$(sed -n '/=== PHASE 1 START ===/,/=== PHASE 2 START ===/p' \"$RAW_OUTPUT_FILE\")\nPHASE2=$(sed -n '/=== PHASE 2 START ===/,$p' \"$RAW_OUTPUT_FILE\")\n\nP1_PASS=$(echo \"$PHASE1\" | grep -c 'PASS')\nP1_FAIL=$(echo \"$PHASE1\" | grep -c 'FAIL')\nP2_PASS=$(echo \"$PHASE2\" | grep -c 'PASS')\nP2_FAIL=$(echo \"$PHASE2\" | grep -c 'FAIL')",
     "quickRule": "If parse_results.sh contains 'node' or 'python', it's a template violation.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-24",
@@ -212,8 +337,15 @@
     "badExample": "Prompt requires: (1) /api/cart endpoint, (2) 401 for unauthenticated requests\n\nRubric: endpoint exists ✅ | 401 behavior [MISSING]\nF2P tests: endpoint test ✅ | 401 test [MISSING]\n\n→ Model skips authentication and passes QC",
     "goodExample": "Prompt requires: (1) /api/cart endpoint, (2) 401 for unauthenticated requests\n\nRubric: endpoint exists ✅ | unauthenticated returns 401 ✅\nF2P tests: GET /api/cart → 200 ✅ | GET /api/cart without token → 401 ✅\nGold patch: implements both ✅\n\n→ Full coverage, nothing slips through",
     "quickRule": "For every requirement: rubric criterion ✓ + F2P test ✓ + gold patch change ✓. All three or it's a gap.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   },
   {
     "date": "2026-07-28",
@@ -224,7 +356,14 @@
     "badExample": "// ❌ Invalid failure prompt is impossible\n\"Add real-time sync using our proprietary internal WebSocket protocol v3.\nThe protocol spec is only in our internal Confluence.\"\n\n// No model can succeed task is invalid",
     "goodExample": "// ✅ Valid failure model often misses edge cases\n\"Fix the bug in CartService.addItem() where adding the same product multiple times creates duplicate entries instead of accumulating quantity.\"\n\n// Model often fixes the basic case but misses edge cases like negative quantities",
     "quickRule": "If no model can succeed, the task is invalid. If every model always succeeds, it's too easy. Aim for the middle.",
-    "tags": ["daily_project_announcements"],
-    "webinar": { "enabled": false, "mandatory": false, "timeLabel": "", "link": "" }
+    "tags": [
+      "daily_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": ""
+    }
   }
 ]

@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 
 const LABELS: Record<string, string> = {
-  HEADLESS: 'Headless Mode',
-  SLOW_MO: 'Slow Motion (ms)',
   COMMUNITY_BASE_URL: 'Community Base URL',
-  COMMUNITY_NEW_TOPIC_URL: 'New Topic URL',
   COMMUNITY_CATEGORY_ID: 'Category ID',
   COMMUNITY_CATEGORY_SLUG: 'Category Slug',
-  COMMUNITY_CHAT_URL: 'Chat URL',
-  BROWSER_PROFILE_PATH: 'Browser Profile Path',
+  COMMUNITY_CHAT_CHANNEL_ID: 'Chat Channel ID',
+  DISCOURSE_API_KEY: 'Discourse API Key',
+  DISCOURSE_API_CLIENT_ID: 'Discourse API Client ID',
+  DISCOURSE_USERNAME: 'Discourse Username',
 };
 
 export default function Settings() {
@@ -42,22 +41,12 @@ export default function Settings() {
         {Object.entries(LABELS).map(([key, label]) => (
           <div key={key}>
             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{label}</label>
-            {key === 'HEADLESS' ? (
-              <select
-                value={config[key] || 'false'}
-                onChange={(e) => setConfig((p) => ({ ...p, [key]: e.target.value }))}
-                className={inputCls}
-              >
-                <option value="false">No (show browser)</option>
-                <option value="true">Yes (headless)</option>
-              </select>
-            ) : (
-              <input
-                value={config[key] || ''}
-                onChange={(e) => setConfig((p) => ({ ...p, [key]: e.target.value }))}
-                className={inputCls}
-              />
-            )}
+            <input
+              type={key === 'DISCOURSE_API_KEY' ? 'password' : 'text'}
+              value={config[key] || ''}
+              onChange={(e) => setConfig((p) => ({ ...p, [key]: e.target.value }))}
+              className={inputCls}
+            />
           </div>
         ))}
       </div>
