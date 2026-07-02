@@ -315,14 +315,14 @@
     "id": "cursor_access_check",
     "category": "access_cursor_setup",
     "name": "Cursor Access Check",
-    "description": "Help a contributor check or request their Cursor access",
+    "description": "Help new contributors check or request their Cursor access",
     "defaultTone": "friendly",
     "supportedTones": ["friendly", "slack_casual"],
-    "audience": ["specific_users"],
+    "audience": ["new_contributors"],
     "variables": [
       { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
     ],
-    "body": "Hi! For Cursor access issues, the best next step is to join the War Room so we can check your access status and help you get set up.\n\nWar Room link:\n{{warRoomLink}}\n\nDrop in during QM support hours (Mon–Fri, 10:30 AM–7:00 PM ARG) and we'll sort it out 🙏"
+    "body": "Hi team! For new contributors that completed the onboarding course and now are EQ, it is because you need access to cursor, please follow the step 0 of the project guidelines, also join the War Room so we can check your access status and help you get set up.\n\nWar Room link:\n{{warRoomLink}}\n\nDrop in during QM support hours (Mon–Fri, 10:30 AM–7:00 PM ARG) and we'll sort it out 🙏"
   },
   {
     "id": "platform_issue_task",
