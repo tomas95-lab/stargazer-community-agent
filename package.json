@@ -12,11 +12,13 @@
     "ui:build": "cd ui && npm run build",
     "dev": "npx tsx server/index.ts & cd ui && npm run dev",
     "start": "cd ui && npm run build && cd .. && npx tsx server/index.ts",
-    "comms": "npx tsx src/comms/index.ts"
+    "comms": "npx tsx src/comms/index.ts",
+    "mcp": "npx tsx src/mcp-server.ts"
   },
   "keywords": [],
   "license": "PRIVATE",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@octokit/rest": "^22.0.1",
     "clipboardy": "^4.0.0",
     "cors": "^2.8.6",
