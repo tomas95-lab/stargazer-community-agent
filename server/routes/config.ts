@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { isAdminAuthConfigured, requireAdminToken } from '../auth';
+import { requireAdminToken } from '../auth';
 import { dataStoreSummary } from '../../src/data-store';
 
 const router = Router();
@@ -21,7 +21,6 @@ router.get('/', (_req: Request, res: Response) => {
   const store = dataStoreSummary();
   res.json({
     ...env,
-    ADMIN_AUTH_CONFIGURED: String(isAdminAuthConfigured()),
     DATA_STORE_REQUESTED: store.requested,
     DATA_STORE_ACTIVE: store.active,
     ANTHROPIC_CONFIGURED: String(Boolean(process.env.ANTHROPIC_API_KEY)),
