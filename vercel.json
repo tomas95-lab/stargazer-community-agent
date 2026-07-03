@@ -7,7 +7,17 @@
   ],
   "functions": {
     "api/index.ts": {
-      "maxDuration": 30
+      "maxDuration": 60,
+      "includeFiles": "{data,templates}/**"
     }
-  }
+  },
+  "crons": [
+    { "path": "/api/cron/community-agent", "schedule": "0 13 * * *" },
+    { "path": "/api/cron/community-agent", "schedule": "30 14 * * *" },
+    { "path": "/api/cron/community-agent", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/community-agent", "schedule": "30 17 * * *" },
+    { "path": "/api/cron/community-agent", "schedule": "0 19 * * *" },
+    { "path": "/api/cron/community-agent", "schedule": "30 20 * * *" },
+    { "path": "/api/cron/community-agent", "schedule": "0 22 * * *" }
+  ]
 }

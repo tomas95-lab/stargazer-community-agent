@@ -8,10 +8,11 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/tomas.ruiz/Desktop/testing/daily-thread-bot/run-daily-thread.sh</string>
+        <!-- Replace this with the absolute path to run-daily-thread.sh before loading the plist. -->
+        <string>/absolute/path/to/daily-thread-bot/run-daily-thread.sh</string>
     </array>
 
-    <!-- Mon-Fri at 10:06 AM, matching the old Cowork schedule -->
+    <!-- Example: Mon-Fri at 9:30 AM local machine time. -->
     <key>StartCalendarInterval</key>
     <array>
         <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>6</integer></dict>
@@ -22,9 +23,9 @@
     </array>
 
     <key>StandardOutPath</key>
-    <string>/Users/tomas.ruiz/Desktop/testing/daily-thread-bot/logs/launchd.out.log</string>
+    <string>/absolute/path/to/daily-thread-bot/logs/launchd.out.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/tomas.ruiz/Desktop/testing/daily-thread-bot/logs/launchd.err.log</string>
+    <string>/absolute/path/to/daily-thread-bot/logs/launchd.err.log</string>
 
     <key>RunAtLoad</key>
     <false/>

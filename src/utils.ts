@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { PATHS, DailyThreadConfig } from './config';
+import { readDataJSON } from './data-store';
 
 export function todayDate(): string {
   const d = new Date();
@@ -15,14 +16,12 @@ export function formatPostTitle(date: string): string {
   return `🧵 Daily thread ${mm}/${dd}`;
 }
 
-export function loadTopics(): DailyThreadConfig[] {
-  const filePath = path.join(PATHS.data, 'topics.json');
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(raw);
+export async function loadTopics(): Promise<DailyThreadConfig[]> {
+  return readDataJSON<DailyThreadConfig[]>('data/topics.json');
 }
 
-export function getTodayTopic(date: string): DailyThreadConfig {
-  const topics = loadTopics();
+export async function getTodayTopic(date: string): Promise<DailyThreadConfig> {
+  const topics = await loadTopics();
   const match = topics.find((t) => t.date === date);
   if (match) return match;
 

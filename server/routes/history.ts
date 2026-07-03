@@ -1,15 +1,15 @@
 import { Router, Request, Response } from 'express';
-import { listDirectory, readFile } from '../../src/github-storage';
+import { listDataDirectory, readDataText } from '../../src/data-store';
 
 const router = Router();
 
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const files = await listDirectory('output');
+    const files = await listDataDirectory('output');
     const sorted = files
       .filter((f) => !f.name.startsWith('.'))
       .sort((a, b) => b.name.localeCompare(a.name));
-    res.json(sorted.map((f) => ({ name: f.name, size: f.size, modified: '' })));
+    res.json(sorted.map((f) => ({ name: f.name, size: f.size, modified: f.modified })));
   } catch {
     res.json([]);
   }
@@ -17,7 +17,7 @@ router.get('/', async (_req: Request, res: Response) => {
 
 router.get('/:filename', async (req: Request, res: Response) => {
   try {
-    const content = await readFile(`output/${req.params.filename}`);
+    const content = await readDataText(`output/${req.params.filename}`);
     res.json({ name: req.params.filename, content });
   } catch {
     res.status(404).json({ error: 'File not found' });

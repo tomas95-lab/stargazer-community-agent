@@ -1,10 +1,10 @@
 #!/bin/bash
-# Wrapper for launchd to run the daily-thread-bot with a real network path.
-# launchd does not load your shell profile, so we set PATH explicitly here.
+# Wrapper for local schedulers such as launchd or cron.
+# Scheduler processes often skip your shell profile, so PATH is set explicitly.
 
 set -euo pipefail
 
-PROJECT_DIR="/Users/tomas.ruiz/Desktop/testing/daily-thread-bot"
+PROJECT_DIR="${PROJECT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 LOG_DIR="$PROJECT_DIR/logs"
 mkdir -p "$LOG_DIR"
 
@@ -16,8 +16,6 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$HOME/.nvm/current/b
 # [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
 cd "$PROJECT_DIR"
-
-export HEADLESS=true
 
 TIMESTAMP="$(date '+%Y-%m-%d_%H-%M-%S')"
 LOG_FILE="$LOG_DIR/run-$TIMESTAMP.log"

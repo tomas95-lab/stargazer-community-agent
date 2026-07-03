@@ -10,6 +10,8 @@ import configRouter from '../server/routes/config';
 import historyRouter from '../server/routes/history';
 import commsRouter from '../server/routes/comms';
 import webinarsRouter from '../server/routes/webinars';
+import communityAgentRouter from '../server/routes/community-agent';
+import cronRouter from '../server/routes/cron';
 
 const app = express();
 app.use(cors());
@@ -22,5 +24,7 @@ app.use('/api/config', configRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/comms', commsRouter);
 app.use('/api/webinars', webinarsRouter);
+app.use('/api/community-agent', communityAgentRouter);
+app.use('/api/cron', cronRouter);
 
 export default app;

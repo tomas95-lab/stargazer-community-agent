@@ -1,9 +1,32 @@
 const BASE = '/api';
+const ADMIN_TOKEN_KEY = 'stargazer_admin_token';
+
+function getStoredAdminToken(): string {
+  if (typeof window === 'undefined') return '';
+  return window.localStorage.getItem(ADMIN_TOKEN_KEY) || '';
+}
+
+function setStoredAdminToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  const trimmed = token.trim();
+  if (trimmed) {
+    window.localStorage.setItem(ADMIN_TOKEN_KEY, trimmed);
+  } else {
+    window.localStorage.removeItem(ADMIN_TOKEN_KEY);
+  }
+}
 
 async function request<T>(path: string, opts?: RequestInit): Promise<T> {
+  const token = getStoredAdminToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['X-Admin-Token'] = token;
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...opts,
+    headers: {
+      ...headers,
+      ...(opts?.headers as Record<string, string> | undefined),
+    },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
@@ -11,6 +34,13 @@ async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   }
   return res.json();
 }
+
+export const adminAuth = {
+  getToken: getStoredAdminToken,
+  setToken: setStoredAdminToken,
+  clearToken: () => setStoredAdminToken(''),
+  hasToken: () => Boolean(getStoredAdminToken()),
+};
 
 export interface Topic {
   date: string;
@@ -74,6 +104,83 @@ export interface CommsTemplate {
   body: string;
 }
 
+export interface CommunityMessage {
+  id: number;
+  message: string;
+  user: { username: string };
+  created_at: string;
+}
+
+export interface CommunityAgentSuggestion {
+  chatMessageId: number;
+  username: string;
+  question: string;
+  reply: string;
+  posted: boolean;
+}
+
+export type CommunityAgentSource = 'community' | 'dm';
+export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
+
+export interface CommunityAgentItem {
+  id: string;
+  source: CommunityAgentSource;
+  username: string;
+  message: string;
+  createdAt: string;
+  title?: string;
+  chatMessageId?: number;
+  topicId?: number;
+  url?: string;
+}
+
+export interface CommunityAgentDecision {
+  itemId: string;
+  source: CommunityAgentSource;
+  username: string;
+  message: string;
+  action: CommunityAgentAction;
+  confidence: number;
+  reason: string;
+  reply: string;
+  posted: boolean;
+  needsHuman: boolean;
+  guidelineSnippets: string[];
+  error?: string;
+}
+
+export interface CommunityAgentResult {
+  mode: 'suggestion' | 'post';
+  checked: number;
+  candidates: number;
+  handled: number;
+  posted: number;
+  needsHuman: number;
+  ignored: number;
+  withinSchedule: boolean;
+  window: {
+    argentinaDate: string;
+    startUtc: string;
+    endUtc: string;
+    operatingHours: string;
+  };
+  items: CommunityAgentItem[];
+  decisions: CommunityAgentDecision[];
+  errors: string[];
+  suggestions?: CommunityAgentSuggestion[];
+}
+
+export interface CommunityAgentOverview {
+  items: CommunityAgentItem[];
+  candidates: CommunityAgentItem[];
+  errors: string[];
+  window: CommunityAgentResult['window'];
+  guidelines: {
+    available: boolean;
+    characters: number;
+  };
+}
+
 export const api = {
   getTopics: () => request<Topic[]>('/topics'),
   getToday: () => request<{ date: string; topic: Topic | null }>('/topics/today'),
@@ -106,4 +213,27 @@ export const api = {
   updateWebinar: (id: string, w: Partial<Webinar>) => request<Webinar>(`/webinars/${id}`, { method: 'PUT', body: JSON.stringify(w) }),
   deleteWebinar: (id: string) => request<{ ok: boolean }>(`/webinars/${id}`, { method: 'DELETE' }),
   syncToGitHub: () => request<{ ok: boolean; message: string }>('/sync', { method: 'POST' }),
+  getCommunityMessages: (count = 20) =>
+    request<{ messages: CommunityMessage[] }>(`/community-agent/messages?count=${count}`),
+  getCommunityAgentOverview: (opts: { messageCount?: number; includeDms?: boolean; includeCommunity?: boolean } = {}) => {
+    const params = new URLSearchParams();
+    if (opts.messageCount) params.set('messageCount', String(opts.messageCount));
+    if (opts.includeDms === false) params.set('includeDms', 'false');
+    if (opts.includeCommunity === false) params.set('includeCommunity', 'false');
+    const query = params.toString();
+    return request<CommunityAgentOverview>(`/community-agent/overview${query ? `?${query}` : ''}`);
+  },
+  runCommunityAgent: (opts: {
+    post?: boolean;
+    maxAnswers?: number;
+    messageCount?: number;
+    includeDms?: boolean;
+    includeCommunity?: boolean;
+    skipProcessed?: boolean;
+    markProcessed?: boolean;
+  }) =>
+    request<CommunityAgentResult>('/community-agent/run', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
 };

@@ -1,0 +1,173 @@
+export interface DiscourseClientConfig {
+  baseUrl: string;
+  apiKey: string;
+  apiClientId: string;
+}
+
+export interface DiscourseTopicResponse {
+  topic_id: number;
+  topic_slug: string;
+  id: number;
+}
+
+export interface DiscourseChatMessage {
+  id: number;
+  message: string;
+  cooked?: string;
+  excerpt?: string;
+  chat_channel_id?: number;
+  user: {
+    id?: number;
+    username: string;
+    name?: string;
+    moderator?: boolean;
+    admin?: boolean;
+    staff?: boolean;
+    primary_group_name?: string;
+  };
+  created_at: string;
+}
+
+export interface DiscourseTopicSummary {
+  title: string;
+  posts_count: number;
+  last_posted_at: string;
+  slug: string;
+  id: number;
+}
+
+export interface DiscourseTopicPost {
+  id?: number;
+  username: string;
+  name?: string;
+  raw?: string;
+  cooked: string;
+  created_at: string;
+}
+
+export interface DiscourseTopicDetails {
+  id?: number;
+  title?: string;
+  slug?: string;
+  post_stream?: { posts?: DiscourseTopicPost[] };
+}
+
+export interface DiscoursePrivateMessageTopic {
+  id: number;
+  title: string;
+  slug?: string;
+  created_at?: string;
+  last_posted_at?: string;
+  bumped_at?: string;
+  last_poster_username?: string;
+  posters?: Array<{ user_id?: number; primary_group_id?: number; description?: string; extras?: string }>;
+}
+
+export class DiscourseClient {
+  private baseUrl: string;
+  private apiKey: string;
+  private apiClientId: string;
+
+  constructor(config: DiscourseClientConfig) {
+    this.baseUrl = config.baseUrl.replace(/\/+$/, '');
+    this.apiKey = config.apiKey;
+    this.apiClientId = config.apiClientId;
+  }
+
+  private headers(): Record<string, string> {
+    return {
+      'Content-Type': 'application/json',
+      'User-Api-Key': this.apiKey,
+      'User-Api-Client-Id': this.apiClientId,
+    };
+  }
+
+  private async request<T>(path: string, init?: RequestInit): Promise<T> {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      ...init,
+      headers: {
+        ...this.headers(),
+        ...(init?.headers as Record<string, string> | undefined),
+      },
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Discourse API error ${res.status}: ${body.slice(0, 500)}`);
+    }
+
+    return res.json() as Promise<T>;
+  }
+
+  async createTopic(params: {
+    title: string;
+    raw: string;
+    categoryId: number;
+    tags?: string[];
+  }): Promise<DiscourseTopicResponse> {
+    return this.request<DiscourseTopicResponse>('/posts.json', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: params.title,
+        raw: params.raw,
+        category: params.categoryId,
+        tags: params.tags || [],
+      }),
+    });
+  }
+
+  async replyToTopic(topicId: number, raw: string): Promise<{ id: number }> {
+    return this.request<{ id: number }>('/posts.json', {
+      method: 'POST',
+      body: JSON.stringify({ topic_id: topicId, raw }),
+    });
+  }
+
+  async sendChatMessage(channelId: string, message: string): Promise<{ message_id?: number; id?: number }> {
+    return this.request<{ message_id?: number; id?: number }>(`/chat/${channelId}.json`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  }
+
+  async readChatMessages(channelId: string, count = 20): Promise<DiscourseChatMessage[]> {
+    const data = await this.request<{ messages?: DiscourseChatMessage[] }>(
+      `/chat/api/channels/${channelId}/messages.json?page_size=${count}`
+    );
+    return data.messages || [];
+  }
+
+  async readCategoryTopics(categoryId: number, count = 10): Promise<DiscourseTopicSummary[]> {
+    const data = await this.request<{
+      topic_list?: { topics?: DiscourseTopicSummary[] };
+    }>(`/c/${categoryId}.json?page=0`);
+    return (data.topic_list?.topics || []).slice(0, count);
+  }
+
+  async readTopic(topicId: number): Promise<DiscourseTopicDetails> {
+    return this.request<DiscourseTopicDetails>(`/t/${topicId}.json`);
+  }
+
+  async readPrivateMessages(
+    username: string,
+    kind: 'inbox' | 'unread' | 'sent' = 'unread',
+    count = 20
+  ): Promise<DiscoursePrivateMessageTopic[]> {
+    const path =
+      kind === 'sent'
+        ? `/topics/private-messages-sent/${username}.json`
+        : kind === 'inbox'
+          ? `/topics/private-messages/${username}.json`
+          : `/topics/private-messages-unread/${username}.json`;
+
+    const data = await this.request<{
+      topic_list?: { topics?: DiscoursePrivateMessageTopic[] };
+    }>(`${path}?page=0`);
+
+    return (data.topic_list?.topics || []).slice(0, count);
+  }
+
+  topicUrl(slug: string, topicId: number): string {
+    return `${this.baseUrl}/t/${slug}/${topicId}`;
+  }
+}

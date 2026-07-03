@@ -2,24 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { api, type CommsTemplate } from '../api';
 
-const TONE_LABELS: Record<string, string> = {
-  friendly: 'Friendly',
-  firm: 'Firm',
-  urgent: 'Urgent',
-  formal: 'Formal',
-  slack_casual: 'Slack Casual',
-};
-
-const AUDIENCE_LABELS: Record<string, string> = {
-  all_contributors: 'All Contributors',
-  reviewers_only: 'Reviewers Only',
-  qma_only: 'QMA Only',
-  invited_contributors: 'Invited Contributors',
-  new_contributors: 'New Contributors',
-  throttled_contributors: 'Throttled Contributors',
-  specific_users: 'Specific Users',
-};
-
 interface Props {
   template: CommsTemplate;
   onBack: () => void;
@@ -39,8 +21,6 @@ export default function CommsForm({ template, onBack }: Props) {
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState<'idle' | 'ok' | 'error'>('idle');
   const [sendError, setSendError] = useState('');
-  const [tone, setTone] = useState(template.defaultTone);
-  const [audience, setAudience] = useState(template.audience[0] ?? 'all_contributors');
 
   useEffect(() => {
     const init: Record<string, string> = {};
@@ -50,8 +30,6 @@ export default function CommsForm({ template, onBack }: Props) {
     setVars(init);
     setPreview('');
     setErrors([]);
-    setTone(template.defaultTone);
-    setAudience(template.audience[0] ?? 'all_contributors');
   }, [template.id]);
 
   const generate = useCallback(async () => {
@@ -122,24 +100,6 @@ export default function CommsForm({ template, onBack }: Props) {
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-1 space-y-4">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-4">
-            <div>
-              <label className={labelCls}>Tone</label>
-              <select value={tone} onChange={(e) => setTone(e.target.value)} className={inputCls}>
-                {template.supportedTones.map((t) => (
-                  <option key={t} value={t}>{TONE_LABELS[t] ?? t}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className={labelCls}>Audience</label>
-              <select value={audience} onChange={(e) => setAudience(e.target.value)} className={inputCls}>
-                {template.audience.map((a) => (
-                  <option key={a} value={a}>{AUDIENCE_LABELS[a] ?? a}</option>
-                ))}
-              </select>
-            </div>
-
             {template.variables.map((v) => (
               <div key={v.key}>
                 <label className={labelCls}>

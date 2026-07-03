@@ -29,7 +29,7 @@ function SyncButton() {
         disabled={status === 'syncing'}
         className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 border border-gray-600 text-gray-200 text-sm font-medium rounded-xl transition-colors"
       >
-        {status === 'syncing' ? 'Syncing...' : '↑ Sync to GitHub'}
+        {status === 'syncing' ? 'Syncing...' : '↑ Sync local changes'}
       </button>
     </div>
   );
@@ -112,7 +112,7 @@ export default function WebinarScheduler() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Session Scheduler</h1>
-          <p className="text-gray-400 text-sm mt-1">Schedule webinars & onboardings — reminder auto-sends 1 hour before via GitHub Actions.</p>
+          <p className="text-gray-400 text-sm mt-1">Schedule webinars & onboardings. Reminder jobs use this data source.</p>
         </div>
         <SyncButton />
       </div>

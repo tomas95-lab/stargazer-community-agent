@@ -9,6 +9,8 @@ import historyRouter from './routes/history';
 import commsRouter from './routes/comms';
 import webinarsRouter from './routes/webinars';
 import syncRouter from './routes/sync';
+import communityAgentRouter from './routes/community-agent';
+import cronRouter from './routes/cron';
 
 const app = express();
 
@@ -23,6 +25,8 @@ app.use('/api/history', historyRouter);
 app.use('/api/comms', commsRouter);
 app.use('/api/webinars', webinarsRouter);
 app.use('/api/sync', syncRouter);
+app.use('/api/community-agent', communityAgentRouter);
+app.use('/api/cron', cronRouter);
 
 const uiBuild = path.resolve(__dirname, '../ui/dist');
 app.use(express.static(uiBuild));

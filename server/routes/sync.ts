@@ -1,12 +1,19 @@
 import { Router, Request, Response } from 'express';
 import { execSync } from 'child_process';
 import * as path from 'path';
+import { requireAdminToken } from '../auth';
+import { activeDataStore } from '../../src/data-store';
 
 const router = Router();
 const ROOT = path.resolve(__dirname, '../..');
 
-router.post('/', (_req: Request, res: Response) => {
+router.post('/', requireAdminToken, (_req: Request, res: Response) => {
   try {
+    if (activeDataStore() === 'github') {
+      res.json({ ok: true, message: 'GitHub data store writes immediately. Nothing to sync.' });
+      return;
+    }
+
     execSync('git add data/', { cwd: ROOT, stdio: 'pipe' });
 
     const statusOut = execSync('git status --porcelain data/', { cwd: ROOT }).toString().trim();

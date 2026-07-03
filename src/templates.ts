@@ -1,5 +1,23 @@
 import { DailyThreadConfig } from './config';
 
+export interface ProjectLinks {
+  guidelines: string;
+  templatesZip: string;
+  warRoom: string;
+  validationScript: string;
+  stargazerEval: string;
+  commonErrorsDocument: string;
+}
+
+export const DEFAULT_PROJECT_LINKS: ProjectLinks = {
+  guidelines: 'https://app.outlier.ai/en/expert/guidelines/69cd3d3788bf65e1468428b1?componentId=69398afb50868106e83b1a53&type=attachment',
+  templatesZip: 'https://static.remotasks.com/uploads/69cd3d3788bf65e1468428b1/stargazer_templates.zip',
+  warRoom: 'https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success',
+  validationScript: 'https://static.remotasks.com/uploads/69cd3d3788bf65e1468428b1/validation_script.zip',
+  stargazerEval: 'https://static.remotasks.com/uploads/69cd3d3788bf65e1468428b1/Stargazer_Eval.zip',
+  commonErrorsDocument: 'https://app.outlier.ai/en/expert/guidelines/69cd3d3788bf65e1468428b1?componentId=6a1888d2acc7aef0d78b71ea&type=attachment',
+};
+
 const DAILY_THREAD_TEMPLATE = `# 🚨 {{title}}
 
 > **TL;DR:** {{quickRule}}
@@ -38,12 +56,12 @@ Daily **Stargazer Axiom** thread is up. Use this thread for blockers, Cursor iss
 
 ## 🔗 LINKS
 
-📘 [Guidelines](https://app.outlier.ai/en/expert/guidelines/69cd3d3788bf65e1468428b1?componentId=69398afb50868106e83b1a53&type=attachment)
-🧩 [Stargazer Templates ZIP](https://static.remotasks.com/uploads/69cd3d3788bf65e1468428b1/stargazer_templates.zip)
-🧭 [War Room](https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success)
-✅ [Validation Script](https://static.remotasks.com/uploads/69cd3d3788bf65e1468428b1/validation_script.zip)
-✅ [Stargazer Eval](https://static.remotasks.com/uploads/69cd3d3788bf65e1468428b1/Stargazer_Eval.zip)
-📚 [Common Errors Document](https://app.outlier.ai/en/expert/guidelines/69cd3d3788bf65e1468428b1?componentId=6a1888d2acc7aef0d78b71ea&type=attachment)
+📘 [Guidelines]({{guidelinesLink}})
+🧩 [Stargazer Templates ZIP]({{templatesZipLink}})
+🧭 [War Room]({{warRoomLink}})
+✅ [Validation Script]({{validationScriptLink}})
+✅ [Stargazer Eval]({{stargazerEvalLink}})
+📚 [Common Errors Document]({{commonErrorsDocumentLink}})
 
 ---
 
@@ -121,7 +139,15 @@ function interpolate(template: string, vars: Record<string, string>): string {
   return result;
 }
 
-export function renderDailyThread(config: DailyThreadConfig): string {
+export function renderDailyThread(config: DailyThreadConfig, links?: Partial<ProjectLinks>): string {
+  return renderDailyThreadWithLinks(config, links);
+}
+
+export function renderDailyThreadWithLinks(
+  config: DailyThreadConfig,
+  links: Partial<ProjectLinks> = {}
+): string {
+  const mergedLinks = { ...DEFAULT_PROJECT_LINKS, ...links };
   return interpolate(DAILY_THREAD_TEMPLATE, {
     title: config.title,
     reminderTitle: config.reminderTitle,
@@ -130,6 +156,12 @@ export function renderDailyThread(config: DailyThreadConfig): string {
     badExample: config.badExample,
     quickRule: config.quickRule,
     webinarSection: buildWebinarSection(config),
+    guidelinesLink: mergedLinks.guidelines,
+    templatesZipLink: mergedLinks.templatesZip,
+    warRoomLink: mergedLinks.warRoom,
+    validationScriptLink: mergedLinks.validationScript,
+    stargazerEvalLink: mergedLinks.stargazerEval,
+    commonErrorsDocumentLink: mergedLinks.commonErrorsDocument,
   });
 }
 

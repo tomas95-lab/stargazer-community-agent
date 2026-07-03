@@ -102,30 +102,30 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-white">Stargazer Comms</h1>
           <p className="text-gray-400 text-sm mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
-        <a
-          href="https://github.com/tomasruiz653/community_bot/actions"
-          target="_blank"
-          rel="noopener"
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl text-gray-300 text-sm transition-colors"
+        <button
+          type="button"
+          disabled
+          className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-xl text-gray-500 text-sm cursor-not-allowed"
         >
-          <span>⚙️</span> GitHub Actions
-        </a>
+          <span>⚙️</span> Agent scheduled
+        </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Today" value={topic ? '✓ Ready' : '✗ Missing'} sub={date} />
         <StatCard label="Upcoming Topics" value={upcomingTopics} sub="scheduled" />
         <StatCard label="Webinars" value={webinars.length} sub="total scheduled" />
-        <StatCard label="Auto-Publish" value="9:30 AM" sub="Mon–Fri via GitHub" />
+        <StatCard label="Agent" value="Ready" sub="10:00-19:00 ARG" />
       </div>
 
       {nextWebinar && <NextWebinarCard webinar={nextWebinar} />}
 
       <div>
         <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Quick Actions</p>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-5 gap-3">
           <QuickAction icon="📝" label="Manage Topics" onClick={() => navigate('/topics')} />
           <QuickAction icon="💬" label="Send a Comm" onClick={() => navigate('/comms')} />
+          <QuickAction icon="🤖" label="Community Agent" onClick={() => navigate('/agent')} />
           <QuickAction icon="🎯" label="Schedule Webinar" onClick={() => navigate('/webinars')} />
           <QuickAction icon="🔗" label="Edit Links" onClick={() => navigate('/links')} />
         </div>
@@ -136,7 +136,7 @@ export default function Dashboard() {
           <span className="text-2xl">⚠️</span>
           <div>
             <p className="text-yellow-300 font-semibold">No topic for today ({date})</p>
-            <p className="text-yellow-500/80 text-sm mt-1">The bot won't publish anything at 9:30 AM — it will use the first available topic as fallback.</p>
+            <p className="text-yellow-500/80 text-sm mt-1">The daily publisher will use the first available topic as fallback if no exact date exists.</p>
             <button onClick={() => navigate('/topics')} className="mt-3 text-sm text-yellow-400 hover:text-yellow-300 underline">
               Create today's topic →
             </button>

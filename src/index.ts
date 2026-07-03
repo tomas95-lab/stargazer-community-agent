@@ -3,20 +3,22 @@ import { renderDailyThread, renderAnnouncement } from './templates';
 import { generateAndSaveAnnouncement } from './announcement';
 import { CommunityBot } from './communityBot';
 import { todayDate, getTodayTopic, saveFile, parseArgs, askConfirmation, formatPostTitle } from './utils';
+import { loadProjectLinks } from './links';
 
 async function main(): Promise<void> {
   const { mode, yes } = parseArgs();
   const date = todayDate();
-  const topic = getTodayTopic(date);
+  const topic = await getTodayTopic(date);
 
   const postTitle = formatPostTitle(topic.date);
+  const links = await loadProjectLinks();
 
   console.log(`\n📅 Date: ${topic.date}`);
   console.log(`📝 Post title: ${postTitle}`);
   console.log(`🔖 Topic: ${topic.topic}`);
   console.log(`🎯 Mode: ${mode}\n`);
 
-  const threadContent = renderDailyThread(topic);
+  const threadContent = renderDailyThread(topic, links);
 
   const threadFile = saveFile(`daily-thread-${topic.date}.md`, threadContent);
   console.log(`💾 Daily thread saved: ${threadFile}`);
@@ -25,7 +27,7 @@ async function main(): Promise<void> {
     const placeholderUrl = `https://community.outlier.ai/t/placeholder/${topic.date}`;
     const announcementFile = await generateAndSaveAnnouncement(topic, placeholderUrl);
     console.log(`💾 Announcement (placeholder) saved: ${announcementFile}`);
-    console.log('\n✅ Dry run complete. No browser was opened.\n');
+    console.log('\n✅ Dry run complete. No Community API publish was attempted.\n');
     return;
   }
 

@@ -35,7 +35,7 @@ function SyncButton() {
         {status === 'syncing' ? (
           <><span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" /> Syncing...</>
         ) : (
-          <>↑ Sync to GitHub</>
+          <>↑ Sync local changes</>
         )}
       </button>
     </div>
@@ -94,7 +94,7 @@ export default function TopicEditor() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Topics</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage daily thread topics. Sync to GitHub so the scheduler picks them up.</p>
+          <p className="text-gray-500 text-sm mt-1">Manage daily thread topics stored in GitHub.</p>
         </div>
         <div className="flex items-center gap-3">
           <SyncButton />
@@ -130,7 +130,7 @@ export default function TopicEditor() {
         <div className="text-center py-16 bg-gray-800/40 border border-gray-700 border-dashed rounded-2xl space-y-3">
           <p className="text-4xl">📋</p>
           <p className="text-gray-300 font-semibold">No topics yet</p>
-          <p className="text-gray-500 text-sm">Create topics in advance — the bot publishes the one matching today's date at 9:30 AM.</p>
+          <p className="text-gray-500 text-sm">Create topics in advance. The publisher uses the one matching today's date.</p>
           <button
             onClick={() => setCreating(true)}
             className="mt-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-xl font-medium"

@@ -1,6 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { loadBotConfig } from './config';
+import { DiscourseClient } from './discourse-client';
+import { readDataJSON } from './data-store';
+import { appendOperationLog } from './operations-log';
 
 dotenv.config();
 
@@ -15,13 +17,15 @@ interface Webinar {
   invitees: string[];
 }
 
-const WEBINARS_PATH = path.resolve(__dirname, '../data/webinars.json');
 const WINDOW_MIN = 45;
 const WINDOW_MAX = 75;
 
-function readWebinars(): Webinar[] {
-  if (!fs.existsSync(WEBINARS_PATH)) return [];
-  return JSON.parse(fs.readFileSync(WEBINARS_PATH, 'utf-8'));
+async function readWebinars(): Promise<Webinar[]> {
+  try {
+    return await readDataJSON<Webinar[]>('data/webinars.json');
+  } catch {
+    return [];
+  }
 }
 
 function getWebinarDateTimeUtc(webinar: Webinar): Date {
@@ -36,27 +40,13 @@ function minutesUntil(dt: Date): number {
 }
 
 async function sendToChat(message: string): Promise<void> {
-  const apiKey = process.env.DISCOURSE_API_KEY;
-  const clientId = process.env.DISCOURSE_API_CLIENT_ID || 'daily-thread-bot';
-  const baseUrl = process.env.COMMUNITY_BASE_URL || 'https://community.outlier.ai';
-  const channelId = process.env.COMMUNITY_CHAT_CHANNEL_ID || '828853';
-
-  if (!apiKey) throw new Error('DISCOURSE_API_KEY not set');
-
-  const res = await fetch(`${baseUrl}/chat/${channelId}.json`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Api-Key': apiKey,
-      'User-Api-Client-Id': clientId,
-    },
-    body: JSON.stringify({ message }),
+  const config = loadBotConfig();
+  const client = new DiscourseClient({
+    baseUrl: config.communityBaseUrl,
+    apiKey: config.discourseApiKey,
+    apiClientId: config.discourseApiClientId,
   });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Discourse error ${res.status}: ${body.slice(0, 200)}`);
-  }
+  await client.sendChatMessage(config.communityChatChannelId, message);
 }
 
 function buildReminderMessage(session: Webinar, minutesLeft: number): string {
@@ -74,8 +64,8 @@ Session link:\n${session.link}\n\nPlease join on time 🙏`;
 Zoom link:\n${session.link}\n\nPlease join on time 🙏`;
 }
 
-async function main(): Promise<void> {
-  const webinars = readWebinars();
+export async function runWebinarReminderJob(): Promise<void> {
+  const webinars = await readWebinars();
   const now = new Date();
 
   console.log(`🕐 Checking webinars at ${now.toISOString()}`);
@@ -88,6 +78,12 @@ async function main(): Promise<void> {
 
   if (upcoming.length === 0) {
     console.log('No webinars in the reminder window. Nothing to send.');
+    await appendOperationLog({
+      action: 'webinar_reminder',
+      status: 'skipped',
+      message: 'No sessions in reminder window',
+      metadata: { checkedAt: now.toISOString() },
+    });
     return;
   }
 
@@ -98,11 +94,19 @@ async function main(): Promise<void> {
 
     console.log(`📢 Sending reminder for: ${webinar.title}`);
     await sendToChat(message);
+    await appendOperationLog({
+      action: 'webinar_reminder',
+      status: 'success',
+      message: `Sent reminder for ${webinar.title}`,
+      metadata: { id: webinar.id, type: webinar.type, date: webinar.date, timeUtc: webinar.timeUtc },
+    });
     console.log('✅ Reminder sent');
   }
 }
 
-main().catch((err) => {
-  console.error('❌ Error:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  runWebinarReminderJob().catch((err) => {
+    console.error('❌ Error:', err);
+    process.exit(1);
+  });
+}
