@@ -1,5 +1,20 @@
 [
   {
+    "id": "544861bf-ee4a-486c-a81a-de0b5c193923",
+    "at": "2026-07-03T22:42:07.725Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "argentinaDate": "2026-07-03",
+        "startUtc": "2026-07-03T03:00:00.000Z",
+        "endUtc": "2026-07-04T03:00:00.000Z",
+        "operatingHours": "10:00-19:00 America/Argentina/Buenos_Aires"
+      }
+    }
+  },
+  {
     "id": "82a2817a-5224-4069-a97d-1fe9e565af2f",
     "at": "2026-07-03T20:59:09.272Z",
     "action": "community_agent",
