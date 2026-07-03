@@ -13,6 +13,7 @@ import {
 import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
+import { loadProjectLinks } from './links';
 
 const BOT_USERNAME = process.env.DISCOURSE_USERNAME || 'tomas.ruiz_OBIC';
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
@@ -342,7 +343,27 @@ function anthropicText(response: { content?: Array<{ type: string; text?: string
   return block?.text || '';
 }
 
-async function askClaude(item: CommunityAgentItem, context: string): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'needsHuman'>> {
+function replyIncludesWarRoomLink(reply: string, warRoomLink: string): boolean {
+  const normalizedReply = normalizeText(reply);
+  const normalizedLink = normalizeText(warRoomLink);
+  return (
+    normalizedReply.includes(normalizedLink) ||
+    normalizedReply.includes('91510346485') ||
+    normalizedReply.includes('war room')
+  );
+}
+
+function withWarRoomLink(reply: string, warRoomLink: string): string {
+  const trimmed = reply.trim();
+  if (!trimmed || replyIncludesWarRoomLink(trimmed, warRoomLink)) return trimmed;
+  return `${trimmed}\n\nWar Room link:\n${warRoomLink}`;
+}
+
+async function askClaude(
+  item: CommunityAgentItem,
+  context: string,
+  warRoomLink: string,
+): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'needsHuman'>> {
   const apiKey = process.env.ANTHROPIC_API_KEY || '';
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
@@ -353,7 +374,7 @@ async function askClaude(item: CommunityAgentItem, context: string): Promise<Omi
     model: ANTHROPIC_MODEL,
     max_tokens: 450,
     system:
-      'You are a community management agent for Stargazer Axiom. You may answer only when the answer is clearly supported by the provided project guideline excerpts or by the recent chat context. If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human". Use the same language as the user. Keep replies under 4 short sentences. Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
+      `You are a community management agent for Stargazer Axiom. You may answer only when the answer is clearly supported by the provided project guideline excerpts or by the recent chat context. If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human". Use the same language as the user. Keep replies under 4 short sentences. When you choose action "reply", always include the War Room Zoom link for live support: ${warRoomLink}. Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.`,
     messages: [
       {
         role: 'user',
@@ -370,10 +391,13 @@ async function askClaude(item: CommunityAgentItem, context: string): Promise<Omi
   const action: CommunityAgentAction =
     parsed.action === 'reply' || parsed.action === 'human' || parsed.action === 'ignore' ? parsed.action : 'human';
   const confidence = typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0;
-  const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
+  const rawReply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
+  const finalAction =
+    action === 'reply' && (!rawReply || confidence < MIN_CONFIDENCE || snippets.length === 0) ? 'human' : action;
+  const reply = finalAction === 'reply' ? withWarRoomLink(rawReply, warRoomLink) : rawReply;
 
   return {
-    action: action === 'reply' && (!reply || confidence < MIN_CONFIDENCE || snippets.length === 0) ? 'human' : action,
+    action: finalAction,
     confidence,
     reason: typeof parsed.reason === 'string' ? parsed.reason : 'No reason returned',
     reply,
@@ -477,11 +501,12 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
     .map((item) => `[${item.source}/${item.username}]: ${item.message.slice(0, 220)}`)
     .join('\n');
 
+  const { warRoom: warRoomLink } = await loadProjectLinks();
   const decisions: CommunityAgentDecision[] = [];
 
   for (const item of candidates) {
     try {
-      const decision = await askClaude(item, context);
+      const decision = await askClaude(item, context, warRoomLink);
       let posted = false;
       if (post && decision.action === 'reply') {
         posted = await postDecision(client, channelId, item, decision.reply);
