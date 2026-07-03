@@ -16,7 +16,7 @@ function isCronAuthorized(req: Request): boolean {
   return constantTimeEquals(req.header('authorization') || '', `Bearer ${secret}`);
 }
 
-router.get('/community-agent', async (req: Request, res: Response) => {
+async function handleCommunityAgentCron(req: Request, res: Response): Promise<void> {
   if (!process.env.CRON_SECRET) {
     res.status(503).json({ error: 'CRON_SECRET is not configured' });
     return;
@@ -44,6 +44,9 @@ router.get('/community-agent', async (req: Request, res: Response) => {
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
-});
+}
+
+router.get('/community-agent', handleCommunityAgentCron);
+router.get('/community-agent/:slot', handleCommunityAgentCron);
 
 export default router;
