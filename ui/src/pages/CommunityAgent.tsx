@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
+  adminAuth,
   api,
   type CommunityAgentDecision,
   type CommunityAgentItem,
@@ -97,13 +99,29 @@ export default function CommunityAgent() {
   const [includeCommunity, setIncludeCommunity] = useState(true);
   const [skipProcessed, setSkipProcessed] = useState(true);
   const [post, setPost] = useState(false);
+  const [hasAdminToken, setHasAdminToken] = useState(adminAuth.hasToken());
 
   const load = () => {
+    if (!adminAuth.hasToken()) {
+      setHasAdminToken(false);
+      setLoading(false);
+      setError('');
+      return;
+    }
+
+    setHasAdminToken(true);
     setLoading(true);
     setError('');
     api.getCommunityAgentOverview({ includeDms, includeCommunity, messageCount: 50 })
       .then(setOverview)
-      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(
+          message === 'Admin token required'
+            ? 'Admin token missing or incorrect. Open Settings, paste the same ADMIN_TOKEN from your .env, and save it.'
+            : message,
+        );
+      })
       .finally(() => setLoading(false));
   };
 
@@ -195,6 +213,15 @@ export default function CommunityAgent() {
       </div>
 
       {error && <div className="bg-red-950/40 border border-red-900 text-red-300 rounded-xl p-4 text-sm">{error}</div>}
+
+      {!hasAdminToken && (
+        <div className="bg-amber-950/40 border border-amber-900 text-amber-200 rounded-xl p-4 text-sm space-y-2">
+          <p>This page needs an admin token. The server already has <code className="text-amber-100">ADMIN_TOKEN</code> in <code className="text-amber-100">.env</code>; you must save the same value in the UI.</p>
+          <Link to="/settings" className="inline-block text-indigo-400 hover:underline font-semibold">
+            Open Settings → Admin Token
+          </Link>
+        </div>
+      )}
 
       {result && (
         <div className="space-y-3">
