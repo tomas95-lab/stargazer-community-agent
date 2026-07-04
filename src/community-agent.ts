@@ -22,6 +22,8 @@ const MESSAGE_COUNT = parseInt(process.env.AGENT_MESSAGE_COUNT || '50', 10);
 const MIN_CONFIDENCE = Number(process.env.AGENT_MIN_CONFIDENCE || '0.72');
 const STATE_FILE = 'output/community-agent-state.json';
 const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
+const WAR_ROOM_WEEKEND_NOTICE =
+  'Note: The War Room is closed on Saturdays and Sundays. Please come back on Monday during 10:00 AM-7:00 PM ARG if you need live support.';
 
 export type CommunityAgentSource = 'community' | 'dm';
 export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
@@ -145,8 +147,25 @@ function todayWindow(now = new Date()): CommunityAgentResult['window'] & { start
     end,
     startUtc: start.toISOString(),
     endUtc: end.toISOString(),
-    operatingHours: '10:00-19:00 America/Argentina/Buenos_Aires',
+    operatingHours: '10:00-19:00 America/Argentina/Buenos_Aires; War Room closed Saturdays and Sundays',
   };
+}
+
+function argentinaDayOfWeek(now = new Date()): number {
+  const shortDay = new Intl.DateTimeFormat('en-US', {
+    timeZone: ARG_TIMEZONE,
+    weekday: 'short',
+  }).format(now);
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(shortDay);
+}
+
+function isArgentinaWeekend(now = new Date()): boolean {
+  const day = argentinaDayOfWeek(now);
+  return day === 0 || day === 6;
+}
+
+function warRoomIsOpenDay(now = new Date()): boolean {
+  return !isArgentinaWeekend(now);
 }
 
 function isWithinOperatingHours(now = new Date()): boolean {
@@ -353,9 +372,27 @@ function replyIncludesWarRoomLink(reply: string, warRoomLink: string): boolean {
   );
 }
 
-function withWarRoomLink(reply: string, warRoomLink: string): string {
+function removeWarRoomLink(reply: string, warRoomLink: string): string {
+  return reply
+    .replaceAll(warRoomLink, '')
+    .replace(/War Room link:\s*/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpenDay: boolean): string {
   const trimmed = reply.trim();
-  if (!trimmed || replyIncludesWarRoomLink(trimmed, warRoomLink)) return trimmed;
+  if (!trimmed) return trimmed;
+
+  if (!isWarRoomOpenDay) {
+    const cleaned = removeWarRoomLink(trimmed, warRoomLink);
+    if (normalizeText(cleaned).includes('war room') && !normalizeText(cleaned).includes('closed on saturdays and sundays')) {
+      return `${cleaned}\n\n${WAR_ROOM_WEEKEND_NOTICE}`;
+    }
+    return cleaned;
+  }
+
+  if (replyIncludesWarRoomLink(trimmed, warRoomLink)) return trimmed;
   return `${trimmed}\n\nWar Room link:\n${warRoomLink}`;
 }
 
@@ -363,6 +400,7 @@ async function askClaude(
   item: CommunityAgentItem,
   context: string,
   warRoomLink: string,
+  isWarRoomOpenDay: boolean,
 ): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'needsHuman'>> {
   const apiKey = process.env.ANTHROPIC_API_KEY || '';
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -374,7 +412,18 @@ async function askClaude(
     model: ANTHROPIC_MODEL,
     max_tokens: 450,
     system:
-      `You are a community management agent for Stargazer Axiom. You may answer only when the answer is clearly supported by the provided project guideline excerpts or by the recent chat context. If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human". Use the same language as the user. Keep replies under 4 short sentences. When you choose action "reply", always include the War Room Zoom link for live support: ${warRoomLink}. Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.`,
+      [
+        'You are a community management agent for Stargazer Axiom.',
+        'Always write user-facing replies in English, even if the incoming message is Spanish, Portuguese, or any other language.',
+        'Never write the reply in Spanish.',
+        'You may answer only when the answer is clearly supported by the provided project guideline excerpts or by the recent chat context.',
+        'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
+        'Keep replies under 4 short sentences.',
+        isWarRoomOpenDay
+          ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}.`
+          : 'The War Room is closed on Saturdays and Sundays. Do not include the War Room Zoom link. If live support is needed, tell the user in English that the War Room is closed on weekends and to come back on Monday during 10:00 AM-7:00 PM ARG.',
+        'Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
+      ].join(' '),
     messages: [
       {
         role: 'user',
@@ -394,7 +443,7 @@ async function askClaude(
   const rawReply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
   const finalAction =
     action === 'reply' && (!rawReply || confidence < MIN_CONFIDENCE || snippets.length === 0) ? 'human' : action;
-  const reply = finalAction === 'reply' ? withWarRoomLink(rawReply, warRoomLink) : rawReply;
+  const reply = finalAction === 'reply' ? withWarRoomSupportInfo(rawReply, warRoomLink, isWarRoomOpenDay) : rawReply;
 
   return {
     action: finalAction,
@@ -502,11 +551,12 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
     .join('\n');
 
   const { warRoom: warRoomLink } = await loadProjectLinks();
+  const isWarRoomOpenDay = warRoomIsOpenDay();
   const decisions: CommunityAgentDecision[] = [];
 
   for (const item of candidates) {
     try {
-      const decision = await askClaude(item, context, warRoomLink);
+      const decision = await askClaude(item, context, warRoomLink, isWarRoomOpenDay);
       let posted = false;
       if (post && decision.action === 'reply') {
         posted = await postDecision(client, channelId, item, decision.reply);
