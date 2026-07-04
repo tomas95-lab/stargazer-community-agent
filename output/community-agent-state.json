@@ -1,3 +1,14 @@
 {
-  "processed": {}
+  "processed": {
+    "community:27683290": {
+      "at": "2026-07-04T16:13:16.210Z",
+      "action": "reply",
+      "posted": true
+    },
+    "community:27683285": {
+      "at": "2026-07-04T16:13:12.616Z",
+      "action": "reply",
+      "posted": true
+    }
+  }
 }
