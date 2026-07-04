@@ -23,7 +23,7 @@ const MIN_CONFIDENCE = Number(process.env.AGENT_MIN_CONFIDENCE || '0.72');
 const STATE_FILE = 'output/community-agent-state.json';
 const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const WAR_ROOM_WEEKEND_NOTICE =
-  'Note: The War Room is closed on Saturdays and Sundays. Please come back on Monday during 10:00 AM-7:00 PM ARG if you need live support.';
+  'Today is a weekend day in Argentina, so the War Room is closed. Please come back on Monday between 10:30 AM and 7:00 PM ARG for live support.';
 
 export type CommunityAgentSource = 'community' | 'dm';
 export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
@@ -388,29 +388,11 @@ function replyReferencesLiveSupport(reply: string, warRoomLink: string): boolean
     normalized.includes('91510346485') ||
     normalized.includes('war room') ||
     normalized.includes('live support') ||
-    normalized.includes('zoom')
+    normalized.includes('zoom') ||
+    normalized.includes('qm availability') ||
+    normalized.includes('business hours') ||
+    normalized.includes('fastest support')
   );
-}
-
-function appendWeekendNotice(reply: string): string {
-  const trimmed = reply.trim();
-  const normalized = normalizeText(trimmed);
-  if (
-    normalized.includes('war room is closed on saturdays and sundays') ||
-    normalized.includes('war room is closed on weekends') ||
-    normalized.includes('war room is closed during weekends')
-  ) {
-    return trimmed;
-  }
-  return trimmed ? `${trimmed}\n\n${WAR_ROOM_WEEKEND_NOTICE}` : WAR_ROOM_WEEKEND_NOTICE;
-}
-
-function removeWeekdayFallbacks(reply: string): string {
-  return reply
-    .replace(/(?:^|\s+)If today is a weekday,[^.?!]*(?:[.?!]|$)/gi, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
 }
 
 function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpenDay: boolean): string {
@@ -419,11 +401,10 @@ function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpe
 
   if (!isWarRoomOpenDay) {
     const referencedLiveSupport = replyReferencesLiveSupport(trimmed, warRoomLink);
-    const cleaned = removeWeekdayFallbacks(removeWarRoomLink(trimmed, warRoomLink));
     if (referencedLiveSupport) {
-      return appendWeekendNotice(cleaned);
+      return WAR_ROOM_WEEKEND_NOTICE;
     }
-    return cleaned;
+    return removeWarRoomLink(trimmed, warRoomLink);
   }
 
   if (replyIncludesWarRoomLink(trimmed, warRoomLink)) return trimmed;
@@ -455,7 +436,7 @@ async function askClaude(
         'Keep replies under 4 short sentences.',
         isWarRoomOpenDay
           ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}.`
-          : 'The War Room is closed on Saturdays and Sundays. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, or live support in any way, explicitly say in English that the War Room is closed on weekends and to come back on Monday during 10:00 AM-7:00 PM ARG.',
+          : 'Today is a weekend day in Argentina, so the War Room is closed. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, QM availability, or live support in any way, say exactly that the user should come back on Monday between 10:30 AM and 7:00 PM ARG.',
         'Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
       ].join(' '),
     messages: [
