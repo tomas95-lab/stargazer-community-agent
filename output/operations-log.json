@@ -1,5 +1,15 @@
 [
   {
+    "id": "e14fb5a2-6fc4-4803-ae89-dec112ca0b33",
+    "at": "2026-07-04T03:13:46.745Z",
+    "action": "delete_session",
+    "status": "success",
+    "message": "Deleted session 1783022906990",
+    "metadata": {
+      "id": "1783022906990"
+    }
+  },
+  {
     "id": "61a38171-2fff-4b42-8fb5-af597767320b",
     "at": "2026-07-04T03:13:12.130Z",
     "action": "community_agent",
