@@ -380,14 +380,33 @@ function removeWarRoomLink(reply: string, warRoomLink: string): string {
     .trim();
 }
 
+function replyReferencesLiveSupport(reply: string, warRoomLink: string): boolean {
+  const normalized = normalizeText(reply);
+  const normalizedLink = normalizeText(warRoomLink);
+  return (
+    normalized.includes(normalizedLink) ||
+    normalized.includes('91510346485') ||
+    normalized.includes('war room') ||
+    normalized.includes('live support') ||
+    normalized.includes('zoom')
+  );
+}
+
+function appendWeekendNotice(reply: string): string {
+  const trimmed = reply.trim();
+  if (normalizeText(trimmed).includes('war room is closed on saturdays and sundays')) return trimmed;
+  return trimmed ? `${trimmed}\n\n${WAR_ROOM_WEEKEND_NOTICE}` : WAR_ROOM_WEEKEND_NOTICE;
+}
+
 function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpenDay: boolean): string {
   const trimmed = reply.trim();
   if (!trimmed) return trimmed;
 
   if (!isWarRoomOpenDay) {
+    const referencedLiveSupport = replyReferencesLiveSupport(trimmed, warRoomLink);
     const cleaned = removeWarRoomLink(trimmed, warRoomLink);
-    if (normalizeText(cleaned).includes('war room') && !normalizeText(cleaned).includes('closed on saturdays and sundays')) {
-      return `${cleaned}\n\n${WAR_ROOM_WEEKEND_NOTICE}`;
+    if (referencedLiveSupport) {
+      return appendWeekendNotice(cleaned);
     }
     return cleaned;
   }
@@ -421,7 +440,7 @@ async function askClaude(
         'Keep replies under 4 short sentences.',
         isWarRoomOpenDay
           ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}.`
-          : 'The War Room is closed on Saturdays and Sundays. Do not include the War Room Zoom link. If live support is needed, tell the user in English that the War Room is closed on weekends and to come back on Monday during 10:00 AM-7:00 PM ARG.',
+          : 'The War Room is closed on Saturdays and Sundays. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, or live support in any way, explicitly say in English that the War Room is closed on weekends and to come back on Monday during 10:00 AM-7:00 PM ARG.',
         'Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
       ].join(' '),
     messages: [
