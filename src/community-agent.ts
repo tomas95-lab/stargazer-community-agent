@@ -394,8 +394,23 @@ function replyReferencesLiveSupport(reply: string, warRoomLink: string): boolean
 
 function appendWeekendNotice(reply: string): string {
   const trimmed = reply.trim();
-  if (normalizeText(trimmed).includes('war room is closed on saturdays and sundays')) return trimmed;
+  const normalized = normalizeText(trimmed);
+  if (
+    normalized.includes('war room is closed on saturdays and sundays') ||
+    normalized.includes('war room is closed on weekends') ||
+    normalized.includes('war room is closed during weekends')
+  ) {
+    return trimmed;
+  }
   return trimmed ? `${trimmed}\n\n${WAR_ROOM_WEEKEND_NOTICE}` : WAR_ROOM_WEEKEND_NOTICE;
+}
+
+function removeWeekdayFallbacks(reply: string): string {
+  return reply
+    .replace(/(?:^|\s+)If today is a weekday,[^.?!]*(?:[.?!]|$)/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpenDay: boolean): string {
@@ -404,7 +419,7 @@ function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpe
 
   if (!isWarRoomOpenDay) {
     const referencedLiveSupport = replyReferencesLiveSupport(trimmed, warRoomLink);
-    const cleaned = removeWarRoomLink(trimmed, warRoomLink);
+    const cleaned = removeWeekdayFallbacks(removeWarRoomLink(trimmed, warRoomLink));
     if (referencedLiveSupport) {
       return appendWeekendNotice(cleaned);
     }
