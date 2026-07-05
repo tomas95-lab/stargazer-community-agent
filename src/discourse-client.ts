@@ -52,17 +52,6 @@ export interface DiscourseTopicDetails {
   post_stream?: { posts?: DiscourseTopicPost[] };
 }
 
-export interface DiscoursePrivateMessageTopic {
-  id: number;
-  title: string;
-  slug?: string;
-  created_at?: string;
-  last_posted_at?: string;
-  bumped_at?: string;
-  last_poster_username?: string;
-  posters?: Array<{ user_id?: number; primary_group_id?: number; description?: string; extras?: string }>;
-}
-
 export class DiscourseClient {
   private baseUrl: string;
   private apiKey: string;
@@ -146,25 +135,6 @@ export class DiscourseClient {
 
   async readTopic(topicId: number): Promise<DiscourseTopicDetails> {
     return this.request<DiscourseTopicDetails>(`/t/${topicId}.json`);
-  }
-
-  async readPrivateMessages(
-    username: string,
-    kind: 'inbox' | 'unread' | 'sent' = 'unread',
-    count = 20
-  ): Promise<DiscoursePrivateMessageTopic[]> {
-    const path =
-      kind === 'sent'
-        ? `/topics/private-messages-sent/${username}.json`
-        : kind === 'inbox'
-          ? `/topics/private-messages/${username}.json`
-          : `/topics/private-messages-unread/${username}.json`;
-
-    const data = await this.request<{
-      topic_list?: { topics?: DiscoursePrivateMessageTopic[] };
-    }>(`${path}?page=0`);
-
-    return (data.topic_list?.topics || []).slice(0, count);
   }
 
   topicUrl(slug: string, topicId: number): string {

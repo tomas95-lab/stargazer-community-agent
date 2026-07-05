@@ -4,12 +4,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import Anthropic from '@anthropic-ai/sdk';
 import { loadBotConfig } from './config';
-import {
-  DiscourseChatMessage,
-  DiscourseClient,
-  DiscoursePrivateMessageTopic,
-  DiscourseTopicPost,
-} from './discourse-client';
+import { DiscourseChatMessage, DiscourseClient } from './discourse-client';
 import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
@@ -25,13 +20,12 @@ const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const WAR_ROOM_WEEKEND_NOTICE =
   'Today is a weekend day in Argentina, so the War Room is closed. Please come back on Monday between 10:30 AM and 7:00 PM ARG for live support.';
 
-export type CommunityAgentSource = 'community' | 'dm';
+export type CommunityAgentSource = 'community';
 export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
 
 export interface CommunityAgentOptions {
   post?: boolean;
   includeCommunity?: boolean;
-  includeDms?: boolean;
   onlyToday?: boolean;
   respectSchedule?: boolean;
   skipProcessed?: boolean;
@@ -46,10 +40,7 @@ export interface CommunityAgentItem {
   username: string;
   message: string;
   createdAt: string;
-  title?: string;
   chatMessageId?: number;
-  topicId?: number;
-  url?: string;
 }
 
 export interface CommunityAgentDecision {
@@ -98,12 +89,10 @@ interface ClaudeDecision {
   reply?: string;
 }
 
-function createClient(): { client: DiscourseClient; channelId: string; username: string; baseUrl: string } {
+function createClient(): { client: DiscourseClient; channelId: string } {
   const config = loadBotConfig();
   return {
     channelId: config.communityChatChannelId,
-    username: config.discourseUsername || BOT_USERNAME,
-    baseUrl: config.communityBaseUrl.replace(/\/+$/, ''),
     client: new DiscourseClient({
       baseUrl: config.communityBaseUrl,
       apiKey: config.discourseApiKey,
@@ -210,9 +199,8 @@ function normalizeText(text: string): string {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-function isQuestionOrSupportRequest(text: string, source: CommunityAgentSource): boolean {
+function isQuestionOrSupportRequest(text: string): boolean {
   const lower = normalizeText(text).trim();
-  if (source === 'dm') return true;
 
   const supportSignals = [
     '?',
@@ -249,17 +237,12 @@ function shouldIgnoreMessage(text: string): boolean {
   return trimmed.length < 8 || trimmed.startsWith('🚨') || trimmed.startsWith('Hey team');
 }
 
-function topicUrl(baseUrl: string, topic: DiscoursePrivateMessageTopic): string | undefined {
-  if (!topic.slug) return `${baseUrl}/t/${topic.id}`;
-  return `${baseUrl}/t/${topic.slug}/${topic.id}`;
-}
-
-async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions, 'includeCommunity' | 'includeDms' | 'onlyToday' | 'messageCount'>>): Promise<{
+async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions, 'includeCommunity' | 'onlyToday' | 'messageCount'>>): Promise<{
   items: CommunityAgentItem[];
   errors: string[];
   window: ReturnType<typeof todayWindow>;
 }> {
-  const { client, channelId, username, baseUrl } = createClient();
+  const { client, channelId } = createClient();
   const window = todayWindow();
   const items: CommunityAgentItem[] = [];
   const errors: string[] = [];
@@ -283,53 +266,14 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
     }
   }
 
-  if (options.includeDms && username) {
-    try {
-      const unreadTopics = await client.readPrivateMessages(username, 'unread', options.messageCount);
-      for (const topic of unreadTopics) {
-        const topicDate = topic.last_posted_at || topic.bumped_at || topic.created_at;
-        if (options.onlyToday && !isWithinWindow(topicDate, window)) continue;
-
-        try {
-          const details = await client.readTopic(topic.id);
-          const posts = details.post_stream?.posts || [];
-          const lastIncoming = [...posts]
-            .reverse()
-            .find((post) => !shouldIgnoreAuthor(post.username) && (!options.onlyToday || isWithinWindow(post.created_at, window)));
-          if (!lastIncoming) continue;
-
-          items.push({
-            id: `dm:${topic.id}:${lastIncoming.id || lastIncoming.created_at}`,
-            source: 'dm',
-            username: lastIncoming.username,
-            message: postText(lastIncoming),
-            createdAt: lastIncoming.created_at,
-            title: details.title || topic.title,
-            topicId: topic.id,
-            url: topicUrl(baseUrl, topic),
-          });
-        } catch (err) {
-          errors.push(`dm topic ${topic.id}: ${err instanceof Error ? err.message : String(err)}`);
-        }
-      }
-    } catch (err) {
-      errors.push(`dm unread: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
   return { items, errors, window };
-}
-
-function postText(post: DiscourseTopicPost): string {
-  if (post.raw?.trim()) return post.raw.trim();
-  return stripHtml(post.cooked || '');
 }
 
 function relevantItems(items: CommunityAgentItem[]): CommunityAgentItem[] {
   return items.filter((item) => {
     if (shouldIgnoreAuthor(item.username)) return false;
     if (shouldIgnoreMessage(item.message)) return false;
-    return isQuestionOrSupportRequest(item.message, item.source);
+    return isQuestionOrSupportRequest(item.message);
   });
 }
 
@@ -426,7 +370,7 @@ async function askClaude(
   const apiKey = process.env.ANTHROPIC_API_KEY || '';
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
-  const snippets = await findProjectGuidelineSnippets(`${item.title || ''}\n${item.message}`, 4);
+  const snippets = await findProjectGuidelineSnippets(item.message, 4);
   const anthropic = new Anthropic({ apiKey });
 
   const response = await anthropic.messages.create({
@@ -451,7 +395,7 @@ async function askClaude(
         content: [
           `Today/context:\n${context || 'No recent context.'}`,
           `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
-          `Incoming ${item.source === 'dm' ? 'DM' : 'community chat message'} from ${item.username}:\n${item.message}`,
+          `Incoming community chat message from ${item.username}:\n${item.message}`,
         ].join('\n\n'),
       },
     ],
@@ -482,18 +426,9 @@ async function askClaude(
   };
 }
 
-async function postDecision(client: DiscourseClient, channelId: string, item: CommunityAgentItem, reply: string): Promise<boolean> {
-  if (item.source === 'community') {
-    await client.sendChatMessage(channelId, reply);
-    return true;
-  }
-
-  if (item.topicId) {
-    await client.replyToTopic(item.topicId, reply);
-    return true;
-  }
-
-  return false;
+async function postDecision(client: DiscourseClient, channelId: string, reply: string): Promise<boolean> {
+  await client.sendChatMessage(channelId, reply);
+  return true;
 }
 
 export async function fetchCommunityAgentItems(options: CommunityAgentOptions = {}): Promise<{
@@ -504,7 +439,6 @@ export async function fetchCommunityAgentItems(options: CommunityAgentOptions = 
 }> {
   const result = await fetchCommunityItems({
     includeCommunity: options.includeCommunity ?? true,
-    includeDms: options.includeDms ?? true,
     onlyToday: options.onlyToday ?? true,
     messageCount: options.messageCount ?? MESSAGE_COUNT,
   });
@@ -526,7 +460,6 @@ export async function fetchCommunityAgentItems(options: CommunityAgentOptions = 
 export async function runCommunityAgent(options: CommunityAgentOptions = {}): Promise<CommunityAgentResult> {
   const post = options.post === true;
   const includeCommunity = options.includeCommunity ?? true;
-  const includeDms = options.includeDms ?? true;
   const onlyToday = options.onlyToday ?? true;
   const respectSchedule = options.respectSchedule ?? false;
   const skipProcessed = options.skipProcessed ?? true;
@@ -536,7 +469,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
   const withinSchedule = isWithinOperatingHours();
   const { client, channelId } = createClient();
 
-  const fetched = await fetchCommunityItems({ includeCommunity, includeDms, onlyToday, messageCount });
+  const fetched = await fetchCommunityItems({ includeCommunity, onlyToday, messageCount });
   const window = {
     argentinaDate: fetched.window.argentinaDate,
     startUtc: fetched.window.startUtc,
@@ -587,7 +520,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       const decision = await askClaude(item, context, warRoomLink, isWarRoomOpenDay);
       let posted = false;
       if (post && decision.action === 'reply') {
-        posted = await postDecision(client, channelId, item, decision.reply);
+        posted = await postDecision(client, channelId, decision.reply);
       }
 
       decisions.push({

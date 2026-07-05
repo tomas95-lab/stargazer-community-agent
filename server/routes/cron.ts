@@ -31,7 +31,6 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
     const result = await runCommunityAgent({
       post: process.env.AGENT_AUTO_POST === 'true',
       includeCommunity: true,
-      includeDms: true,
       onlyToday: true,
       respectSchedule: true,
       skipProcessed: true,

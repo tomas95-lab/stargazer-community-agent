@@ -119,7 +119,7 @@ export interface CommunityAgentSuggestion {
   posted: boolean;
 }
 
-export type CommunityAgentSource = 'community' | 'dm';
+export type CommunityAgentSource = 'community';
 export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
 
 export interface CommunityAgentItem {
@@ -128,10 +128,7 @@ export interface CommunityAgentItem {
   username: string;
   message: string;
   createdAt: string;
-  title?: string;
   chatMessageId?: number;
-  topicId?: number;
-  url?: string;
 }
 
 export interface CommunityAgentDecision {
@@ -215,10 +212,9 @@ export const api = {
   syncToGitHub: () => request<{ ok: boolean; message: string }>('/sync', { method: 'POST' }),
   getCommunityMessages: (count = 20) =>
     request<{ messages: CommunityMessage[] }>(`/community-agent/messages?count=${count}`),
-  getCommunityAgentOverview: (opts: { messageCount?: number; includeDms?: boolean; includeCommunity?: boolean } = {}) => {
+  getCommunityAgentOverview: (opts: { messageCount?: number; includeCommunity?: boolean } = {}) => {
     const params = new URLSearchParams();
     if (opts.messageCount) params.set('messageCount', String(opts.messageCount));
-    if (opts.includeDms === false) params.set('includeDms', 'false');
     if (opts.includeCommunity === false) params.set('includeCommunity', 'false');
     const query = params.toString();
     return request<CommunityAgentOverview>(`/community-agent/overview${query ? `?${query}` : ''}`);
@@ -227,7 +223,6 @@ export const api = {
     post?: boolean;
     maxAnswers?: number;
     messageCount?: number;
-    includeDms?: boolean;
     includeCommunity?: boolean;
     skipProcessed?: boolean;
     markProcessed?: boolean;

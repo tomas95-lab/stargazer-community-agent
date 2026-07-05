@@ -24,11 +24,9 @@ router.get('/messages', requireAdminToken, async (req: Request, res: Response) =
 router.get('/overview', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const messageCount = clampNumber(req.query.messageCount, 50, 1, 100);
-    const includeDms = req.query.includeDms !== 'false';
     const includeCommunity = req.query.includeCommunity !== 'false';
     const result = await fetchCommunityAgentItems({
       messageCount,
-      includeDms,
       includeCommunity,
       onlyToday: true,
     });
@@ -45,7 +43,6 @@ router.post('/run', requireAdminToken, async (req: Request, res: Response) => {
       post: req.body?.post === true,
       maxAnswers: clampNumber(req.body?.maxAnswers, 3, 1, 10),
       messageCount: clampNumber(req.body?.messageCount, 50, 1, 100),
-      includeDms: req.body?.includeDms !== false,
       includeCommunity: req.body?.includeCommunity !== false,
       onlyToday: true,
       skipProcessed: req.body?.skipProcessed !== false,

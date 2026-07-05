@@ -34,18 +34,12 @@ function ItemRow({ item }: { item: CommunityAgentItem }) {
     <div className="border-b border-border py-3 last:border-0">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <Badge tone={item.source === 'dm' ? 'yellow' : 'blue'}>{item.source === 'dm' ? 'DM' : 'Community'}</Badge>
+          <Badge tone="blue">Community</Badge>
           <span className="truncate text-sm font-semibold text-foreground">{item.username}</span>
-          {item.title && <span className="truncate text-xs text-muted-foreground">{item.title}</span>}
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleTimeString()}</span>
       </div>
       <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{item.message}</p>
-      {item.url && (
-        <a href={item.url} target="_blank" rel="noopener" className="mt-2 inline-block text-xs text-primary hover:underline">
-          Open DM
-        </a>
-      )}
     </div>
   );
 }
@@ -64,7 +58,7 @@ function DecisionCard({ decision }: { decision: CommunityAgentDecision }) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Badge tone={decision.source === 'dm' ? 'yellow' : 'blue'}>{decision.source === 'dm' ? 'DM' : 'Community'}</Badge>
+            <Badge tone="blue">Community</Badge>
             <Badge tone={tone}>{decision.error ? 'Error' : decision.action}</Badge>
             {decision.posted && <Badge tone="green">Posted</Badge>}
           </div>
@@ -93,7 +87,6 @@ export default function CommunityAgent() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
-  const [includeDms, setIncludeDms] = useState(true);
   const [includeCommunity, setIncludeCommunity] = useState(true);
   const [skipProcessed, setSkipProcessed] = useState(true);
   const [post, setPost] = useState(false);
@@ -101,7 +94,7 @@ export default function CommunityAgent() {
   const load = () => {
     setLoading(true);
     setError('');
-    api.getCommunityAgentOverview({ includeDms, includeCommunity, messageCount: 50 })
+    api.getCommunityAgentOverview({ includeCommunity, messageCount: 50 })
       .then(setOverview)
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
@@ -114,7 +107,6 @@ export default function CommunityAgent() {
   const counts = useMemo(() => {
     const items = overview?.items || [];
     return {
-      dms: items.filter((item) => item.source === 'dm').length,
       community: items.filter((item) => item.source === 'community').length,
     };
   }, [overview]);
@@ -125,7 +117,6 @@ export default function CommunityAgent() {
     try {
       const next = await api.runCommunityAgent({
         post,
-        includeDms,
         includeCommunity,
         skipProcessed,
         markProcessed: post,
@@ -133,7 +124,7 @@ export default function CommunityAgent() {
         messageCount: 50,
       });
       setResult(next);
-      await api.getCommunityAgentOverview({ includeDms, includeCommunity, messageCount: 50 }).then(setOverview);
+      await api.getCommunityAgentOverview({ includeCommunity, messageCount: 50 }).then(setOverview);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -157,10 +148,9 @@ export default function CommunityAgent() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat label="Date" value={overview?.window.argentinaDate || '-'} sub="ARG" />
         <Stat label="Guideline" value={overview?.guidelines.available ? 'Ready' : 'Missing'} sub={overview ? `${overview.guidelines.characters} chars` : ''} />
-        <Stat label="DMs" value={counts.dms} sub="unread today" />
         <Stat label="Community" value={counts.community} sub="today" />
         <Stat label="Candidates" value={overview?.candidates.length || 0} sub="Claude check" />
       </div>
@@ -170,10 +160,6 @@ export default function CommunityAgent() {
           <label className="flex items-center gap-2 text-sm text-foreground">
             <input type="checkbox" checked={includeCommunity} onChange={(e) => setIncludeCommunity(e.target.checked)} className="accent-primary" />
             Community
-          </label>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" checked={includeDms} onChange={(e) => setIncludeDms(e.target.checked)} className="accent-primary" />
-            DMs
           </label>
           <label className="flex items-center gap-2 text-sm text-foreground">
             <input type="checkbox" checked={skipProcessed} onChange={(e) => setSkipProcessed(e.target.checked)} className="accent-primary" />
@@ -187,7 +173,7 @@ export default function CommunityAgent() {
 
         <button
           onClick={run}
-          disabled={running || loading || (!includeCommunity && !includeDms)}
+          disabled={running || loading || !includeCommunity}
           className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {running ? 'Running Claude...' : 'Run Claude'}

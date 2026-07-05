@@ -115,7 +115,7 @@ export function SectionCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Reviews DMs and community messages <IconRobot className="size-4" />
+            Reviews community messages <IconRobot className="size-4" />
           </div>
           <div className="text-muted-foreground">
             Escalates when guidelines are not enough

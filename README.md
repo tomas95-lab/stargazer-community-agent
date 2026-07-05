@@ -10,7 +10,7 @@ Internal community-management toolkit for Stargazer Axiom. It generates daily th
 - Manages topics, sessions/webinars, links, templates, and history through a React dashboard.
 - Writes an operation log for publishes, chat sends, reminders, and data edits.
 - Exposes community actions through an MCP server.
-- Includes a Claude-powered community agent for today's chat messages and unread DMs.
+- Includes a Claude-powered community agent for today's chat messages.
 
 ## Project Shape
 
@@ -137,7 +137,7 @@ npm test
 
 `output/operations-log.json` stores recent operational events such as publishes, chat sends, reminders, and data edits.
 
-`output/community-agent-state.json` tracks processed community/DM items so the scheduled agent does not answer the same message twice.
+`output/community-agent-state.json` tracks processed community chat items so the scheduled agent does not answer the same message twice.
 
 ## Automation
 
@@ -151,7 +151,7 @@ npm run job:webinars    # send webinar/onboarding reminders in the reminder wind
 npm run jobs:all        # reminders + daily publish only when DAILY_PUBLISH_ENABLED=true
 ```
 
-The Community Agent checks only today's Argentina-day messages. It reads the public community chat and unread DMs, retrieves relevant snippets from `data/project-guidelines.txt`, and asks Claude whether to reply, ignore, or route to a human. Claude is instructed to answer only when the guideline/context supports the reply.
+The Community Agent checks only today's Argentina-day messages. It reads the public community chat, retrieves relevant snippets from `data/project-guidelines.txt`, and asks Claude whether to reply, ignore, or route to a human. Claude is instructed to answer only when the guideline/context supports the reply.
 
 Refresh the guideline text after replacing the PDF:
 
@@ -166,7 +166,7 @@ npm run ai:respond
 npm run ai:respond -- --post
 ```
 
-Use `--post` only when you want it to send safe replies to chat or DM topics.
+Use `--post` only when you want it to send safe replies to chat.
 
 The same agent is available through protected API routes:
 

@@ -33,7 +33,7 @@ Variables principales:
 | `CRON_SECRET` | Secreto para la ruta programada en Vercel |
 | `AGENT_AUTO_POST` | `true` para que el cron postee respuestas seguras |
 | `AGENT_MAX_ANSWERS` | Máximo de mensajes que Claude analiza por corrida |
-| `AGENT_MESSAGE_COUNT` | Cantidad de mensajes/DMs recientes a leer antes de filtrar por día |
+| `AGENT_MESSAGE_COUNT` | Cantidad de mensajes recientes a leer antes de filtrar por día |
 | `DAILY_PUBLISH_ENABLED` | Habilita publish dentro de `jobs:all` |
 | `FORCE_DAILY_PUBLISH` | Fuerza publish aunque ya exista URL del día |
 
@@ -176,7 +176,7 @@ npm run mcp
 
 ## Community Agent
 
-El agente lee solo mensajes del día Argentina, revisa el canal de community y DMs no leídos, consulta `data/project-guidelines.txt`, y decide si puede responder o si conviene que responda un humano.
+El agente lee solo mensajes del día Argentina, revisa el canal de community, consulta `data/project-guidelines.txt`, y decide si puede responder o si conviene que responda un humano.
 
 Para actualizar la base de conocimiento después de cambiar `project_guidelines.pdf`:
 
@@ -190,7 +190,7 @@ Por seguridad, el CLI arranca en modo sugerencia:
 npm run ai:respond
 ```
 
-Para postear respuestas seguras al chat o al topic de DM:
+Para postear respuestas seguras al chat:
 
 ```bash
 npm run ai:respond -- --post
@@ -208,7 +208,7 @@ GET  /api/cron/community-agent
 Ejemplo body para sugerencias:
 
 ```json
-{ "post": false, "maxAnswers": 4, "messageCount": 50, "includeDms": true, "includeCommunity": true }
+{ "post": false, "maxAnswers": 4, "messageCount": 50, "includeCommunity": true }
 ```
 
 Control de volumen:

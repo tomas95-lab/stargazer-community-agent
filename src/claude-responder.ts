@@ -12,7 +12,6 @@ export type ClaudeResponderResult = CommunityAgentResult;
 export async function runClaudeResponder(options: ClaudeResponderOptions = {}): Promise<ClaudeResponderResult> {
   return runCommunityAgent({
     includeCommunity: true,
-    includeDms: true,
     onlyToday: true,
     ...options,
   });
