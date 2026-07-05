@@ -1,5 +1,20 @@
 [
   {
+    "id": "1cbeae7f-3909-4954-9582-5a0d87216b3f",
+    "at": "2026-07-05T22:55:34.626Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "argentinaDate": "2026-07-05",
+        "startUtc": "2026-07-05T03:00:00.000Z",
+        "endUtc": "2026-07-06T03:00:00.000Z",
+        "operatingHours": "10:00-19:00 America/Argentina/Buenos_Aires; War Room closed Saturdays and Sundays"
+      }
+    }
+  },
+  {
     "id": "f1884d6c-ef9c-4891-816e-c0ce74c8a445",
     "at": "2026-07-05T21:46:46.251Z",
     "action": "community_agent",
