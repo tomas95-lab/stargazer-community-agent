@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { ClipboardList, Loader2, Upload } from 'lucide-react';
 import { api, type Topic } from '../api';
 import TopicForm from '../components/TopicForm';
 import Preview from '../components/Preview';
+import { Button } from '@/components/ui/button';
 
 function SyncButton() {
   const [status, setStatus] = useState<'idle' | 'syncing' | 'ok' | 'error'>('idle');
@@ -25,17 +27,20 @@ function SyncButton() {
   return (
     <div className="flex items-center gap-3">
       {msg && (
-        <span className={`text-xs ${status === 'error' ? 'text-red-400' : 'text-green-400'}`}>{msg}</span>
+        <span className={`text-xs ${status === 'error' ? 'text-danger' : 'text-success'}`}>{msg}</span>
       )}
       <button
         onClick={sync}
         disabled={status === 'syncing'}
-        className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 border border-gray-600 text-gray-200 text-sm font-medium rounded-xl transition-colors"
+        className="flex items-center gap-2 rounded-md border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
       >
         {status === 'syncing' ? (
-          <><span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin inline-block" /> Syncing...</>
+          <><span className="inline-block size-3 animate-spin rounded-full border border-muted-foreground border-t-transparent" /> Syncing...</>
         ) : (
-          <>↑ Sync local changes</>
+          <>
+            <Upload className="size-3" />
+            Sync local changes
+          </>
         )}
       </button>
     </div>
@@ -93,16 +98,16 @@ export default function TopicEditor() {
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Topics</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage daily thread topics stored in GitHub.</p>
+          <h1 className="text-2xl font-semibold text-foreground">Topics</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Manage daily thread topics stored in GitHub.</p>
         </div>
         <div className="flex items-center gap-3">
           <SyncButton />
           <button
             onClick={() => { setCreating(true); setSelected(null); setPreviewData(null); }}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition-colors"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            + New Topic
+            New Topic
           </button>
         </div>
       </div>
@@ -124,25 +129,25 @@ export default function TopicEditor() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       ) : topics.length === 0 ? (
-        <div className="text-center py-16 bg-gray-800/40 border border-gray-700 border-dashed rounded-2xl space-y-3">
-          <p className="text-4xl">📋</p>
-          <p className="text-gray-300 font-semibold">No topics yet</p>
-          <p className="text-gray-500 text-sm">Create topics in advance. The publisher uses the one matching today's date.</p>
-          <button
+        <div className="space-y-3 rounded-xl border border-dashed border-border bg-card/60 py-16 text-center">
+          <ClipboardList className="mx-auto size-9 text-primary" />
+          <p className="font-semibold text-foreground">No topics yet</p>
+          <p className="text-sm text-muted-foreground">Create topics in advance. The publisher uses the one matching today's date.</p>
+          <Button
             onClick={() => setCreating(true)}
-            className="mt-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-xl font-medium"
+            className="mt-2"
           >
             Create first topic
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="space-y-6">
           {upcoming.length > 0 && (
             <div className="space-y-1">
-              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold px-1 mb-2">Upcoming</p>
+              <p className="sg-label mb-2 px-1">Upcoming</p>
               <TopicTable
                 topics={upcoming}
                 today={today}
@@ -154,7 +159,7 @@ export default function TopicEditor() {
           )}
           {past.length > 0 && (
             <div className="space-y-1">
-              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold px-1 mb-2">Past</p>
+              <p className="sg-label mb-2 px-1">Past</p>
               <TopicTable
                 topics={past}
                 today={today}
@@ -180,10 +185,10 @@ function TopicTable({ topics, today, onPreview, onEdit, onDelete, dim }: {
   dim?: boolean;
 }) {
   return (
-    <div className={`bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden ${dim ? 'opacity-60' : ''}`}>
-      <table className="w-full text-sm">
+    <div className={`sg-panel overflow-hidden ${dim ? 'opacity-60' : ''}`}>
+      <table className="sg-table">
         <thead>
-          <tr className="border-b border-gray-800 text-left text-xs uppercase text-gray-500">
+          <tr className="text-left">
             <th className="px-4 py-3">Date</th>
             <th className="px-4 py-3">Topic</th>
             <th className="px-4 py-3">Tags</th>
@@ -194,25 +199,25 @@ function TopicTable({ topics, today, onPreview, onEdit, onDelete, dim }: {
           {topics.map((t) => (
             <tr
               key={t.date}
-              className={`border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors ${t.date === today ? 'bg-indigo-900/10 border-l-2 border-l-indigo-500' : ''}`}
+              className={`transition-colors ${t.date === today ? 'border-l-2 border-l-primary bg-accent/45' : ''}`}
             >
-              <td className="px-4 py-3 font-mono text-gray-300 whitespace-nowrap">
+              <td className="whitespace-nowrap px-4 py-3 font-mono text-foreground">
                 {t.date}
-                {t.date === today && <span className="ml-2 text-xs text-indigo-400 font-bold bg-indigo-900/40 px-1.5 py-0.5 rounded">TODAY</span>}
+                {t.date === today && <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-bold text-primary">TODAY</span>}
               </td>
-              <td className="px-4 py-3 text-gray-300 max-w-xs truncate">{t.topic}</td>
+              <td className="max-w-xs truncate px-4 py-3 text-foreground">{t.topic}</td>
               <td className="px-4 py-3">
                 <div className="flex gap-1 flex-wrap">
                   {(t.tags || []).map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 bg-gray-800 text-gray-400 text-xs rounded-full">{tag}</span>
+                    <span key={tag} className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{tag}</span>
                   ))}
                 </div>
               </td>
               <td className="px-4 py-3 text-right">
                 <div className="flex items-center justify-end gap-2">
-                  <button onClick={() => onPreview(t.date)} className="px-2 py-1 text-xs text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded transition-colors">Preview</button>
-                  <button onClick={() => onEdit(t)} className="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors">Edit</button>
-                  <button onClick={() => onDelete(t.date)} className="px-2 py-1 text-xs text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded transition-colors">Delete</button>
+                  <button onClick={() => onPreview(t.date)} className="rounded px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-accent">Preview</button>
+                  <button onClick={() => onEdit(t)} className="rounded px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent">Edit</button>
+                  <button onClick={() => onDelete(t.date)} className="rounded px-2 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger/10">Delete</button>
                 </div>
               </td>
             </tr>

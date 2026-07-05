@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "header": "Daily thread for today",
+    "type": "Publishing",
+    "status": "In Process",
+    "target": "Today",
+    "limit": "1",
+    "reviewer": "Community Manager"
+  },
+  {
+    "id": 2,
+    "header": "Community inbox review",
+    "type": "Agent",
+    "status": "In Process",
+    "target": "10-19 ARG",
+    "limit": "4",
+    "reviewer": "Claude Agent"
+  },
+  {
+    "id": 3,
+    "header": "Project guideline grounding",
+    "type": "Guidelines",
+    "status": "Done",
+    "target": "Daily",
+    "limit": "1",
+    "reviewer": "Claude Agent"
+  },
+  {
+    "id": 4,
+    "header": "War Room access reminders",
+    "type": "Comms",
+    "status": "Done",
+    "target": "Weekdays",
+    "limit": "1",
+    "reviewer": "Community Manager"
+  },
+  {
+    "id": 5,
+    "header": "Upcoming session reminders",
+    "type": "Sessions",
+    "status": "Not Started",
+    "target": "Scheduled",
+    "limit": "2",
+    "reviewer": "Human Review"
+  }
+]

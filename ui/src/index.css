@@ -1,5 +1,156 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(240 10% 3.9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(240 10% 3.9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(240 10% 3.9%);
+  --color-primary: hsl(188 86% 37%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(210 40% 96.1%);
+  --color-secondary-foreground: hsl(240 5.9% 10%);
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215 16% 47%);
+  --color-accent: hsl(188 78% 94%);
+  --color-accent-foreground: hsl(188 86% 22%);
+  --color-destructive: hsl(0 72% 51%);
+  --color-border: hsl(214 32% 91%);
+  --color-input: hsl(214 32% 91%);
+  --color-ring: hsl(188 86% 37%);
+  --color-surface: hsl(210 40% 98%);
+  --color-success: hsl(142 71% 35%);
+  --color-success-foreground: hsl(0 0% 100%);
+  --color-warning: hsl(38 92% 50%);
+  --color-warning-foreground: hsl(24 10% 10%);
+  --color-danger: hsl(0 72% 45%);
+  --color-danger-foreground: hsl(0 0% 100%);
+}
+
+* {
+  border-color: hsl(214 32% 91%);
+}
+
 body {
-  @apply bg-gray-950 text-gray-100 min-h-screen;
+  @apply min-h-screen bg-background text-foreground antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+:root {
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(222 47% 11%);
+  --sidebar-primary: hsl(188 86% 37%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(188 78% 94%);
+  --sidebar-accent-foreground: hsl(188 86% 22%);
+  --sidebar-border: hsl(214 32% 91%);
+  --sidebar-ring: hsl(188 86% 37%);
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+.sg-panel {
+  border: 1px solid hsl(214 32% 91%);
+  border-radius: 0.5rem;
+  background: hsl(0 0% 100%);
+  color: hsl(240 10% 3.9%);
+  box-shadow: 0 1px 2px hsl(222 47% 11% / 0.04);
+}
+
+.sg-panel-muted {
+  border: 1px solid hsl(214 32% 91%);
+  border-radius: 0.5rem;
+  background: hsl(210 40% 98%);
+  color: hsl(240 10% 3.9%);
+}
+
+.sg-panel-header {
+  border-bottom: 1px solid hsl(214 32% 91%);
+  background: hsl(210 40% 98%);
+}
+
+.sg-input {
+  width: 100%;
+  border: 1px solid hsl(214 32% 91%);
+  border-radius: 0.375rem;
+  background: hsl(0 0% 100%);
+  color: hsl(240 10% 3.9%);
+  box-shadow: 0 1px 2px hsl(222 47% 11% / 0.04);
+}
+
+.sg-input:focus {
+  border-color: hsl(188 86% 37%);
+  outline: 2px solid hsl(188 86% 37% / 0.22);
+  outline-offset: 1px;
+}
+
+.sg-label {
+  color: hsl(215 16% 47%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.sg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.sg-table thead {
+  background: hsl(210 40% 98%);
+  color: hsl(215 16% 47%);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sg-table tr {
+  border-bottom: 1px solid hsl(214 32% 91%);
+}
+
+.sg-table tbody tr:hover {
+  background: hsl(210 40% 98%);
+}
+
+.sg-status-success {
+  border-color: hsl(142 71% 35% / 0.24);
+  background: hsl(142 71% 35% / 0.1);
+  color: hsl(142 71% 24%);
+}
+
+.sg-status-warning {
+  border-color: hsl(38 92% 50% / 0.28);
+  background: hsl(38 92% 50% / 0.12);
+  color: hsl(30 80% 24%);
+}
+
+.sg-status-danger {
+  border-color: hsl(0 72% 45% / 0.24);
+  background: hsl(0 72% 45% / 0.1);
+  color: hsl(0 72% 34%);
 }

@@ -31,11 +31,11 @@ export default function TopicForm({ topic, onSave, onCancel }: Props) {
   const setWebinar = (field: string, value: unknown) =>
     setForm((p) => ({ ...p, webinar: { ...p.webinar!, [field]: value } }));
 
-  const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-indigo-500';
-  const labelCls = 'block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1';
+  const inputCls = 'sg-input px-3 py-2 text-sm';
+  const labelCls = 'sg-label mb-1 block';
 
   return (
-    <div className="space-y-4 bg-gray-900 border border-gray-700 rounded-xl p-6">
+    <div className="sg-panel space-y-4 p-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Date</label>
@@ -83,7 +83,7 @@ export default function TopicForm({ topic, onSave, onCancel }: Props) {
         <input value={(form.tags || []).join(', ')} onChange={(e) => set('tags', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} className={inputCls} />
       </div>
 
-      <div className="border border-gray-700 rounded-lg p-4 space-y-3">
+      <div className="sg-panel-muted space-y-3 p-4">
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={form.webinar?.enabled || false} onChange={(e) => setWebinar('enabled', e.target.checked)} className="rounded" />
           Webinar enabled
@@ -117,10 +117,10 @@ export default function TopicForm({ topic, onSave, onCancel }: Props) {
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button onClick={() => onSave(form)} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-sm transition-colors">
+        <button onClick={() => onSave(form)} className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
           Save
         </button>
-        <button onClick={onCancel} className="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold rounded-lg text-sm transition-colors">
+        <button onClick={onCancel} className="rounded-md border bg-background px-5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent">
           Cancel
         </button>
       </div>

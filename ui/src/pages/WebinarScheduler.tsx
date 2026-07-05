@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { GraduationCap, Video } from 'lucide-react';
 import { api } from '../api';
 import type { Webinar } from '../api';
 
@@ -23,13 +24,13 @@ function SyncButton() {
 
   return (
     <div className="flex items-center gap-3">
-      {msg && <span className={`text-xs ${status === 'error' ? 'text-red-400' : 'text-green-400'}`}>{msg}</span>}
+      {msg && <span className={`text-xs ${status === 'error' ? 'text-danger' : 'text-success'}`}>{msg}</span>}
       <button
         onClick={sync}
         disabled={status === 'syncing'}
-        className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 border border-gray-600 text-gray-200 text-sm font-medium rounded-xl transition-colors"
+        className="flex items-center gap-2 rounded-md border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
       >
-        {status === 'syncing' ? 'Syncing...' : '↑ Sync local changes'}
+        {status === 'syncing' ? 'Syncing...' : 'Sync local changes'}
       </button>
     </div>
   );
@@ -107,39 +108,52 @@ export default function WebinarScheduler() {
     .filter((w) => new Date(`${w.date}T${w.timeUtc}:00Z`) < new Date())
     .sort((a, b) => b.date.localeCompare(a.date));
 
+  const inputCls = 'sg-input px-3 py-2 text-sm';
+  const labelCls = 'sg-label mb-1 block';
+
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Session Scheduler</h1>
-          <p className="text-gray-400 text-sm mt-1">Schedule webinars & onboardings. Reminder jobs use this data source.</p>
+          <h1 className="text-2xl font-semibold text-foreground">Session Scheduler</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Schedule webinars & onboardings. Reminder jobs use this data source.</p>
         </div>
         <SyncButton />
       </div>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-white">{editingId ? 'Edit Webinar' : 'Schedule New Webinar'}</h2>
+      <div className="sg-panel space-y-4 p-6">
+        <h2 className="text-lg font-semibold text-foreground">{editingId ? 'Edit Webinar' : 'Schedule New Webinar'}</h2>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
-            <label className="block text-xs text-gray-400 mb-1">Type</label>
+            <label className={labelCls}>Type</label>
             <div className="flex gap-2">
               {(['webinar', 'onboarding'] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setForm({ ...form, type: t })}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${form.type === t ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                  className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium capitalize transition-colors ${form.type === t ? 'bg-primary text-primary-foreground' : 'border bg-background text-foreground hover:bg-accent'}`}
                 >
-                  {t === 'webinar' ? '🎥 Webinar' : '🎓 Onboarding'}
+                  {t === 'webinar' ? (
+                    <>
+                      <Video className="size-4" />
+                      Webinar
+                    </>
+                  ) : (
+                    <>
+                      <GraduationCap className="size-4" />
+                      Onboarding
+                    </>
+                  )}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="col-span-2">
-            <label className="block text-xs text-gray-400 mb-1">Title</label>
+            <label className={labelCls}>Title</label>
             <input
-              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              className={inputCls}
               placeholder={form.type === 'onboarding' ? 'New Contributor Onboarding' : 'Alignment Webinar'}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -147,30 +161,30 @@ export default function WebinarScheduler() {
           </div>
 
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Date</label>
+            <label className={labelCls}>Date</label>
             <input
               type="date"
-              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              className={inputCls}
               value={form.date}
               onChange={(e) => setForm({ ...form, date: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Time (UTC)</label>
+            <label className={labelCls}>Time (UTC)</label>
             <input
               type="time"
-              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              className={inputCls}
               value={form.timeUtc}
               onChange={(e) => setForm({ ...form, timeUtc: e.target.value })}
             />
-            <p className="text-xs text-gray-500 mt-1">ARG is UTC-3. 12:30 PM ARG = 15:30 UTC</p>
+            <p className="mt-1 text-xs text-muted-foreground">ARG is UTC-3. 12:30 PM ARG = 15:30 UTC</p>
           </div>
 
           <div className="col-span-2">
-            <label className="block text-xs text-gray-400 mb-1">Time Label (display)</label>
+            <label className={labelCls}>Time Label (display)</label>
             <input
-              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              className={inputCls}
               placeholder="e.g. 12:30 PM ARG"
               value={form.timeLabel}
               onChange={(e) => setForm({ ...form, timeLabel: e.target.value })}
@@ -178,9 +192,9 @@ export default function WebinarScheduler() {
           </div>
 
           <div className="col-span-2">
-            <label className="block text-xs text-gray-400 mb-1">Zoom Link</label>
+            <label className={labelCls}>Zoom Link</label>
             <input
-              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              className={inputCls}
               placeholder="https://zoom.us/j/..."
               value={form.link}
               onChange={(e) => setForm({ ...form, link: e.target.value })}
@@ -188,10 +202,10 @@ export default function WebinarScheduler() {
           </div>
 
           <div className="col-span-2">
-            <label className="block text-xs text-gray-400 mb-1">Invited Contributors <span className="text-gray-500">(one per line, optional)</span></label>
+            <label className={labelCls}>Invited Contributors <span className="text-muted-foreground">(one per line, optional)</span></label>
             <textarea
               rows={4}
-              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono resize-none"
+              className={`${inputCls} resize-none font-mono`}
               placeholder="@name1&#10;@name2"
               value={inviteesRaw}
               onChange={(e) => setInviteesRaw(e.target.value)}
@@ -199,18 +213,18 @@ export default function WebinarScheduler() {
           </div>
         </div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
 
         <div className="flex gap-2">
           <button
             onClick={save}
             disabled={saving}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             {saving ? 'Saving...' : editingId ? 'Update' : 'Schedule'}
           </button>
           {editingId && (
-            <button onClick={reset} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm rounded-lg">
+            <button onClick={reset} className="rounded-md border bg-background px-4 py-2 text-sm text-foreground transition-colors hover:bg-accent">
               Cancel
             </button>
           )}
@@ -219,7 +233,7 @@ export default function WebinarScheduler() {
 
       {upcoming.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Upcoming</h2>
+          <h2 className="sg-label">Upcoming</h2>
           {upcoming.map((w) => (
             <WebinarCard key={w.id} webinar={w} onEdit={startEdit} onDelete={remove} />
           ))}
@@ -228,7 +242,7 @@ export default function WebinarScheduler() {
 
       {past.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Past</h2>
+          <h2 className="sg-label">Past</h2>
           {past.map((w) => (
             <WebinarCard key={w.id} webinar={w} onEdit={startEdit} onDelete={remove} dim />
           ))}
@@ -236,7 +250,7 @@ export default function WebinarScheduler() {
       )}
 
       {webinars.length === 0 && (
-        <p className="text-gray-500 text-sm text-center py-8">No sessions scheduled yet.</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">No sessions scheduled yet.</p>
       )}
     </div>
   );
@@ -244,21 +258,25 @@ export default function WebinarScheduler() {
 
 function WebinarCard({ webinar, onEdit, onDelete, dim }: { webinar: Webinar; onEdit: (w: Webinar) => void; onDelete: (id: string) => void; dim?: boolean }) {
   return (
-    <div className={`bg-gray-800 border rounded-xl p-4 flex items-start justify-between gap-4 ${dim ? 'border-gray-700 opacity-50' : 'border-gray-600'}`}>
+    <div className={`sg-panel flex items-start justify-between gap-4 p-4 ${dim ? 'opacity-50' : ''}`}>
       <div className="space-y-1 min-w-0">
       <div className="flex items-center gap-2">
-        <span className="text-sm">{webinar.type === 'onboarding' ? '🎓' : '🎥'}</span>
-        <p className="text-white font-medium">{webinar.title}</p>
+        {webinar.type === 'onboarding' ? (
+          <GraduationCap className="size-4 text-primary" />
+        ) : (
+          <Video className="size-4 text-primary" />
+        )}
+        <p className="font-medium text-foreground">{webinar.title}</p>
       </div>
-      <p className="text-gray-400 text-sm">{webinar.date} · {webinar.timeLabel}</p>
-        <p className="text-indigo-400 text-xs truncate">{webinar.link}</p>
+      <p className="text-sm text-muted-foreground">{webinar.date} · {webinar.timeLabel}</p>
+        <p className="truncate text-xs text-primary">{webinar.link}</p>
         {webinar.invitees.length > 0 && (
-          <p className="text-gray-500 text-xs">{webinar.invitees.length} invitee{webinar.invitees.length > 1 ? 's' : ''}</p>
+          <p className="text-xs text-muted-foreground">{webinar.invitees.length} invitee{webinar.invitees.length > 1 ? 's' : ''}</p>
         )}
       </div>
       <div className="flex gap-2 shrink-0">
-        <button onClick={() => onEdit(webinar)} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded-lg">Edit</button>
-        <button onClick={() => onDelete(webinar.id)} className="px-3 py-1 bg-red-900/50 hover:bg-red-800 text-red-400 text-xs rounded-lg">Delete</button>
+        <button onClick={() => onEdit(webinar)} className="rounded-md border bg-background px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent">Edit</button>
+        <button onClick={() => onDelete(webinar.id)} className="rounded-md px-3 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger/10">Delete</button>
       </div>
     </div>
   );

@@ -43,22 +43,22 @@ export default function PublishButton({ date, disabled }: Props) {
       <button
         onClick={publish}
         disabled={disabled || status === 'running'}
-        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold rounded-xl transition-colors text-sm"
+        className="rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
       >
         {status === 'running' ? 'Publishing...' : status === 'done' ? 'Published!' : 'Publish to Community'}
       </button>
 
       {publishedUrl && (
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-green-400 font-medium">Published:</span>
-          <a href={publishedUrl} target="_blank" rel="noopener" className="text-indigo-400 hover:underline break-all">
+          <span className="font-medium text-success">Published:</span>
+          <a href={publishedUrl} target="_blank" rel="noopener" className="break-all text-primary hover:underline">
             {publishedUrl}
           </a>
         </div>
       )}
 
       {status === 'error' && (
-        <div className="bg-red-950/50 border border-red-700 rounded-xl p-3 text-red-400 text-sm">
+        <div className="sg-status-danger rounded-lg border p-3 text-sm">
           {error}
         </div>
       )}

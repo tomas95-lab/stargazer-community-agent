@@ -395,6 +395,12 @@ function replyReferencesLiveSupport(reply: string, warRoomLink: string): boolean
   );
 }
 
+const NON_ENGLISH_REPLY_PATTERN = /[ñáéíóúü¿¡]|\b(hola|gracias|por favor|disculpa|ay[uú]dame|necesito|equipo|acceso)\b/i;
+
+function looksNonEnglish(reply: string): boolean {
+  return NON_ENGLISH_REPLY_PATTERN.test(reply);
+}
+
 function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpenDay: boolean): string {
   const trimmed = reply.trim();
   if (!trimmed) return trimmed;
@@ -456,14 +462,21 @@ async function askClaude(
     parsed.action === 'reply' || parsed.action === 'human' || parsed.action === 'ignore' ? parsed.action : 'human';
   const confidence = typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0;
   const rawReply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
+  const nonEnglishReply = action === 'reply' && looksNonEnglish(rawReply);
   const finalAction =
-    action === 'reply' && (!rawReply || confidence < MIN_CONFIDENCE || snippets.length === 0) ? 'human' : action;
+    action === 'reply' && (!rawReply || confidence < MIN_CONFIDENCE || snippets.length === 0 || nonEnglishReply)
+      ? 'human'
+      : action;
   const reply = finalAction === 'reply' ? withWarRoomSupportInfo(rawReply, warRoomLink, isWarRoomOpenDay) : rawReply;
 
   return {
     action: finalAction,
     confidence,
-    reason: typeof parsed.reason === 'string' ? parsed.reason : 'No reason returned',
+    reason: nonEnglishReply
+      ? 'Model reply failed the English-only check, escalated to human'
+      : typeof parsed.reason === 'string'
+        ? parsed.reason
+        : 'No reason returned',
     reply,
     guidelineSnippets: snippets,
   };

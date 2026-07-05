@@ -82,29 +82,29 @@ export default function CommsForm({ template, onBack }: Props) {
     URL.revokeObjectURL(url);
   };
 
-  const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-indigo-500';
-  const labelCls = 'block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1';
+  const inputCls = 'sg-input px-3 py-2 text-sm';
+  const labelCls = 'sg-label mb-1 block';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="text-gray-400 hover:text-white text-sm">
-          ← Back
+        <button onClick={onBack} className="text-sm font-medium text-primary hover:underline">
+          Back
         </button>
         <div>
-          <h2 className="text-xl font-bold text-white">{template.name}</h2>
-          <p className="text-gray-400 text-sm">{template.description}</p>
+          <h2 className="text-xl font-semibold text-foreground">{template.name}</h2>
+          <p className="text-sm text-muted-foreground">{template.description}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-1 space-y-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-4">
+          <div className="sg-panel space-y-4 p-4">
             {template.variables.map((v) => (
               <div key={v.key}>
                 <label className={labelCls}>
                   {v.label}
-                  {v.required && <span className="text-red-400 ml-1">*</span>}
+                  {v.required && <span className="ml-1 text-danger">*</span>}
                 </label>
                 {v.placeholder?.includes('\n') ? (
                   <textarea
@@ -129,61 +129,61 @@ export default function CommsForm({ template, onBack }: Props) {
 
         <div className="col-span-2 space-y-4">
           {sendStatus === 'error' && (
-            <div className="bg-red-950/50 border border-red-700 rounded-xl p-3 text-red-400 text-sm">
+            <div className="sg-status-danger rounded-lg border p-3 text-sm">
               Failed to send: {sendError}
             </div>
           )}
 
           {errors.length > 0 && (
-            <div className="bg-red-950/50 border border-red-700 rounded-xl p-4 space-y-1">
+            <div className="sg-status-danger space-y-1 rounded-lg border p-4">
               {errors.map((e, i) => (
-                <p key={i} className="text-red-400 text-sm">{e}</p>
+                <p key={i} className="text-sm">{e}</p>
               ))}
             </div>
           )}
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Preview</span>
+          <div className="sg-panel overflow-hidden">
+            <div className="sg-panel-header flex items-center justify-between px-4 py-2">
+              <span className="text-xs font-semibold uppercase text-muted-foreground">Preview</span>
               <div className="flex gap-2">
                 <button
                   onClick={copy}
                   disabled={!preview}
-                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-xs font-medium rounded-lg transition-colors"
+                  className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                 >
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
                 <button
                   onClick={exportMd}
                   disabled={!preview}
-                  className="px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700 disabled:text-gray-500 text-gray-200 text-xs font-medium rounded-lg transition-colors"
+                  className="rounded-md border bg-background px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
                 >
                   Export .md
                 </button>
                 <button
                   onClick={sendToChat}
                   disabled={!preview || sending}
-                  className="px-3 py-1 bg-green-700 hover:bg-green-600 disabled:bg-gray-700 disabled:text-gray-500 text-white text-xs font-medium rounded-lg transition-colors"
+                  className="rounded-md bg-success px-3 py-1 text-xs font-medium text-success-foreground transition-colors hover:bg-success/90 disabled:opacity-50"
                 >
                   {sending ? 'Sending...' : sendStatus === 'ok' ? 'Sent!' : 'Send to Chat'}
                 </button>
               </div>
             </div>
-            <div className="p-5 prose prose-invert prose-sm max-w-none min-h-48">
+            <div className="prose prose-sm min-h-48 max-w-none p-5 text-foreground">
               {preview ? (
                 <ReactMarkdown>{preview}</ReactMarkdown>
               ) : (
-                <p className="text-gray-600 italic">Fill in the required fields to generate a preview.</p>
+                <p className="italic text-muted-foreground">Fill in the required fields to generate a preview.</p>
               )}
             </div>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-            <div className="px-4 py-2 bg-gray-800 border-b border-gray-700">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Raw text</span>
+          <div className="sg-panel overflow-hidden">
+            <div className="sg-panel-header px-4 py-2">
+              <span className="text-xs font-semibold uppercase text-muted-foreground">Raw text</span>
             </div>
-            <pre className="p-4 text-xs text-gray-400 whitespace-pre-wrap font-mono overflow-auto max-h-64">
-              {preview || '—'}
+            <pre className="max-h-64 overflow-auto whitespace-pre-wrap p-4 font-mono text-xs text-muted-foreground">
+              {preview || 'No preview'}
             </pre>
           </div>
         </div>

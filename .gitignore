@@ -6,6 +6,7 @@ output/*.md
 output/*.txt
 output/*.png
 output/*.html
+output/*.log
 !output/.gitkeep
 ui/node_modules/
 ui/dist/
