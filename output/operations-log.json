@@ -1,5 +1,19 @@
 [
   {
+    "id": "8bc2bb9c-8894-486c-8774-1daa24a06203",
+    "at": "2026-07-05T01:55:21.773Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 13,
+      "candidates": 4,
+      "posted": 0,
+      "needsHuman": 3,
+      "errors": []
+    }
+  },
+  {
     "id": "da6a5eed-466f-4ab5-8d10-71352227a0bc",
     "at": "2026-07-05T01:54:15.590Z",
     "action": "community_agent",
