@@ -36,7 +36,7 @@ export default function TopicForm({ topic, onSave, onCancel }: Props) {
 
   return (
     <div className="sg-panel space-y-4 p-6">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className={labelCls}>Date</label>
           <input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} className={inputCls} disabled={!!topic} />
@@ -67,7 +67,7 @@ export default function TopicForm({ topic, onSave, onCancel }: Props) {
         <textarea value={form.reminderBody} onChange={(e) => set('reminderBody', e.target.value)} className={inputCls} rows={4} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className={labelCls}>Bad Example</label>
           <textarea value={form.badExample} onChange={(e) => set('badExample', e.target.value)} className={inputCls} rows={4} />
@@ -89,7 +89,7 @@ export default function TopicForm({ topic, onSave, onCancel }: Props) {
           Webinar enabled
         </label>
         {form.webinar?.enabled && (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.webinar?.mandatory || false} onChange={(e) => setWebinar('mandatory', e.target.checked)} className="rounded" />
               Mandatory
@@ -102,7 +102,7 @@ export default function TopicForm({ topic, onSave, onCancel }: Props) {
               <label className={labelCls}>Link</label>
               <input value={form.webinar?.link || ''} onChange={(e) => setWebinar('link', e.target.value)} className={inputCls} />
             </div>
-            <div className="col-span-3">
+            <div className="sm:col-span-3">
               <label className={labelCls}>Invited Emails (one per line)</label>
               <textarea
                 value={(form.webinar?.invitees || []).join('\n')}

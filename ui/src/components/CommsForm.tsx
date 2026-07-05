@@ -97,8 +97,8 @@ export default function CommsForm({ template, onBack }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-1 space-y-4">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1 space-y-4">
           <div className="sg-panel space-y-4 p-4">
             {template.variables.map((v) => (
               <div key={v.key}>
@@ -127,7 +127,7 @@ export default function CommsForm({ template, onBack }: Props) {
           </div>
         </div>
 
-        <div className="col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           {sendStatus === 'error' && (
             <div className="sg-status-danger rounded-lg border p-3 text-sm">
               Failed to send: {sendError}

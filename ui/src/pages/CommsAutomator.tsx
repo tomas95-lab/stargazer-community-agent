@@ -62,8 +62,8 @@ export default function CommsAutomator() {
   const ActiveIcon = CATEGORY_ICONS[activeCategory];
 
   return (
-    <div className="flex min-h-[600px] gap-6 px-6">
-      <aside className="w-52 shrink-0">
+    <div className="flex min-h-[600px] flex-col gap-6 px-6 lg:flex-row">
+      <aside className="w-full shrink-0 lg:w-52">
         <Card className="overflow-hidden p-1">
           {CATEGORIES.map((cat) => (
             <button
@@ -106,7 +106,7 @@ export default function CommsAutomator() {
             ) : templates.length === 0 ? (
               <p className="text-muted-foreground">No templates in this category.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {templates.map((t) => (
                   <button
                     key={t.id}

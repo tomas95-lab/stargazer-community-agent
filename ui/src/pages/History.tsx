@@ -20,24 +20,26 @@ export default function History() {
         <p className="py-12 text-center text-muted-foreground">No output files yet.</p>
       ) : (
         <div className="sg-panel overflow-hidden">
-          <table className="sg-table">
-            <thead>
-              <tr className="text-left">
-                <th className="px-4 py-3">File</th>
-                <th className="px-4 py-3">Size</th>
-                <th className="px-4 py-3">Modified</th>
-              </tr>
-            </thead>
-            <tbody>
-              {files.map((f) => (
-                <tr key={f.name} className="cursor-pointer transition-colors" onClick={() => openFile(f.name)}>
-                  <td className="px-4 py-3 font-mono text-primary">{f.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{(f.size / 1024).toFixed(1)} KB</td>
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(f.modified).toLocaleString()}</td>
+          <div className="overflow-x-auto">
+            <table className="sg-table">
+              <thead>
+                <tr className="text-left">
+                  <th className="px-4 py-3">File</th>
+                  <th className="px-4 py-3">Size</th>
+                  <th className="px-4 py-3">Modified</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {files.map((f) => (
+                  <tr key={f.name} className="cursor-pointer transition-colors" onClick={() => openFile(f.name)}>
+                    <td className="px-4 py-3 font-mono text-primary">{f.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{(f.size / 1024).toFixed(1)} KB</td>
+                    <td className="px-4 py-3 text-muted-foreground">{new Date(f.modified).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

@@ -124,8 +124,8 @@ export default function WebinarScheduler() {
       <div className="sg-panel space-y-4 p-6">
         <h2 className="text-lg font-semibold text-foreground">{editingId ? 'Edit Webinar' : 'Schedule New Webinar'}</h2>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
             <label className={labelCls}>Type</label>
             <div className="flex gap-2">
               {(['webinar', 'onboarding'] as const).map((t) => (
@@ -150,7 +150,7 @@ export default function WebinarScheduler() {
             </div>
           </div>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className={labelCls}>Title</label>
             <input
               className={inputCls}
@@ -181,7 +181,7 @@ export default function WebinarScheduler() {
             <p className="mt-1 text-xs text-muted-foreground">ARG is UTC-3. 12:30 PM ARG = 15:30 UTC</p>
           </div>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className={labelCls}>Time Label (display)</label>
             <input
               className={inputCls}
@@ -191,7 +191,7 @@ export default function WebinarScheduler() {
             />
           </div>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className={labelCls}>Zoom Link</label>
             <input
               className={inputCls}
@@ -201,7 +201,7 @@ export default function WebinarScheduler() {
             />
           </div>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className={labelCls}>Invited Contributors <span className="text-muted-foreground">(one per line, optional)</span></label>
             <textarea
               rows={4}

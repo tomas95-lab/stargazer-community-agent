@@ -121,7 +121,7 @@ export default function TopicEditor() {
       )}
 
       {previewData && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Preview content={previewData.thread} label="Thread Preview" />
           <Preview content={previewData.announcement} label="Announcement Preview" />
         </div>
@@ -186,44 +186,46 @@ function TopicTable({ topics, today, onPreview, onEdit, onDelete, dim }: {
 }) {
   return (
     <div className={`sg-panel overflow-hidden ${dim ? 'opacity-60' : ''}`}>
-      <table className="sg-table">
-        <thead>
-          <tr className="text-left">
-            <th className="px-4 py-3">Date</th>
-            <th className="px-4 py-3">Topic</th>
-            <th className="px-4 py-3">Tags</th>
-            <th className="px-4 py-3 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {topics.map((t) => (
-            <tr
-              key={t.date}
-              className={`transition-colors ${t.date === today ? 'border-l-2 border-l-primary bg-accent/45' : ''}`}
-            >
-              <td className="whitespace-nowrap px-4 py-3 font-mono text-foreground">
-                {t.date}
-                {t.date === today && <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-bold text-primary">TODAY</span>}
-              </td>
-              <td className="max-w-xs truncate px-4 py-3 text-foreground">{t.topic}</td>
-              <td className="px-4 py-3">
-                <div className="flex gap-1 flex-wrap">
-                  {(t.tags || []).map((tag) => (
-                    <span key={tag} className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{tag}</span>
-                  ))}
-                </div>
-              </td>
-              <td className="px-4 py-3 text-right">
-                <div className="flex items-center justify-end gap-2">
-                  <button onClick={() => onPreview(t.date)} className="rounded px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-accent">Preview</button>
-                  <button onClick={() => onEdit(t)} className="rounded px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent">Edit</button>
-                  <button onClick={() => onDelete(t.date)} className="rounded px-2 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger/10">Delete</button>
-                </div>
-              </td>
+      <div className="overflow-x-auto">
+        <table className="sg-table">
+          <thead>
+            <tr className="text-left">
+              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">Topic</th>
+              <th className="px-4 py-3">Tags</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {topics.map((t) => (
+              <tr
+                key={t.date}
+                className={`transition-colors ${t.date === today ? 'border-l-2 border-l-primary bg-accent/45' : ''}`}
+              >
+                <td className="whitespace-nowrap px-4 py-3 font-mono text-foreground">
+                  {t.date}
+                  {t.date === today && <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-bold text-primary">TODAY</span>}
+                </td>
+                <td className="max-w-xs truncate px-4 py-3 text-foreground">{t.topic}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1 flex-wrap">
+                    {(t.tags || []).map((tag) => (
+                      <span key={tag} className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{tag}</span>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <button onClick={() => onPreview(t.date)} className="rounded px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-accent">Preview</button>
+                    <button onClick={() => onEdit(t)} className="rounded px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent">Edit</button>
+                    <button onClick={() => onDelete(t.date)} className="rounded px-2 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger/10">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
