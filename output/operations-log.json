@@ -1,5 +1,19 @@
 [
   {
+    "id": "e050f1aa-db81-4971-b760-4329b39e09f6",
+    "at": "2026-07-06T19:32:04.313Z",
+    "action": "dm_draft",
+    "status": "skipped",
+    "message": "Claude DM draft evaluated channel 836387.",
+    "metadata": {
+      "channelId": 836387,
+      "action": "human",
+      "confidence": 0.15,
+      "pendingIncomingMessages": 2,
+      "lastIncomingMessageId": 27695069
+    }
+  },
+  {
     "id": "e41d3390-44e0-46a5-a25d-cbbfc07b6867",
     "at": "2026-07-06T19:30:03.847Z",
     "action": "dm_draft",
