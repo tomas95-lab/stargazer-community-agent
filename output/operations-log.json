@@ -1,5 +1,61 @@
 [
   {
+    "id": "eabf4ad2-0e21-425b-9c63-07857e3650ee",
+    "at": "2026-07-06T14:30:11.444Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 3,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "06aed2fb-9369-492a-80b6-4916df7d3c86",
+    "at": "2026-07-06T14:28:13.691Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 3,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "b1042fb4-bb06-44f9-a2b7-be1b850b5f17",
+    "at": "2026-07-06T14:26:16.735Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 3,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "d1c84f2b-46c0-446c-884e-b0c7a3356cea",
+    "at": "2026-07-06T14:25:55.724Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 3,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
     "id": "5efcd6c0-4002-4c4a-87fe-d4d207029520",
     "at": "2026-07-06T14:08:59.712Z",
     "action": "send_chat_message",
