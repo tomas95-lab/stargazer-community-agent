@@ -1,5 +1,271 @@
 [
   {
+    "id": "9d0da6da-f3dd-4121-a1e0-8847b436422b",
+    "at": "2026-07-06T17:12:15.115Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "245a8da7-9253-4130-b229-a6f37148d13a",
+    "at": "2026-07-06T16:45:42.588Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 5,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 1,
+      "errors": []
+    }
+  },
+  {
+    "id": "b655f9f5-909e-4c2d-903f-81a3884420c2",
+    "at": "2026-07-06T16:45:16.824Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 1 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 12,
+      "incomingMessages": 1,
+      "channelsWithTodayMessages": 1,
+      "errors": 0
+    }
+  },
+  {
+    "id": "a2b6b7ce-caad-463e-bfbd-06bf8bd75db3",
+    "at": "2026-07-06T16:35:26.163Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "1618166e-8259-4ae2-935c-e3ed17fbadde",
+    "at": "2026-07-06T16:33:15.729Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 10,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "07d58848-c742-4208-a5dc-bce3e500c267",
+    "at": "2026-07-06T16:28:19.234Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "79af206d-fc8d-42c0-87a9-09cef0bac0cc",
+    "at": "2026-07-06T16:20:12.100Z",
+    "action": "dm_review",
+    "status": "error",
+    "message": "Found 1 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 12,
+      "incomingMessages": 1,
+      "channelsWithTodayMessages": 1,
+      "errors": 3
+    }
+  },
+  {
+    "id": "675241fa-8fc1-4518-af84-7425d4430a29",
+    "at": "2026-07-06T16:19:09.872Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "bea59951-491d-4e70-850e-8ba192a2c16b",
+    "at": "2026-07-06T16:17:11.303Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 13,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "a1f35016-7180-4da4-b47c-576e55ac61da",
+    "at": "2026-07-06T16:09:31.529Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": [
+        "Channel 846819: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}",
+        "Channel 757783: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}"
+      ]
+    }
+  },
+  {
+    "id": "f860a608-df2c-4fa9-b46e-76c780972e09",
+    "at": "2026-07-06T16:09:22.857Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": [
+        "Channel 757780: fetch failed",
+        "Channel 792756: fetch failed",
+        "Channel 792757: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}",
+        "Channel 843040: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}"
+      ]
+    }
+  },
+  {
+    "id": "9de1ee9e-4b77-468f-aa3f-2cf81d10fa17",
+    "at": "2026-07-06T16:09:18.656Z",
+    "action": "dm_review",
+    "status": "error",
+    "message": "Found 1 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 12,
+      "incomingMessages": 1,
+      "channelsWithTodayMessages": 1,
+      "errors": 1
+    }
+  },
+  {
+    "id": "6ce2fd20-caf7-479e-b051-4a3189b57294",
+    "at": "2026-07-06T15:57:36.241Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "53a4add3-9c09-4fb6-ae6a-a13187252fc5",
+    "at": "2026-07-06T15:56:15.578Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 1 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 12,
+      "incomingMessages": 1,
+      "channelsWithTodayMessages": 1,
+      "errors": 0
+    }
+  },
+  {
+    "id": "7b017451-c3cd-4f69-a54a-cb871afe93f9",
+    "at": "2026-07-06T15:49:31.159Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 5,
+      "candidates": 2,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "8b7b00f7-df9b-426b-a12b-73d20c95092e",
+    "at": "2026-07-06T15:48:33.422Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 1 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 12,
+      "incomingMessages": 1,
+      "channelsWithTodayMessages": 1,
+      "errors": 0
+    }
+  },
+  {
+    "id": "6340c52b-42a9-4fb0-98d1-ce6df4df06e1",
+    "at": "2026-07-06T15:46:53.780Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 3,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
+    "id": "1c6b1a74-efbf-433e-a2ae-544176b8f443",
+    "at": "2026-07-06T15:37:47.942Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 1 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 12,
+      "incomingMessages": 1,
+      "channelsWithTodayMessages": 1,
+      "errors": 0
+    }
+  },
+  {
     "id": "d3a0718c-8aac-4799-af37-a9cf2c6e0a39",
     "at": "2026-07-06T15:29:12.314Z",
     "action": "dm_review",
