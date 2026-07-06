@@ -240,6 +240,15 @@ export interface DmDraftResult {
   messages: DmReviewMessage[];
 }
 
+export interface OperationLogEntry {
+  id: string;
+  at: string;
+  action: string;
+  status: 'success' | 'error' | 'skipped';
+  message: string;
+  metadata?: Record<string, unknown>;
+}
+
 export const api = {
   getTopics: () => request<Topic[]>('/topics'),
   getToday: () => request<{ date: string; topic: Topic | null }>('/topics/today'),
@@ -316,4 +325,5 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ channelId, messageCount: opts.messageCount }),
     }),
+  getOperations: (limit = 50) => request<{ entries: OperationLogEntry[] }>(`/operations?limit=${limit}`),
 };

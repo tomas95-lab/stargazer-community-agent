@@ -213,6 +213,7 @@ GET  /api/dm-review
 POST /api/dm-review/run
 POST /api/dm-review/draft
 POST /api/dm-review/reply
+GET  /api/operations
 GET  /api/cron/daily-thread
 GET  /api/cron/community-agent
 GET  /api/cron/dm-review
@@ -240,6 +241,8 @@ También programa `/api/cron/community-agent` aproximadamente cada 90 minutos en
 
 También programa `/api/cron/dm-review` a las 3:30 PM y 6:00 PM ARG. Este job revisa como máximo 5 canales DM activos del día Argentina actual, guarda el timeline de mensajes del día en `output/dm-review-YYYY-MM-DD.json` y no responde automáticamente. Desde la UI se puede pedir un draft de Claude por conversación; las respuestas a DMs se envían manualmente, una conversación a la vez.
 
+La campana del header activa notificaciones del navegador en la Mac actual. Avisa cuando hay nuevos candidatos de Community, cuando el bot posteó una respuesta, o cuando el scan de DMs detecta message IDs nuevos. Para este modo sin costo, la web debe quedar abierta en el navegador.
+
 ## Archivos Generados
 
 | Archivo | Contenido |
@@ -248,6 +251,7 @@ También programa `/api/cron/dm-review` a las 3:30 PM y 6:00 PM ARG. Este job re
 | `output/announcement-YYYY-MM-DD.md` | Announcement renderizado |
 | `output/published-url-YYYY-MM-DD.txt` | URL publicada |
 | `output/dm-review-YYYY-MM-DD.json` | Conversaciones DM detectadas en el día Argentina actual |
+| `output/dm-review-notification-state.json` | Message IDs de DMs ya notificados en el día Argentina actual |
 | `output/operations-log.json` | Log de acciones operativas |
 | `output/community-agent-state.json` | Mensajes ya procesados por el Community Agent |
 

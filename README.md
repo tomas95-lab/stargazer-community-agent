@@ -12,6 +12,7 @@ Internal community-management toolkit for Stargazer Axiom. It generates daily th
 - Exposes community actions through an MCP server.
 - Includes a Claude-powered community agent for today's chat messages.
 - Reviews today's direct-message threads and can draft DM replies with Claude without auto-posting.
+- Sends browser notifications from the dashboard when new Community or DM items are detected.
 
 ## Project Shape
 
@@ -163,6 +164,8 @@ The Community Agent checks only today's Argentina-day messages. It reads the pub
 
 The DM review job checks up to 5 active direct-message channels and stores today's full DM thread timeline from the current Argentina day in `output/dm-review-YYYY-MM-DD.json`. It does not answer DMs automatically. The UI can ask Claude for a draft reply per DM thread, then a human sends it manually.
 
+The header bell enables browser notifications on the current Mac. Notifications are triggered from `output/operations-log.json` when the agent finds new Community candidates, posts an automatic Community reply, or detects new DM message IDs. The dashboard must be open in the browser for this no-cost local notification mode.
+
 Refresh the guideline text after replacing the PDF:
 
 ```bash
@@ -188,6 +191,7 @@ GET  /api/dm-review
 POST /api/dm-review/run
 POST /api/dm-review/draft
 POST /api/dm-review/reply
+GET  /api/operations
 GET  /api/cron/daily-thread
 GET  /api/cron/community-agent
 GET  /api/cron/dm-review

@@ -9,7 +9,7 @@ import {
   DiscourseClient,
   DiscourseDirectMessageChannel,
 } from './discourse-client';
-import { writeDataJSON } from './data-store';
+import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
 import {
   evaluateSupportMessage,
@@ -23,6 +23,7 @@ const DEFAULT_MESSAGE_COUNT = Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50);
 const DM_CHANNEL_SCAN_CAP = 5;
 const DEFAULT_MAX_CHANNELS = Math.min(Number(process.env.DM_REVIEW_MAX_CHANNELS || DM_CHANNEL_SCAN_CAP), DM_CHANNEL_SCAN_CAP);
 const DEFAULT_REQUEST_DELAY_MS = Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500);
+const DM_NOTIFICATION_STATE_FILE = 'output/dm-review-notification-state.json';
 
 export interface DmReviewWindow {
   argentinaDate: string;
@@ -88,6 +89,11 @@ export interface DmDraftResult {
   lastIncomingMessageId?: number;
   pendingIncomingMessages: number;
   messages: DmReviewMessage[];
+}
+
+interface DmReviewNotificationState {
+  argentinaDate: string;
+  notifiedMessageIds: number[];
 }
 
 function argentinaDateParts(date: Date): { year: number; month: number; day: number; label: string } {
@@ -277,6 +283,41 @@ function createClient(): { client: DiscourseClient; ownUsername: string } {
   };
 }
 
+async function readDmReviewNotificationState(argentinaDate: string): Promise<DmReviewNotificationState> {
+  try {
+    const state = await readDataJSON<DmReviewNotificationState>(DM_NOTIFICATION_STATE_FILE);
+    if (state.argentinaDate !== argentinaDate) {
+      return { argentinaDate, notifiedMessageIds: [] };
+    }
+    return {
+      argentinaDate,
+      notifiedMessageIds: Array.isArray(state.notifiedMessageIds) ? state.notifiedMessageIds : [],
+    };
+  } catch {
+    return { argentinaDate, notifiedMessageIds: [] };
+  }
+}
+
+async function updateDmReviewNotificationState(result: DmReviewResult): Promise<{
+  newIncomingMessages: DmReviewMessage[];
+}> {
+  const incoming = result.messages.filter((message) => message.incoming);
+  const state = await readDmReviewNotificationState(result.window.argentinaDate);
+  const knownIds = new Set(state.notifiedMessageIds);
+  const newIncomingMessages = incoming.filter((message) => !knownIds.has(message.messageId));
+  const nextIds = Array.from(new Set([...state.notifiedMessageIds, ...incoming.map((message) => message.messageId)])).slice(-500);
+
+  if (nextIds.join(',') !== state.notifiedMessageIds.join(',')) {
+    await writeDataJSON(
+      DM_NOTIFICATION_STATE_FILE,
+      { argentinaDate: result.window.argentinaDate, notifiedMessageIds: nextIds },
+      `update dm notification state ${result.window.argentinaDate}`
+    );
+  }
+
+  return { newIncomingMessages };
+}
+
 export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise<DmReviewResult> {
   const { client, ownUsername } = createClient();
   const window = getArgentinaDayWindow(options.now || new Date());
@@ -339,6 +380,9 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
   const result = await fetchTodayDmReview({ ...options, fullScan: options.fullScan ?? true });
 
   if (options.writeReport !== false) {
+    const notificationState = await updateDmReviewNotificationState(result);
+    const newIncomingMessages = notificationState.newIncomingMessages;
+
     await writeDataJSON(
       `output/dm-review-${result.window.argentinaDate}.json`,
       result,
@@ -357,6 +401,9 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
         totalDirectChannels: result.totalDirectChannels,
         scannedChannels: result.scannedChannels,
         incomingMessages: result.incomingMessages,
+        newIncomingMessages: newIncomingMessages.length,
+        newIncomingMessageIds: newIncomingMessages.map((message) => message.messageId),
+        newDmSenders: Array.from(new Set(newIncomingMessages.map((message) => message.username))),
         channelsWithTodayMessages: result.channelsWithTodayMessages,
         errors: result.errors.length,
       },

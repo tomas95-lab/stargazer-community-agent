@@ -849,6 +849,9 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       candidates: candidates.length,
       posted,
       needsHuman,
+      candidateUsers: candidates.map((item) => item.username),
+      postedUsers: decisions.filter((decision) => decision.posted).map((decision) => decision.username),
+      humanUsers: decisions.filter((decision) => decision.needsHuman).map((decision) => decision.username),
       errors: fetched.errors,
     },
   });

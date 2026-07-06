@@ -15,9 +15,10 @@ export interface OperationLogEntry {
 const FILE = 'output/operations-log.json';
 const MAX_ENTRIES = 500;
 
-async function readLog(): Promise<OperationLogEntry[]> {
+export async function readOperationLog(limit = MAX_ENTRIES): Promise<OperationLogEntry[]> {
   try {
-    return await readDataJSON<OperationLogEntry[]>(FILE);
+    const entries = await readDataJSON<OperationLogEntry[]>(FILE);
+    return entries.slice(0, Math.max(1, Math.min(MAX_ENTRIES, limit)));
   } catch {
     return [];
   }
@@ -27,7 +28,7 @@ export async function appendOperationLog(
   entry: Omit<OperationLogEntry, 'id' | 'at'>
 ): Promise<void> {
   try {
-    const current = await readLog();
+    const current = await readOperationLog();
     const next = [
       {
         id: randomUUID(),
