@@ -1,15 +1,15 @@
 {
   "mode": "dm-review",
   "scanMode": "full",
-  "generatedAt": "2026-07-06T19:09:24.735Z",
+  "generatedAt": "2026-07-06T19:26:21.038Z",
   "window": {
     "argentinaDate": "2026-07-06",
     "startUtc": "2026-07-06T03:00:00.000Z",
     "endUtc": "2026-07-07T03:00:00.000Z"
   },
   "totalDirectChannels": 55,
-  "scannedChannels": 13,
-  "skippedInactiveChannels": 42,
+  "scannedChannels": 5,
+  "skippedInactiveChannels": 50,
   "incomingMessages": 3,
   "channelsWithTodayMessages": 2,
   "messages": [
