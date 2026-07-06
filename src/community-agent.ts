@@ -23,6 +23,7 @@ const WAR_ROOM_BREAKOUT_ROOM = 'Stargazer - Team';
 const WAR_ROOM_BREAKOUT_NOTICE = `Once you are in the War Room, join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`;
 const WAR_ROOM_WEEKEND_NOTICE =
   'Today is a weekend day in Argentina, so the War Room is closed. Please come back on Monday between 11:15 AM and 7:00 PM ARG for live support.';
+const SUPPORT_ASSISTANT_SIGNATURE = '- Stargazer Support Assistant';
 
 export type CommunityAgentSource = 'community';
 export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
@@ -558,6 +559,13 @@ function looksNonEnglish(reply: string): boolean {
   return NON_ENGLISH_REPLY_PATTERN.test(reply);
 }
 
+function withSupportAssistantSignature(reply: string): string {
+  const trimmed = reply.trim();
+  if (!trimmed) return trimmed;
+  if (normalizeText(trimmed).includes(normalizeText(SUPPORT_ASSISTANT_SIGNATURE))) return trimmed;
+  return `${trimmed}\n\n${SUPPORT_ASSISTANT_SIGNATURE}`;
+}
+
 function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpenDay: boolean): string {
   const trimmed = reply.trim();
   if (!trimmed) return trimmed;
@@ -590,7 +598,7 @@ export function warRoomAvailabilityDecision(
       action: 'reply',
       confidence: 1,
       reason: 'Deterministic War Room weekend availability rule',
-      reply: WAR_ROOM_WEEKEND_NOTICE,
+      reply: withSupportAssistantSignature(WAR_ROOM_WEEKEND_NOTICE),
       guidelineSnippets: [],
     };
   }
@@ -600,7 +608,9 @@ export function warRoomAvailabilityDecision(
       action: 'reply',
       confidence: 1,
       reason: 'Deterministic War Room pre-open availability rule',
-      reply: 'Not yet. The War Room will be open after 11:15 AM ARG today. Please come back then for live support.',
+      reply: withSupportAssistantSignature(
+        'Not yet. The War Room will be open after 11:15 AM ARG today. Please come back then for live support.'
+      ),
       guidelineSnippets: [],
     };
   }
@@ -609,7 +619,9 @@ export function warRoomAvailabilityDecision(
     action: 'reply',
     confidence: 1,
     reason: 'Deterministic War Room open availability rule',
-    reply: `Yes, the War Room is open now.\n\nWar Room link:\n${warRoomLink}\n\n${WAR_ROOM_BREAKOUT_NOTICE}`,
+    reply: withSupportAssistantSignature(
+      `Yes, the War Room is open now.\n\nWar Room link:\n${warRoomLink}\n\n${WAR_ROOM_BREAKOUT_NOTICE}`
+    ),
     guidelineSnippets: [],
   };
 }
@@ -638,6 +650,7 @@ export async function evaluateSupportMessage(
         'You may answer only when the answer is clearly supported by the provided project guideline excerpts or by the recent chat context.',
         'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
         'Keep replies under 4 short sentences.',
+        `Do not add a signature. The system will append "${SUPPORT_ASSISTANT_SIGNATURE}" to user-facing replies.`,
         isWarRoomOpenDay
           ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}. Always tell them that once inside the War Room they must join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`
           : 'Today is a weekend day in Argentina, so the War Room is closed. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, QM availability, or live support in any way, say exactly that the user should come back on Monday between 11:15 AM and 7:00 PM ARG.',
@@ -668,7 +681,9 @@ export async function evaluateSupportMessage(
     action === 'reply' && (!rawReply || confidence < MIN_CONFIDENCE || snippets.length === 0 || nonEnglishReply)
       ? 'human'
       : action;
-  const reply = finalAction === 'reply' ? withWarRoomSupportInfo(rawReply, warRoomLink, isWarRoomOpenDay) : rawReply;
+  const reply = finalAction === 'reply'
+    ? withSupportAssistantSignature(withWarRoomSupportInfo(rawReply, warRoomLink, isWarRoomOpenDay))
+    : rawReply;
 
   return {
     action: finalAction,
