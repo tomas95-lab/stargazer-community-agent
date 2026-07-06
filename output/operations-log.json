@@ -1,5 +1,20 @@
 [
   {
+    "id": "4ff122a6-1001-419c-baef-a4b9ae88d9aa",
+    "at": "2026-07-06T19:26:22.558Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 3 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 5,
+      "incomingMessages": 3,
+      "channelsWithTodayMessages": 2,
+      "errors": 0
+    }
+  },
+  {
     "id": "bab63fc6-674d-452e-97de-f2f2d1cdb0b4",
     "at": "2026-07-06T19:24:42.821Z",
     "action": "dm_reply",
