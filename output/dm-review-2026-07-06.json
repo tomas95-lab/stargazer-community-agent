@@ -1,17 +1,17 @@
 {
   "mode": "dm-review",
   "scanMode": "full",
-  "generatedAt": "2026-07-06T18:20:24.879Z",
+  "generatedAt": "2026-07-06T19:05:29.302Z",
   "window": {
     "argentinaDate": "2026-07-06",
     "startUtc": "2026-07-06T03:00:00.000Z",
     "endUtc": "2026-07-07T03:00:00.000Z"
   },
   "totalDirectChannels": 55,
-  "scannedChannels": 12,
-  "skippedInactiveChannels": 43,
-  "incomingMessages": 1,
-  "channelsWithTodayMessages": 1,
+  "scannedChannels": 13,
+  "skippedInactiveChannels": 42,
+  "incomingMessages": 3,
+  "channelsWithTodayMessages": 2,
   "messages": [
     {
       "channelId": 855952,
@@ -26,6 +26,38 @@
           "username": "latam.coder2366",
           "id": 2604311,
           "name": "Warner Bonilla Latam Coder 2366"
+        }
+      ]
+    },
+    {
+      "channelId": 836387,
+      "channelTitle": "latam.coder1232",
+      "messageId": 27695066,
+      "username": "latam.coder1232",
+      "name": "Junior Amorim Latam Coder 1232",
+      "createdAt": "2026-07-06T18:56:25Z",
+      "text": "1. FaqSection.js uses useState(activeTab) and onClick={() => toggleTab(...)},  there is no data-bs-toggle=\"tab\" anywhere.\n2. I believe that Jest + Babel + react test library is the correct for these taks.\n3. Per the guidelines and common errors, We need to still the tests config in the test_patch",
+      "peers": [
+        {
+          "username": "latam.coder1232",
+          "id": 2073664,
+          "name": "Junior Amorim Latam Coder 1232"
+        }
+      ]
+    },
+    {
+      "channelId": 836387,
+      "channelTitle": "latam.coder1232",
+      "messageId": 27695069,
+      "username": "latam.coder1232",
+      "name": "Junior Amorim Latam Coder 1232",
+      "createdAt": "2026-07-06T18:56:35Z",
+      "text": "Because of this, I'm ineligible in the project.",
+      "peers": [
+        {
+          "username": "latam.coder1232",
+          "id": 2073664,
+          "name": "Junior Amorim Latam Coder 1232"
         }
       ]
     }
