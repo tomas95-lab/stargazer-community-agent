@@ -20,6 +20,8 @@
     { "path": "/api/cron/community-agent/1430", "schedule": "30 17 * * *" },
     { "path": "/api/cron/community-agent/1600", "schedule": "0 19 * * *" },
     { "path": "/api/cron/community-agent/1730", "schedule": "30 20 * * *" },
-    { "path": "/api/cron/community-agent/1900", "schedule": "0 22 * * *" }
+    { "path": "/api/cron/community-agent/1900", "schedule": "0 22 * * *" },
+    { "path": "/api/cron/dm-review/1530", "schedule": "30 18 * * *" },
+    { "path": "/api/cron/dm-review/1800", "schedule": "0 21 * * *" }
   ]
 }

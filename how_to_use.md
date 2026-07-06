@@ -34,6 +34,8 @@ Variables principales:
 | `AGENT_AUTO_POST` | `true` para que el cron postee respuestas seguras |
 | `AGENT_MAX_ANSWERS` | Máximo de mensajes que Claude analiza por corrida |
 | `AGENT_MESSAGE_COUNT` | Cantidad de mensajes recientes a leer antes de filtrar por día |
+| `DM_REVIEW_MESSAGE_COUNT` | Cantidad de mensajes recientes a leer por DM |
+| `DM_REVIEW_MAX_CHANNELS` | Máximo de canales DM activos a revisar por corrida |
 | `DAILY_PUBLISH_ENABLED` | Habilita publish dentro de `jobs:all` |
 | `DAILY_PUBLISH_POST_CHAT` | `false` para publicar thread sin announcement al chat |
 | `FORCE_DAILY_PUBLISH` | Fuerza publish aunque ya exista URL del día |
@@ -157,6 +159,7 @@ npm run job:webinars
 
 ```bash
 npm run job:daily
+npm run job:dms
 npm run job:webinars
 npm run jobs:all
 ```
@@ -205,6 +208,7 @@ GET  /api/community-agent/overview
 POST /api/community-agent/run
 GET  /api/cron/daily-thread
 GET  /api/cron/community-agent
+GET  /api/cron/dm-review
 ```
 
 Ejemplo body para sugerencias:
@@ -227,6 +231,8 @@ Para producción, usá `DATA_STORE=github` con `GITHUB_TOKEN` para que ese marke
 
 También programa `/api/cron/community-agent` aproximadamente cada 90 minutos entre 10 AM y 7 PM ARG. Vercel usa cron en UTC, por eso hay varias entradas horarias.
 
+También programa `/api/cron/dm-review` a las 3:30 PM y 6:00 PM ARG. Este job revisa DMs entrantes del día Argentina actual, guarda el reporte en `output/dm-review-YYYY-MM-DD.json` y no responde automáticamente.
+
 ## Archivos Generados
 
 | Archivo | Contenido |
@@ -234,6 +240,7 @@ También programa `/api/cron/community-agent` aproximadamente cada 90 minutos en
 | `output/daily-thread-YYYY-MM-DD.md` | Daily thread renderizado |
 | `output/announcement-YYYY-MM-DD.md` | Announcement renderizado |
 | `output/published-url-YYYY-MM-DD.txt` | URL publicada |
+| `output/dm-review-YYYY-MM-DD.json` | DMs entrantes detectados en el día Argentina actual |
 | `output/operations-log.json` | Log de acciones operativas |
 | `output/community-agent-state.json` | Mensajes ya procesados por el agente |
 

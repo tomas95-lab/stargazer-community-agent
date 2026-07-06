@@ -46,3 +46,33 @@ test('DiscourseClient can send a chat message as a threaded reply', async () => 
     global.fetch = previousFetch;
   }
 });
+
+test('DiscourseClient reads direct-message channels from the current user chat endpoint', async () => {
+  const previousFetch = global.fetch;
+  const calls = [];
+  global.fetch = async (url, init) => {
+    calls.push({ url, init });
+    return {
+      ok: true,
+      json: async () => ({
+        public_channels: [{ id: 1 }],
+        direct_message_channels: [{ id: 836387, title: 'latam.coder1232' }],
+      }),
+    };
+  };
+
+  try {
+    const client = new DiscourseClient({
+      baseUrl: 'https://community.example/',
+      apiKey: 'key',
+      apiClientId: 'client',
+    });
+
+    const channels = await client.readDirectMessageChannels();
+
+    assert.equal(calls[0].url, 'https://community.example/chat/api/me/channels.json');
+    assert.deepEqual(channels, [{ id: 836387, title: 'latam.coder1232' }]);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});

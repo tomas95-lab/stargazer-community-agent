@@ -11,6 +11,7 @@ Internal community-management toolkit for Stargazer Axiom. It generates daily th
 - Writes an operation log for publishes, chat sends, reminders, and data edits.
 - Exposes community actions through an MCP server.
 - Includes a Claude-powered community agent for today's chat messages.
+- Reviews today's incoming direct messages without auto-replying.
 
 ## Project Shape
 
@@ -66,6 +67,8 @@ AGENT_AUTO_POST=false
 AGENT_MAX_ANSWERS=4
 AGENT_MESSAGE_COUNT=50
 AGENT_MIN_CONFIDENCE=0.72
+DM_REVIEW_MESSAGE_COUNT=50
+DM_REVIEW_MAX_CHANNELS=100
 DAILY_PUBLISH_POST_CHAT=true
 SERVER_PORT=3001
 ```
@@ -148,11 +151,14 @@ Local job commands:
 
 ```bash
 npm run job:daily       # publish today's thread once unless FORCE_DAILY_PUBLISH=true
+npm run job:dms         # review today's incoming direct messages
 npm run job:webinars    # send webinar/onboarding reminders in the reminder window
 npm run jobs:all        # reminders + daily publish only when DAILY_PUBLISH_ENABLED=true
 ```
 
 The Community Agent checks only today's Argentina-day messages. It reads the public community chat, retrieves relevant snippets from `data/project-guidelines.txt`, and asks Claude whether to reply, ignore, or route to a human. Claude is instructed to answer only when the guideline/context supports the reply.
+
+The DM review job checks direct-message channels and stores only incoming messages from the current Argentina day in `output/dm-review-YYYY-MM-DD.json`. It does not answer DMs automatically.
 
 Refresh the guideline text after replacing the PDF:
 
@@ -177,6 +183,7 @@ GET  /api/community-agent/overview
 POST /api/community-agent/run
 GET  /api/cron/daily-thread
 GET  /api/cron/community-agent
+GET  /api/cron/dm-review
 ```
 
 `POST /api/community-agent/run` accepts `{ "post": false }` for suggestions and `{ "post": true }` for auto-posting. Community-agent routes require `X-Admin-Token`.
@@ -188,6 +195,8 @@ Vercel calls `/api/cron/daily-thread` at 10:00 and 11:00 Argentina time. The sec
 For production cron, use `DATA_STORE=github` with `GITHUB_TOKEN` so the publish marker persists between serverless runs. The job also checks the Community category for an existing daily-thread title before publishing, which prevents duplicate posts if the marker file is missing.
 
 Vercel calls `/api/cron/community-agent` roughly every 90 minutes between 10:00 and 19:00 Argentina time using UTC schedules in `vercel.json`.
+
+Vercel calls `/api/cron/dm-review` at 15:30 and 18:00 Argentina time. The job filters by the current Argentina day, so older DMs remain available for endpoint verification but are not included in the daily report.
 
 ## Current Caveats
 

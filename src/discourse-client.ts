@@ -44,6 +44,30 @@ export interface DiscourseChatMessage {
   created_at: string;
 }
 
+export interface DiscourseChatUser {
+  id?: number;
+  username: string;
+  name?: string;
+}
+
+export interface DiscourseDirectMessageChannel {
+  id: number;
+  title?: string | null;
+  slug?: string | null;
+  unicode_title?: string | null;
+  last_message?: DiscourseChatMessage;
+  last_message_id?: number;
+  last_message_created_at?: string;
+  current_user_membership?: Record<string, unknown>;
+  users?: DiscourseChatUser[];
+  chatable?: {
+    users?: DiscourseChatUser[];
+    direct_message_users?: DiscourseChatUser[];
+    participants?: DiscourseChatUser[];
+    group_users?: DiscourseChatUser[];
+  };
+}
+
 export interface DiscourseTopicSummary {
   title: string;
   posts_count: number;
@@ -148,6 +172,26 @@ export class DiscourseClient {
       `/chat/api/channels/${channelId}/messages.json?page_size=${count}`
     );
     return data.messages || [];
+  }
+
+  async readMyChatChannels(): Promise<{
+    publicChannels: unknown[];
+    directMessageChannels: DiscourseDirectMessageChannel[];
+  }> {
+    const data = await this.request<{
+      public_channels?: unknown[];
+      direct_message_channels?: DiscourseDirectMessageChannel[];
+    }>('/chat/api/me/channels.json');
+
+    return {
+      publicChannels: data.public_channels || [],
+      directMessageChannels: data.direct_message_channels || [],
+    };
+  }
+
+  async readDirectMessageChannels(): Promise<DiscourseDirectMessageChannel[]> {
+    const data = await this.readMyChatChannels();
+    return data.directMessageChannels;
   }
 
   async readCategoryTopics(categoryId: number, count = 10): Promise<DiscourseTopicSummary[]> {
