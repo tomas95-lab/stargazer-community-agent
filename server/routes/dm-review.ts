@@ -30,6 +30,8 @@ router.post('/run', requireAdminToken, async (req: Request, res: Response) => {
       messageCount: clampNumber(req.body?.messageCount, 50, 1, 100),
       maxChannels: clampNumber(req.body?.maxChannels, 5, 1, 5),
       requestDelayMs: clampNumber(req.body?.requestDelayMs, Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500), 0, 10000),
+      autoReply: req.body?.autoReply === true,
+      maxAutoReplies: clampNumber(req.body?.maxAutoReplies, Number(process.env.DM_AUTO_REPLY_MAX || 3), 0, 5),
     });
     res.json(result);
   } catch (err) {

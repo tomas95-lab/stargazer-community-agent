@@ -24,6 +24,8 @@ const DM_CHANNEL_SCAN_CAP = 5;
 const DEFAULT_MAX_CHANNELS = Math.min(Number(process.env.DM_REVIEW_MAX_CHANNELS || DM_CHANNEL_SCAN_CAP), DM_CHANNEL_SCAN_CAP);
 const DEFAULT_REQUEST_DELAY_MS = Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500);
 const DM_NOTIFICATION_STATE_FILE = 'output/dm-review-notification-state.json';
+const DM_AUTO_REPLY_STATE_FILE = 'output/dm-auto-reply-state.json';
+const DEFAULT_DM_AUTO_REPLY_MAX = Number(process.env.DM_AUTO_REPLY_MAX || 3);
 
 export interface DmReviewWindow {
   argentinaDate: string;
@@ -61,6 +63,7 @@ export interface DmReviewResult {
   channelsWithTodayMessages: number;
   messages: DmReviewMessage[];
   errors: string[];
+  autoReply?: DmAutoReplySummary;
 }
 
 export interface DmReviewOptions {
@@ -70,6 +73,8 @@ export interface DmReviewOptions {
   writeReport?: boolean;
   fullScan?: boolean;
   requestDelayMs?: number;
+  autoReply?: boolean;
+  maxAutoReplies?: number;
 }
 
 export interface DmReplyResult {
@@ -91,9 +96,41 @@ export interface DmDraftResult {
   messages: DmReviewMessage[];
 }
 
+export interface DmAutoReplyDecision {
+  channelId: number;
+  action: 'reply' | 'human' | 'ignore';
+  posted: boolean;
+  confidence: number;
+  reason: string;
+  username?: string;
+  lastIncomingMessageId?: number;
+  messageId?: number;
+  error?: string;
+}
+
+export interface DmAutoReplySummary {
+  enabled: boolean;
+  checked: number;
+  replied: number;
+  needsHuman: number;
+  ignored: number;
+  skippedProcessed: number;
+  decisions: DmAutoReplyDecision[];
+}
+
 interface DmReviewNotificationState {
   argentinaDate: string;
   notifiedMessageIds: number[];
+}
+
+interface DmAutoReplyState {
+  processed: Record<string, {
+    at: string;
+    action: 'reply' | 'human' | 'ignore';
+    posted: boolean;
+    channelId: number;
+    lastIncomingMessageId: number;
+  }>;
 }
 
 function argentinaDateParts(date: Date): { year: number; month: number; day: number; label: string } {
@@ -318,6 +355,33 @@ async function updateDmReviewNotificationState(result: DmReviewResult): Promise<
   return { newIncomingMessages };
 }
 
+async function readDmAutoReplyState(): Promise<DmAutoReplyState> {
+  try {
+    const state = await readDataJSON<DmAutoReplyState>(DM_AUTO_REPLY_STATE_FILE);
+    return {
+      processed: state && typeof state.processed === 'object' && state.processed ? state.processed : {},
+    };
+  } catch {
+    return { processed: {} };
+  }
+}
+
+async function writeDmAutoReplyState(state: DmAutoReplyState): Promise<void> {
+  const entries = Object.entries(state.processed)
+    .sort(([, left], [, right]) => right.at.localeCompare(left.at))
+    .slice(0, 500);
+
+  await writeDataJSON(
+    DM_AUTO_REPLY_STATE_FILE,
+    { processed: Object.fromEntries(entries) },
+    'update dm auto reply state'
+  );
+}
+
+function dmAutoReplyKey(channelId: number, lastIncomingMessageId: number): string {
+  return `${channelId}:${lastIncomingMessageId}`;
+}
+
 export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise<DmReviewResult> {
   const { client, ownUsername } = createClient();
   const window = getArgentinaDayWindow(options.now || new Date());
@@ -379,6 +443,10 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
 export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmReviewResult> {
   const result = await fetchTodayDmReview({ ...options, fullScan: options.fullScan ?? true });
 
+  if (options.autoReply === true) {
+    result.autoReply = await runDmAutoRepliesFromReview(result, options);
+  }
+
   if (options.writeReport !== false) {
     const notificationState = await updateDmReviewNotificationState(result);
     const newIncomingMessages = notificationState.newIncomingMessages;
@@ -405,6 +473,9 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
         newIncomingMessageIds: newIncomingMessages.map((message) => message.messageId),
         newDmSenders: Array.from(new Set(newIncomingMessages.map((message) => message.username))),
         channelsWithTodayMessages: result.channelsWithTodayMessages,
+        autoReplyEnabled: result.autoReply?.enabled || false,
+        autoReplied: result.autoReply?.replied || 0,
+        autoNeedsHuman: result.autoReply?.needsHuman || 0,
         errors: result.errors.length,
       },
     });
@@ -453,12 +524,84 @@ function messageTime(message: DmReviewMessage): number {
 
 function buildDmContext(messages: DmReviewMessage[]): string {
   return messages
+    .slice()
     .sort((left, right) => messageTime(left) - messageTime(right))
     .map((message) => {
       const direction = message.incoming ? 'user' : 'manager';
       return `[${formatArgTime(message.createdAt)} ARG/${direction}/${message.username}]: ${message.text.slice(0, 700)}`;
     })
     .join('\n');
+}
+
+function pendingIncomingMessages(messages: DmReviewMessage[]): DmReviewMessage[] {
+  const incoming = messages.filter((message) => message.incoming);
+  const lastOutgoing = [...messages].reverse().find((message) => !message.incoming);
+  return incoming.filter((message) => !lastOutgoing || messageTime(message) > messageTime(lastOutgoing));
+}
+
+async function evaluateDirectMessageThread(
+  channelId: number,
+  messages: DmReviewMessage[],
+  now = new Date(),
+  logDraft = true
+): Promise<DmDraftResult> {
+  const orderedMessages = messages.slice().sort((left, right) => messageTime(left) - messageTime(right));
+  const incoming = orderedMessages.filter((message) => message.incoming);
+  const pendingIncoming = pendingIncomingMessages(orderedMessages);
+  const lastIncoming = pendingIncoming[pendingIncoming.length - 1] || incoming[incoming.length - 1];
+
+  if (!lastIncoming || pendingIncoming.length === 0) {
+    return {
+      channelId,
+      action: 'ignore',
+      confidence: 1,
+      reason: 'No pending incoming DM after the latest outgoing reply.',
+      reply: '',
+      needsHuman: false,
+      guidelineSnippets: [],
+      lastIncomingMessageId: lastIncoming?.messageId,
+      pendingIncomingMessages: 0,
+      messages: orderedMessages,
+    };
+  }
+
+  const { warRoom: warRoomLink } = await loadProjectLinks();
+  const pendingText = pendingIncoming
+    .map((message) => `${message.username}: ${message.text}`)
+    .join('\n\n');
+  const window = getArgentinaDayWindow(now);
+  const context = `Private DM thread from ${window.argentinaDate} ARG:\n${buildDmContext(orderedMessages) || 'No messages today.'}`;
+  const deterministicDecision =
+    warRoomAvailabilityDecision(pendingText, warRoomLink, now) ||
+    await evaluateSupportMessage(lastIncoming.username, pendingText, context, warRoomLink, warRoomIsOpenDay(now));
+
+  if (logDraft) {
+    await appendOperationLog({
+      action: 'dm_draft',
+      status: deterministicDecision.action === 'reply' ? 'success' : deterministicDecision.action === 'human' ? 'skipped' : 'success',
+      message: `Claude DM draft evaluated channel ${channelId}.`,
+      metadata: {
+        channelId,
+        action: deterministicDecision.action,
+        confidence: deterministicDecision.confidence,
+        pendingIncomingMessages: pendingIncoming.length,
+        lastIncomingMessageId: lastIncoming.messageId,
+      },
+    });
+  }
+
+  return {
+    channelId,
+    action: deterministicDecision.action,
+    confidence: deterministicDecision.confidence,
+    reason: deterministicDecision.reason,
+    reply: deterministicDecision.action === 'reply' ? deterministicDecision.reply : '',
+    needsHuman: deterministicDecision.action === 'human',
+    guidelineSnippets: deterministicDecision.guidelineSnippets,
+    lastIncomingMessageId: lastIncoming.messageId,
+    pendingIncomingMessages: pendingIncoming.length,
+    messages: orderedMessages,
+  };
 }
 
 export async function draftDirectMessageReply(
@@ -477,60 +620,132 @@ export async function draftDirectMessageReply(
     .map((message) => summarizeMessage(channel, message, ownUsername))
     .sort((left, right) => messageTime(left) - messageTime(right));
 
-  const incoming = messages.filter((message) => message.incoming);
-  const lastOutgoing = [...messages].reverse().find((message) => !message.incoming);
-  const pendingIncoming = incoming.filter((message) => !lastOutgoing || messageTime(message) > messageTime(lastOutgoing));
-  const lastIncoming = pendingIncoming[pendingIncoming.length - 1] || incoming[incoming.length - 1];
+  return evaluateDirectMessageThread(channelId, messages, options.now || new Date(), true);
+}
 
-  if (!lastIncoming || pendingIncoming.length === 0) {
-    return {
-      channelId,
-      action: 'ignore',
-      confidence: 1,
-      reason: 'No pending incoming DM after the latest outgoing reply.',
-      reply: '',
-      needsHuman: false,
-      guidelineSnippets: [],
-      lastIncomingMessageId: lastIncoming?.messageId,
-      pendingIncomingMessages: 0,
-      messages,
-    };
+function groupedMessagesByChannel(messages: DmReviewMessage[]): Map<number, DmReviewMessage[]> {
+  const grouped = new Map<number, DmReviewMessage[]>();
+  for (const message of messages) {
+    grouped.set(message.channelId, [...(grouped.get(message.channelId) || []), message]);
+  }
+  return grouped;
+}
+
+async function runDmAutoRepliesFromReview(
+  result: DmReviewResult,
+  options: Pick<DmReviewOptions, 'maxAutoReplies' | 'now'> = {}
+): Promise<DmAutoReplySummary> {
+  const maxAutoReplies = Math.min(Math.max(0, options.maxAutoReplies ?? DEFAULT_DM_AUTO_REPLY_MAX), DM_CHANNEL_SCAN_CAP);
+  const state = await readDmAutoReplyState();
+  const decisions: DmAutoReplyDecision[] = [];
+  const now = options.now || new Date();
+  let checked = 0;
+  let replied = 0;
+  let needsHuman = 0;
+  let ignored = 0;
+  let skippedProcessed = 0;
+  let stateChanged = false;
+
+  for (const [channelId, messages] of groupedMessagesByChannel(result.messages).entries()) {
+    const orderedMessages = messages.slice().sort((left, right) => messageTime(left) - messageTime(right));
+    const pending = pendingIncomingMessages(orderedMessages);
+    const lastIncoming = pending[pending.length - 1];
+    if (!lastIncoming) continue;
+
+    checked += 1;
+    const key = dmAutoReplyKey(channelId, lastIncoming.messageId);
+    if (state.processed[key]) {
+      skippedProcessed += 1;
+      continue;
+    }
+
+    if (replied >= maxAutoReplies) {
+      break;
+    }
+
+    try {
+      const decision = await evaluateDirectMessageThread(channelId, orderedMessages, now, false);
+      let posted = false;
+      let sentMessageId: number | undefined;
+
+      if (decision.action === 'reply' && decision.reply.trim()) {
+        const sent = await sendDirectMessageReply(channelId, decision.reply);
+        posted = true;
+        sentMessageId = sent.messageId;
+        replied += 1;
+      } else if (decision.action === 'human') {
+        needsHuman += 1;
+      } else {
+        ignored += 1;
+      }
+
+      decisions.push({
+        channelId,
+        action: decision.action,
+        posted,
+        confidence: decision.confidence,
+        reason: decision.reason,
+        username: lastIncoming.username,
+        lastIncomingMessageId: lastIncoming.messageId,
+        messageId: sentMessageId,
+      });
+
+      state.processed[key] = {
+        at: new Date().toISOString(),
+        action: decision.action,
+        posted,
+        channelId,
+        lastIncomingMessageId: lastIncoming.messageId,
+      };
+      stateChanged = true;
+    } catch (err) {
+      decisions.push({
+        channelId,
+        action: 'human',
+        posted: false,
+        confidence: 0,
+        reason: 'DM auto-reply failed while evaluating this thread',
+        username: lastIncoming.username,
+        lastIncomingMessageId: lastIncoming.messageId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
-  const { warRoom: warRoomLink } = await loadProjectLinks();
-  const pendingText = pendingIncoming
-    .map((message) => `${message.username}: ${message.text}`)
-    .join('\n\n');
-  const context = `Private DM thread from ${window.argentinaDate} ARG:\n${buildDmContext(messages) || 'No messages today.'}`;
-  const deterministicDecision =
-    warRoomAvailabilityDecision(pendingText, warRoomLink, options.now || new Date()) ||
-    await evaluateSupportMessage(lastIncoming.username, pendingText, context, warRoomLink, warRoomIsOpenDay(options.now || new Date()));
+  if (stateChanged) {
+    await writeDmAutoReplyState(state);
+  }
+
+  const summary = {
+    enabled: true,
+    checked,
+    replied,
+    needsHuman,
+    ignored,
+    skippedProcessed,
+    decisions,
+  };
 
   await appendOperationLog({
-    action: 'dm_draft',
-    status: deterministicDecision.action === 'reply' ? 'success' : deterministicDecision.action === 'human' ? 'skipped' : 'success',
-    message: `Claude DM draft evaluated channel ${channelId}.`,
+    action: 'dm_auto_reply',
+    status: decisions.some((decision) => decision.error) ? 'error' : replied > 0 ? 'success' : 'skipped',
+    message:
+      replied > 0
+        ? `Auto-replied to ${replied} DM thread(s).`
+        : 'No safe DM auto-replies sent.',
     metadata: {
-      channelId,
-      action: deterministicDecision.action,
-      confidence: deterministicDecision.confidence,
-      pendingIncomingMessages: pendingIncoming.length,
-      lastIncomingMessageId: lastIncoming.messageId,
+      checked,
+      replied,
+      needsHuman,
+      ignored,
+      skippedProcessed,
+      repliedUsers: decisions.filter((decision) => decision.posted).map((decision) => decision.username),
+      humanUsers: decisions.filter((decision) => decision.action === 'human' && !decision.posted).map((decision) => decision.username),
+      errors: decisions.filter((decision) => decision.error).length,
     },
   });
 
-  return {
-    channelId,
-    action: deterministicDecision.action,
-    confidence: deterministicDecision.confidence,
-    reason: deterministicDecision.reason,
-    reply: deterministicDecision.action === 'reply' ? deterministicDecision.reply : '',
-    needsHuman: deterministicDecision.action === 'human',
-    guidelineSnippets: deterministicDecision.guidelineSnippets,
-    lastIncomingMessageId: lastIncoming.messageId,
-    pendingIncomingMessages: pendingIncoming.length,
-    messages,
-  };
+  return summary;
 }
 
 if (require.main === module) {

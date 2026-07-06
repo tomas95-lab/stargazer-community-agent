@@ -27,6 +27,8 @@ router.get('/', (_req: Request, res: Response) => {
     ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
     CRON_CONFIGURED: String(Boolean(process.env.CRON_SECRET)),
     AGENT_AUTO_POST: String(process.env.AGENT_AUTO_POST === 'true'),
+    DM_AUTO_REPLY: String(process.env.DM_AUTO_REPLY === 'true'),
+    DM_AUTO_REPLY_MAX: process.env.DM_AUTO_REPLY_MAX || '3',
   });
 });
 

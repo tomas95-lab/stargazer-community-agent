@@ -225,6 +225,14 @@ export interface DmReviewResult {
   channelsWithTodayMessages: number;
   messages: DmReviewMessage[];
   errors: string[];
+  autoReply?: {
+    enabled: boolean;
+    checked: number;
+    replied: number;
+    needsHuman: number;
+    ignored: number;
+    skippedProcessed: number;
+  };
 }
 
 export interface DmDraftResult {
@@ -310,7 +318,7 @@ export const api = {
     const query = params.toString();
     return request<DmReviewResult>(`/dm-review${query ? `?${query}` : ''}`);
   },
-  runDmReview: (opts: { messageCount?: number; maxChannels?: number; requestDelayMs?: number } = {}) =>
+  runDmReview: (opts: { messageCount?: number; maxChannels?: number; requestDelayMs?: number; autoReply?: boolean; maxAutoReplies?: number } = {}) =>
     request<DmReviewResult>('/dm-review/run', {
       method: 'POST',
       body: JSON.stringify(opts),

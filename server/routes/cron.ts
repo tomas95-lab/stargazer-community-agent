@@ -82,6 +82,8 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
       messageCount: Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50),
       maxChannels: Number(process.env.DM_REVIEW_MAX_CHANNELS || 5),
       requestDelayMs: Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500),
+      autoReply: process.env.DM_AUTO_REPLY === 'true',
+      maxAutoReplies: Number(process.env.DM_AUTO_REPLY_MAX || 3),
     });
     res.json({ ok: true, result });
   } catch (err) {

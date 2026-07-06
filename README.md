@@ -11,7 +11,7 @@ Internal community-management toolkit for Stargazer Axiom. It generates daily th
 - Writes an operation log for publishes, chat sends, reminders, and data edits.
 - Exposes community actions through an MCP server.
 - Includes a Claude-powered community agent for today's chat messages.
-- Reviews today's direct-message threads and can draft DM replies with Claude without auto-posting.
+- Reviews today's direct-message threads and can auto-reply to safe DMs with the same Claude filters as Community.
 - Sends browser notifications from the dashboard when new Community or DM items are detected.
 
 ## Project Shape
@@ -71,6 +71,8 @@ AGENT_MIN_CONFIDENCE=0.50
 DM_REVIEW_MESSAGE_COUNT=50
 DM_REVIEW_MAX_CHANNELS=5
 DM_REVIEW_REQUEST_DELAY_MS=1500
+DM_AUTO_REPLY=true
+DM_AUTO_REPLY_MAX=3
 DISCOURSE_RATE_LIMIT_RETRIES=2
 DISCOURSE_RATE_LIMIT_MAX_WAIT_SECONDS=30
 DAILY_PUBLISH_POST_CHAT=true
@@ -162,7 +164,7 @@ npm run jobs:all        # reminders + daily publish only when DAILY_PUBLISH_ENAB
 
 The Community Agent checks only today's Argentina-day messages. It reads the public community chat, retrieves relevant snippets from `data/project-guidelines.txt`, and asks Claude whether to reply, ignore, or route to a human. Claude is instructed to answer only when the guideline/context supports the reply.
 
-The DM review job checks up to 5 active direct-message channels and stores today's full DM thread timeline from the current Argentina day in `output/dm-review-YYYY-MM-DD.json`. It does not answer DMs automatically. The UI can ask Claude for a draft reply per DM thread, then a human sends it manually.
+The DM review job checks up to 5 active direct-message channels and stores today's full DM thread timeline from the current Argentina day in `output/dm-review-YYYY-MM-DD.json`. When `DM_AUTO_REPLY=true`, it can auto-reply to safe pending DMs using the same Claude filters as the Community Agent. The UI can still ask Claude for a draft reply per DM thread and send replies manually.
 
 The header bell enables browser notifications on the current Mac. Notifications are triggered from `output/operations-log.json` when the agent finds new Community candidates, posts an automatic Community reply, or detects new DM message IDs. The dashboard must be open in the browser for this no-cost local notification mode.
 
@@ -207,7 +209,7 @@ For production cron, use `DATA_STORE=github` with `GITHUB_TOKEN` so the publish 
 
 Vercel calls `/api/cron/community-agent` roughly every 90 minutes between 10:00 and 19:00 Argentina time using UTC schedules in `vercel.json`.
 
-Vercel calls `/api/cron/dm-review` at 15:30 and 18:00 Argentina time. The job filters by the current Argentina day, so older DMs remain available for endpoint verification but are not included in the daily report. DM drafts are generated through `/api/dm-review/draft`, and replies are sent manually from the UI via `/api/dm-review/reply`; there is no DM auto-responder.
+Vercel calls `/api/cron/dm-review` at 15:30 and 18:00 Argentina time. The job filters by the current Argentina day, so older DMs remain available for endpoint verification but are not included in the daily report. If `DM_AUTO_REPLY=true`, safe DMs are answered automatically with the same confidence, guideline, English-only, sensitive-topic, and signature checks used by the Community Agent. DM drafts are still available through `/api/dm-review/draft`, and manual replies are sent from the UI via `/api/dm-review/reply`.
 
 Production cron schedule:
 

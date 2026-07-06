@@ -15,6 +15,8 @@ const LABELS: Record<string, string> = {
   ANTHROPIC_MODEL: 'Claude Model',
   CRON_CONFIGURED: 'Cron Configured',
   AGENT_AUTO_POST: 'Agent Auto Post',
+  DM_AUTO_REPLY: 'DM Auto Reply',
+  DM_AUTO_REPLY_MAX: 'DM Auto Reply Max',
 };
 
 const AUTOMATION_SCHEDULE = [

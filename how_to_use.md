@@ -231,6 +231,8 @@ Control de volumen:
 AGENT_MAX_ANSWERS=4
 AGENT_MESSAGE_COUNT=50
 AGENT_MIN_CONFIDENCE=0.50
+DM_AUTO_REPLY=true
+DM_AUTO_REPLY_MAX=3
 ```
 
 En Vercel, `vercel.json` programa `/api/cron/daily-thread` a las 10:00 y 11:00 AM ARG. El segundo horario funciona como retry: si `output/published-url-YYYY-MM-DD.txt` ya existe, el job saltea la publicación para no duplicar. En Hobby, Vercel puede ejecutar los crons en cualquier momento dentro de la hora configurada, por eso el retry vive en la hora siguiente.
@@ -239,7 +241,7 @@ Para producción, usá `DATA_STORE=github` con `GITHUB_TOKEN` para que ese marke
 
 También programa `/api/cron/community-agent` aproximadamente cada 90 minutos entre 10 AM y 7 PM ARG. Vercel usa cron en UTC, por eso hay varias entradas horarias.
 
-También programa `/api/cron/dm-review` a las 3:30 PM y 6:00 PM ARG. Este job revisa como máximo 5 canales DM activos del día Argentina actual, guarda el timeline de mensajes del día en `output/dm-review-YYYY-MM-DD.json` y no responde automáticamente. Desde la UI se puede pedir un draft de Claude por conversación; las respuestas a DMs se envían manualmente, una conversación a la vez.
+También programa `/api/cron/dm-review` a las 3:30 PM y 6:00 PM ARG. Este job revisa como máximo 5 canales DM activos del día Argentina actual y guarda el timeline de mensajes del día en `output/dm-review-YYYY-MM-DD.json`. Si `DM_AUTO_REPLY=true`, responde automáticamente solo DMs seguros con los mismos filtros del Community Agent: guideline, confianza mínima, inglés, temas sensibles, estado procesado y firma. Desde la UI se puede pedir un draft de Claude por conversación; las respuestas manuales siguen disponibles una conversación a la vez.
 
 ### Horarios De Ejecución
 
@@ -268,6 +270,7 @@ La campana del header activa notificaciones del navegador en la Mac actual. Avis
 | `output/published-url-YYYY-MM-DD.txt` | URL publicada |
 | `output/dm-review-YYYY-MM-DD.json` | Conversaciones DM detectadas en el día Argentina actual |
 | `output/dm-review-notification-state.json` | Message IDs de DMs ya notificados en el día Argentina actual |
+| `output/dm-auto-reply-state.json` | Últimos DMs ya evaluados/respondidos por auto-reply |
 | `output/operations-log.json` | Log de acciones operativas |
 | `output/community-agent-state.json` | Mensajes ya procesados por el Community Agent |
 
