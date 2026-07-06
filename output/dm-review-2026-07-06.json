@@ -1,0 +1,34 @@
+{
+  "mode": "dm-review",
+  "scanMode": "full",
+  "generatedAt": "2026-07-06T15:29:10.825Z",
+  "window": {
+    "argentinaDate": "2026-07-06",
+    "startUtc": "2026-07-06T03:00:00.000Z",
+    "endUtc": "2026-07-07T03:00:00.000Z"
+  },
+  "totalDirectChannels": 55,
+  "scannedChannels": 12,
+  "skippedInactiveChannels": 43,
+  "incomingMessages": 1,
+  "channelsWithTodayMessages": 1,
+  "messages": [
+    {
+      "channelId": 855952,
+      "channelTitle": "latam.coder2366",
+      "messageId": 27692973,
+      "username": "latam.coder2366",
+      "name": "Warner Bonilla Latam Coder 2366",
+      "createdAt": "2026-07-06T15:10:30Z",
+      "text": "Hi, @tomas.ruiz_OBIC . Did you have a good weekend? I'm warner bonilla. I didn't receive access yet and can't start the task. Please check this.\nThanks.",
+      "peers": [
+        {
+          "username": "latam.coder2366",
+          "id": 2604311,
+          "name": "Warner Bonilla Latam Coder 2366"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
