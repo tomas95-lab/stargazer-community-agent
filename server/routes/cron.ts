@@ -81,6 +81,7 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
     const result = await runDmReviewJob({
       messageCount: Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50),
       maxChannels: Number(process.env.DM_REVIEW_MAX_CHANNELS || 100),
+      requestDelayMs: Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500),
     });
     res.json({ ok: true, result });
   } catch (err) {

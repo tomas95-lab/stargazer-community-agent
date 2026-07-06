@@ -50,12 +50,23 @@ export interface DiscourseChatUser {
   name?: string;
 }
 
+export interface DiscourseChannelLastMessage {
+  id: number;
+  message?: string;
+  cooked?: string;
+  excerpt?: string;
+  chat_channel_id?: number;
+  thread_id?: number | null;
+  user?: DiscourseChatMessage['user'];
+  created_at: string;
+}
+
 export interface DiscourseDirectMessageChannel {
   id: number;
   title?: string | null;
   slug?: string | null;
   unicode_title?: string | null;
-  last_message?: DiscourseChatMessage;
+  last_message?: DiscourseChannelLastMessage;
   last_message_id?: number;
   last_message_created_at?: string;
   current_user_membership?: Record<string, unknown>;
@@ -111,7 +122,43 @@ export class DiscourseClient {
     };
   }
 
-  private async request<T>(path: string, init?: RequestInit): Promise<T> {
+  private rateLimitMaxWaitMs(): number {
+    const seconds = Number(process.env.DISCOURSE_RATE_LIMIT_MAX_WAIT_SECONDS || 30);
+    return Math.max(0, Number.isFinite(seconds) ? seconds * 1000 : 30000);
+  }
+
+  private rateLimitRetryCount(): number {
+    const retries = Number(process.env.DISCOURSE_RATE_LIMIT_RETRIES || 2);
+    return Math.max(0, Number.isFinite(retries) ? Math.floor(retries) : 2);
+  }
+
+  private parseRateLimitWaitMs(res: Response, body: string): number {
+    const retryAfter = Number(res.headers.get('retry-after'));
+    if (Number.isFinite(retryAfter)) {
+      return Math.min(this.rateLimitMaxWaitMs(), Math.max(0, retryAfter * 1000));
+    }
+
+    try {
+      const parsed = JSON.parse(body) as { extras?: { wait_seconds?: unknown } };
+      const waitSeconds = Number(parsed.extras?.wait_seconds);
+      if (Number.isFinite(waitSeconds)) {
+        return Math.min(this.rateLimitMaxWaitMs(), Math.max(0, waitSeconds * 1000));
+      }
+    } catch {
+      // Fall through to the text fallback below.
+    }
+
+    const match = body.match(/wait\s+(\d+)\s+seconds?/i);
+    const waitSeconds = match ? Number(match[1]) : 5;
+    return Math.min(this.rateLimitMaxWaitMs(), Math.max(0, waitSeconds * 1000));
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    if (ms <= 0) return;
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async request<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: {
@@ -122,6 +169,11 @@ export class DiscourseClient {
 
     if (!res.ok) {
       const body = await res.text();
+      const method = (init?.method || 'GET').toUpperCase();
+      if (res.status === 429 && method === 'GET' && attempt < this.rateLimitRetryCount()) {
+        await this.sleep(this.parseRateLimitWaitMs(res, body));
+        return this.request<T>(path, init, attempt + 1);
+      }
       throw new Error(`Discourse API error ${res.status}: ${body.slice(0, 500)}`);
     }
 

@@ -4,6 +4,7 @@ import {
   IconCalendarEvent,
   IconDashboard,
   IconHistory,
+  IconInbox,
   IconInnerShadowTop,
   IconLink,
   IconListDetails,
@@ -52,6 +53,11 @@ const data = {
       title: "Community Agent",
       url: "/agent",
       icon: IconRobot,
+    },
+    {
+      title: "DM Review",
+      url: "/dms",
+      icon: IconInbox,
     },
     {
       title: "Sessions",

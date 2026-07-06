@@ -191,6 +191,41 @@ export interface CommunityAgentOverview {
   };
 }
 
+export interface DmReviewPeer {
+  id?: number;
+  username: string;
+  name?: string;
+}
+
+export interface DmReviewMessage {
+  channelId: number;
+  channelTitle?: string | null;
+  messageId: number;
+  username: string;
+  name?: string;
+  createdAt: string;
+  text: string;
+  peers: DmReviewPeer[];
+}
+
+export interface DmReviewResult {
+  mode: 'dm-review';
+  scanMode: 'quick' | 'full';
+  generatedAt: string;
+  window: {
+    argentinaDate: string;
+    startUtc: string;
+    endUtc: string;
+  };
+  totalDirectChannels: number;
+  scannedChannels: number;
+  skippedInactiveChannels: number;
+  incomingMessages: number;
+  channelsWithTodayMessages: number;
+  messages: DmReviewMessage[];
+  errors: string[];
+}
+
 export const api = {
   getTopics: () => request<Topic[]>('/topics'),
   getToday: () => request<{ date: string; topic: Topic | null }>('/topics/today'),
@@ -241,6 +276,19 @@ export const api = {
     markProcessed?: boolean;
   }) =>
     request<CommunityAgentResult>('/community-agent/run', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
+  getDmReview: (opts: { messageCount?: number; maxChannels?: number; fullScan?: boolean } = {}) => {
+    const params = new URLSearchParams();
+    if (opts.messageCount) params.set('messageCount', String(opts.messageCount));
+    if (opts.maxChannels) params.set('maxChannels', String(opts.maxChannels));
+    if (opts.fullScan) params.set('fullScan', 'true');
+    const query = params.toString();
+    return request<DmReviewResult>(`/dm-review${query ? `?${query}` : ''}`);
+  },
+  runDmReview: (opts: { messageCount?: number; maxChannels?: number; requestDelayMs?: number } = {}) =>
+    request<DmReviewResult>('/dm-review/run', {
       method: 'POST',
       body: JSON.stringify(opts),
     }),

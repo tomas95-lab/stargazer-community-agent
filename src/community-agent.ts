@@ -659,7 +659,7 @@ async function askClaude(
     action: finalAction,
     confidence,
     reason: nonEnglishReply
-      ? 'Model reply failed the English-only check, escalated to human'
+      ? 'Claude reply failed the English-only check, escalated to human'
       : typeof parsed.reason === 'string'
         ? parsed.reason
         : 'No reason returned',

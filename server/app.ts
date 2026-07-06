@@ -10,6 +10,7 @@ import commsRouter from './routes/comms';
 import webinarsRouter from './routes/webinars';
 import syncRouter from './routes/sync';
 import communityAgentRouter from './routes/community-agent';
+import dmReviewRouter from './routes/dm-review';
 import cronRouter from './routes/cron';
 
 const app = express();
@@ -26,6 +27,7 @@ app.use('/api/comms', commsRouter);
 app.use('/api/webinars', webinarsRouter);
 app.use('/api/sync', syncRouter);
 app.use('/api/community-agent', communityAgentRouter);
+app.use('/api/dm-review', dmReviewRouter);
 app.use('/api/cron', cronRouter);
 
 const uiBuild = path.resolve(__dirname, '../ui/dist');

@@ -8,6 +8,7 @@ const TITLES: Record<string, string> = {
   "/topics": "Topics",
   "/comms": "Comms Automator",
   "/agent": "Community Agent",
+  "/dms": "DM Review",
   "/webinars": "Sessions",
   "/links": "Link Manager",
   "/history": "History",

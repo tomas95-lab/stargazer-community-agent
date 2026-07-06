@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import CommsAutomator from "@/pages/CommsAutomator"
 import CommunityAgent from "@/pages/CommunityAgent"
 import Dashboard from "@/pages/Dashboard"
+import DirectMessages from "@/pages/DirectMessages"
 import History from "@/pages/History"
 import LinkManager from "@/pages/LinkManager"
 import Settings from "@/pages/Settings"
@@ -37,6 +38,7 @@ export default function App() {
                     <Route path="/topics" element={<TopicEditor />} />
                     <Route path="/comms" element={<CommsAutomator />} />
                     <Route path="/agent" element={<CommunityAgent />} />
+                    <Route path="/dms" element={<DirectMessages />} />
                     <Route path="/webinars" element={<WebinarScheduler />} />
                     <Route path="/links" element={<LinkManager />} />
                     <Route path="/history" element={<History />} />

@@ -15,6 +15,7 @@ import { appendOperationLog } from './operations-log';
 const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const DEFAULT_MESSAGE_COUNT = Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50);
 const DEFAULT_MAX_CHANNELS = Number(process.env.DM_REVIEW_MAX_CHANNELS || 100);
+const DEFAULT_REQUEST_DELAY_MS = Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500);
 
 export interface DmReviewWindow {
   argentinaDate: string;
@@ -41,6 +42,7 @@ export interface DmReviewMessage {
 
 export interface DmReviewResult {
   mode: 'dm-review';
+  scanMode: 'quick' | 'full';
   generatedAt: string;
   window: DmReviewWindow;
   totalDirectChannels: number;
@@ -57,6 +59,8 @@ export interface DmReviewOptions {
   messageCount?: number;
   maxChannels?: number;
   writeReport?: boolean;
+  fullScan?: boolean;
+  requestDelayMs?: number;
 }
 
 function argentinaDateParts(date: Date): { year: number; month: number; day: number; label: string } {
@@ -110,6 +114,11 @@ function shouldScanChannel(channel: DiscourseDirectMessageChannel, window: { sta
   return !Number.isFinite(time) || time >= window.start.getTime();
 }
 
+async function sleep(ms: number): Promise<void> {
+  if (ms <= 0) return;
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function stripHtml(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, '\n')
@@ -127,6 +136,12 @@ function stripHtml(html: string): string {
 
 function messageText(message: DiscourseChatMessage): string {
   return (message.message || stripHtml(message.cooked || message.excerpt || '')).trim();
+}
+
+function hasMessageUser(
+  message: DiscourseDirectMessageChannel['last_message'] | undefined
+): message is DiscourseChatMessage {
+  return Boolean(message?.user?.username && typeof message.message === 'string');
 }
 
 function addUsers(target: Map<string, DmReviewPeer>, users: DiscourseChatUser[] | undefined): void {
@@ -194,15 +209,23 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
   const window = getArgentinaDayWindow(options.now || new Date());
   const messageCount = options.messageCount ?? DEFAULT_MESSAGE_COUNT;
   const maxChannels = options.maxChannels ?? DEFAULT_MAX_CHANNELS;
+  const fullScan = options.fullScan ?? true;
+  const requestDelayMs = Math.max(0, options.requestDelayMs ?? DEFAULT_REQUEST_DELAY_MS);
   const errors: string[] = [];
   const directChannels = await client.readDirectMessageChannels();
   const channelsToScan = directChannels.filter((channel) => shouldScanChannel(channel, window)).slice(0, maxChannels);
   const messages: DmReviewMessage[] = [];
   let channelsWithTodayMessages = 0;
 
-  for (const channel of channelsToScan) {
+  for (const [index, channel] of channelsToScan.entries()) {
     try {
-      const channelMessages = await client.readChatMessages(String(channel.id), messageCount);
+      if (fullScan && index > 0) await sleep(requestDelayMs);
+
+      const channelMessages = fullScan
+        ? await client.readChatMessages(String(channel.id), messageCount)
+        : hasMessageUser(channel.last_message)
+          ? [channel.last_message]
+          : [];
       const todayIncoming = filterTodayIncomingDmMessages(channelMessages, ownUsername, window);
       if (todayIncoming.length > 0) channelsWithTodayMessages += 1;
       for (const message of todayIncoming) {
@@ -217,6 +240,7 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
 
   return {
     mode: 'dm-review',
+    scanMode: fullScan ? 'full' : 'quick',
     generatedAt: new Date().toISOString(),
     window: {
       argentinaDate: window.argentinaDate,
@@ -234,7 +258,7 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
 }
 
 export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmReviewResult> {
-  const result = await fetchTodayDmReview(options);
+  const result = await fetchTodayDmReview({ ...options, fullScan: options.fullScan ?? true });
 
   if (options.writeReport !== false) {
     await writeDataJSON(
