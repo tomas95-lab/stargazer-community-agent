@@ -37,6 +37,8 @@ Variables principales:
 | `DM_REVIEW_MESSAGE_COUNT` | Cantidad de mensajes recientes a leer por DM |
 | `DM_REVIEW_MAX_CHANNELS` | Máximo de canales DM activos a revisar por corrida |
 | `DM_REVIEW_REQUEST_DELAY_MS` | Pausa entre canales DM durante el scan completo |
+| `DM_AGENT_AUTO_POST` | `true` para que el DM Agent responda solo cuando la confianza de Claude supera `AGENT_MIN_CONFIDENCE` |
+| `DM_AGENT_MAX_ANSWERS` | Máximo de DMs que Claude analiza por corrida |
 | `DISCOURSE_RATE_LIMIT_RETRIES` | Reintentos GET cuando Discourse devuelve rate limit |
 | `DISCOURSE_RATE_LIMIT_MAX_WAIT_SECONDS` | Espera máxima por rate limit antes de reintentar |
 | `DAILY_PUBLISH_ENABLED` | Habilita publish dentro de `jobs:all` |
@@ -236,6 +238,29 @@ También programa `/api/cron/community-agent` aproximadamente cada 90 minutos en
 
 También programa `/api/cron/dm-review` a las 3:30 PM y 6:00 PM ARG. Este job revisa DMs entrantes del día Argentina actual, guarda el reporte en `output/dm-review-YYYY-MM-DD.json` y no responde automáticamente. Para evitar rate limits de Discourse, la UI carga un preview liviano y el scan completo espera entre canales.
 
+## DM Agent
+
+Además del review de solo lectura, `/api/cron/dm-agent` corre cada ~90 minutos entre 10 AM y 7 PM ARG (mismos horarios que el Community Agent) y responde DMs con el mismo criterio de confianza: si Claude devuelve `confidence >= AGENT_MIN_CONFIDENCE` y `DM_AGENT_AUTO_POST=true`, contesta solo; si no, la conversación queda marcada como `needsHuman` para que la revises vos. Detecta como candidato cualquier canal DM cuyo último mensaje de hoy sea de la otra persona (todavía no le contestaste).
+
+```text
+GET  /api/dm-agent/overview?messageCount=50&maxChannels=100
+POST /api/dm-agent/run
+```
+
+Ejemplo body:
+
+```json
+{ "post": false, "maxAnswers": 4, "messageCount": 50, "maxChannels": 100, "skipProcessed": true }
+```
+
+También se puede correr en local:
+
+```bash
+npm run job:dm-agent -- --post
+```
+
+Sin `--post` corre en modo sugerencia (no manda nada).
+
 ## Archivos Generados
 
 | Archivo | Contenido |
@@ -245,7 +270,8 @@ También programa `/api/cron/dm-review` a las 3:30 PM y 6:00 PM ARG. Este job re
 | `output/published-url-YYYY-MM-DD.txt` | URL publicada |
 | `output/dm-review-YYYY-MM-DD.json` | DMs entrantes detectados en el día Argentina actual |
 | `output/operations-log.json` | Log de acciones operativas |
-| `output/community-agent-state.json` | Mensajes ya procesados por el agente |
+| `output/community-agent-state.json` | Mensajes ya procesados por el Community Agent |
+| `output/dm-agent-state.json` | DMs ya procesados por el DM Agent |
 
 ## Tests
 

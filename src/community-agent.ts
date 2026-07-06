@@ -19,6 +19,8 @@ const REPLY_LOOKAHEAD_MINUTES = 45;
 const STATE_FILE = 'output/community-agent-state.json';
 const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const WAR_ROOM_OPEN_MINUTES = 11 * 60 + 15;
+const WAR_ROOM_BREAKOUT_ROOM = 'Stargazer - Team';
+const WAR_ROOM_BREAKOUT_NOTICE = `Once you are in the War Room, join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`;
 const WAR_ROOM_WEEKEND_NOTICE =
   'Today is a weekend day in Argentina, so the War Room is closed. Please come back on Monday between 11:15 AM and 7:00 PM ARG for live support.';
 
@@ -181,11 +183,11 @@ function isArgentinaWeekend(now = new Date()): boolean {
   return day === 0 || day === 6;
 }
 
-function warRoomIsOpenDay(now = new Date()): boolean {
+export function warRoomIsOpenDay(now = new Date()): boolean {
   return !isArgentinaWeekend(now);
 }
 
-function isWithinOperatingHours(now = new Date()): boolean {
+export function isWithinOperatingHours(now = new Date()): boolean {
   const minutes = argentinaMinutes(now);
   return minutes >= 10 * 60 && minutes <= 19 * 60;
 }
@@ -526,8 +528,13 @@ function removeWarRoomLink(reply: string, warRoomLink: string): string {
   return reply
     .replaceAll(warRoomLink, '')
     .replace(/War Room link:\s*/gi, '')
+    .replace(new RegExp(WAR_ROOM_BREAKOUT_NOTICE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+function replyMentionsBreakoutRoom(reply: string): boolean {
+  return normalizeText(reply).includes(normalizeText(WAR_ROOM_BREAKOUT_ROOM));
 }
 
 function replyReferencesLiveSupport(reply: string, warRoomLink: string): boolean {
@@ -563,8 +570,12 @@ function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpe
     return removeWarRoomLink(trimmed, warRoomLink);
   }
 
-  if (replyIncludesWarRoomLink(trimmed, warRoomLink)) return trimmed;
-  return `${trimmed}\n\nWar Room link:\n${warRoomLink}`;
+  const withLink = replyIncludesWarRoomLink(trimmed, warRoomLink)
+    ? trimmed
+    : `${trimmed}\n\nWar Room link:\n${warRoomLink}`;
+
+  if (replyMentionsBreakoutRoom(withLink)) return withLink;
+  return `${withLink}\n\n${WAR_ROOM_BREAKOUT_NOTICE}`;
 }
 
 export function warRoomAvailabilityDecision(
@@ -603,8 +614,9 @@ export function warRoomAvailabilityDecision(
   };
 }
 
-async function askClaude(
-  item: CommunityAgentItem,
+export async function evaluateSupportMessage(
+  username: string,
+  message: string,
   context: string,
   warRoomLink: string,
   isWarRoomOpenDay: boolean,
@@ -612,7 +624,7 @@ async function askClaude(
   const apiKey = process.env.ANTHROPIC_API_KEY || '';
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
-  const snippets = await findProjectGuidelineSnippets(item.message, 4);
+  const snippets = await findProjectGuidelineSnippets(message, 4);
   const anthropic = new Anthropic({ apiKey });
 
   const response = await anthropic.messages.create({
@@ -637,7 +649,7 @@ async function askClaude(
         content: [
           `Today/context:\n${context || 'No recent context.'}`,
           `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
-          `Incoming community chat message from ${item.username}:\n${item.message}`,
+          `Incoming message from ${username}:\n${message}`,
         ].join('\n\n'),
       },
     ],
@@ -763,7 +775,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
   for (const item of candidates) {
     try {
       const decision = warRoomAvailabilityDecision(item.message, warRoomLink) ||
-        await askClaude(item, context, warRoomLink, isWarRoomOpenDay);
+        await evaluateSupportMessage(item.username, item.message, context, warRoomLink, isWarRoomOpenDay);
       let posted = false;
       if (post && decision.action === 'reply') {
         posted = await postDecision(client, channelId, decision.reply, item);

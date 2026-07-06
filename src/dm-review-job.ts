@@ -107,7 +107,7 @@ function lastMessageCreatedAt(channel: DiscourseDirectMessageChannel): string | 
   return channel.last_message_created_at || channel.last_message?.created_at;
 }
 
-function shouldScanChannel(channel: DiscourseDirectMessageChannel, window: { start: Date }): boolean {
+export function shouldScanChannel(channel: DiscourseDirectMessageChannel, window: { start: Date }): boolean {
   const lastAt = lastMessageCreatedAt(channel);
   if (!lastAt) return true;
   const time = new Date(lastAt).getTime();

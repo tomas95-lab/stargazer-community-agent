@@ -17,6 +17,7 @@
     "mcp": "node node_modules/tsx/dist/cli.mjs src/mcp-server.ts",
     "job:daily": "node node_modules/tsx/dist/cli.mjs src/daily-publish-job.ts",
     "job:dms": "node node_modules/tsx/dist/cli.mjs src/dm-review-job.ts",
+    "job:dm-agent": "node node_modules/tsx/dist/cli.mjs src/dm-agent.ts",
     "job:webinars": "node node_modules/tsx/dist/cli.mjs src/webinar-reminder.ts",
     "jobs:all": "node node_modules/tsx/dist/cli.mjs src/run-community-jobs.ts",
     "ai:respond": "node node_modules/tsx/dist/cli.mjs src/claude-responder.ts",

@@ -7,9 +7,44 @@ import {
   IconRefresh,
   IconUser,
 } from '@tabler/icons-react';
-import { api, type DmReviewMessage, type DmReviewResult } from '../api';
+import { api, type DmAgentDecision, type DmAgentResult, type DmReviewMessage, type DmReviewResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
+function DecisionTone(decision: DmAgentDecision): 'default' | 'secondary' | 'destructive' | 'outline' {
+  if (decision.error) return 'destructive';
+  if (decision.action === 'reply') return 'default';
+  if (decision.action === 'human') return 'secondary';
+  return 'outline';
+}
+
+function DmDecisionCard({ decision }: { decision: DmAgentDecision }) {
+  return (
+    <div className="sg-panel space-y-3 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Badge variant={DecisionTone(decision)}>{decision.error ? 'Error' : decision.action}</Badge>
+            {decision.posted && <Badge className="border-transparent bg-success text-success-foreground">Posted</Badge>}
+          </div>
+          <p className="mt-2 font-semibold text-foreground">{decision.peer.name || decision.username}</p>
+        </div>
+        <span className="text-xs text-muted-foreground">{Math.round(decision.confidence * 100)}%</span>
+      </div>
+
+      <p className="text-sm text-muted-foreground">{decision.message}</p>
+
+      {decision.reply && (
+        <div className="sg-panel-muted p-3">
+          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Agent reply</p>
+          <p className="whitespace-pre-wrap text-sm text-foreground">{decision.reply}</p>
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground">{decision.error || decision.reason}</p>
+    </div>
+  );
+}
 
 function formatArgTime(value: string): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -90,6 +125,13 @@ export default function DirectMessages() {
   const [error, setError] = useState('');
   const [reportSaved, setReportSaved] = useState(false);
 
+  const [agentResult, setAgentResult] = useState<DmAgentResult | null>(null);
+  const [agentCandidateCount, setAgentCandidateCount] = useState<number | null>(null);
+  const [agentRunning, setAgentRunning] = useState(false);
+  const [agentError, setAgentError] = useState('');
+  const [post, setPost] = useState(false);
+  const [skipProcessed, setSkipProcessed] = useState(true);
+
   const load = async () => {
     setLoading(true);
     setError('');
@@ -103,8 +145,18 @@ export default function DirectMessages() {
     }
   };
 
+  const loadAgentOverview = async () => {
+    try {
+      const overview = await api.getDmAgentOverview({ messageCount: 50, maxChannels: 100 });
+      setAgentCandidateCount(overview.candidates.length);
+    } catch (err) {
+      setAgentError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   useEffect(() => {
     void load();
+    void loadAgentOverview();
   }, []);
 
   const run = async () => {
@@ -117,6 +169,27 @@ export default function DirectMessages() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setRunning(false);
+    }
+  };
+
+  const runAgent = async () => {
+    setAgentRunning(true);
+    setAgentError('');
+    try {
+      const next = await api.runDmAgent({
+        post,
+        skipProcessed,
+        markProcessed: post,
+        maxAnswers: 4,
+        messageCount: 50,
+        maxChannels: 100,
+      });
+      setAgentResult(next);
+      await loadAgentOverview();
+    } catch (err) {
+      setAgentError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAgentRunning(false);
     }
   };
 
@@ -173,6 +246,54 @@ export default function DirectMessages() {
           <span>{error}</span>
         </div>
       )}
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-foreground">DM Agent</h2>
+          <p className="text-xs text-muted-foreground">{agentCandidateCount ?? '-'} pending reply</p>
+        </div>
+
+        <div className="sg-panel space-y-4 p-5">
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input type="checkbox" checked={skipProcessed} onChange={(e) => setSkipProcessed(e.target.checked)} className="accent-primary" />
+              Skip processed
+            </label>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input type="checkbox" checked={post} onChange={(e) => setPost(e.target.checked)} className="accent-primary" />
+              Send safe replies
+            </label>
+          </div>
+
+          <Button onClick={runAgent} disabled={agentRunning}>
+            {agentRunning ? 'Running Claude...' : 'Run Claude'}
+          </Button>
+
+          {agentError && (
+            <div className="sg-status-danger flex items-start gap-2 rounded-lg border p-4 text-sm">
+              <IconAlertCircle className="mt-0.5 size-4 shrink-0" />
+              <span>{agentError}</span>
+            </div>
+          )}
+
+          {agentResult && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                {agentResult.handled} handled · {agentResult.posted} sent · {agentResult.needsHuman} need a human
+              </p>
+              {agentResult.decisions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No pending DMs for Claude.</p>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {agentResult.decisions.map((decision) => (
+                    <DmDecisionCard key={decision.id} decision={decision} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
