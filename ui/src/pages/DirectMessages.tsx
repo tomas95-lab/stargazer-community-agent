@@ -6,9 +6,10 @@ import {
   IconInbox,
   IconRefresh,
   IconSend,
+  IconSparkles,
   IconUser,
 } from '@tabler/icons-react';
-import { api, type DmReviewMessage, type DmReviewResult } from '../api';
+import { api, type DmDraftResult, type DmReviewMessage, type DmReviewResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -65,37 +66,82 @@ function peerLabel(message: DmReviewMessage): string {
   return visiblePeers.map((peer) => peer.name || peer.username).join(', ') || message.channelTitle || 'Direct message';
 }
 
-function DmRow({
-  message,
+function threadLabel(messages: DmReviewMessage[]): string {
+  const incoming = messages.find((message) => message.incoming);
+  if (incoming) return senderLabel(incoming);
+  const first = messages[0];
+  return first ? peerLabel(first) : 'Direct message';
+}
+
+function DmThread({
+  messages,
   draft,
+  draftResult,
+  generating,
   sending,
   sent,
   onDraftChange,
+  onGenerateDraft,
   onSend,
 }: {
-  message: DmReviewMessage;
+  messages: DmReviewMessage[];
   draft: string;
+  draftResult?: DmDraftResult;
+  generating: boolean;
   sending: boolean;
   sent: boolean;
   onDraftChange: (value: string) => void;
+  onGenerateDraft: () => void;
   onSend: () => void;
 }) {
+  const channelId = messages[0]?.channelId;
+  const incomingCount = messages.filter((message) => message.incoming).length;
+
   return (
-    <div className="space-y-3 border-b border-border py-4 last:border-0">
-      <div className="grid gap-3 md:grid-cols-[minmax(180px,240px)_1fr_auto] md:items-start">
+    <div className="space-y-4 border-b border-border py-5 last:border-0">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <IconUser className="size-4 shrink-0 text-muted-foreground" />
-            <p className="truncate text-sm font-semibold text-foreground">{senderLabel(message)}</p>
+            <p className="truncate text-sm font-semibold text-foreground">{threadLabel(messages)}</p>
           </div>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{peerLabel(message)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Channel {channelId}</p>
         </div>
-        <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{message.text}</p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground md:justify-end">
-          <IconClock className="size-3.5" />
-          <span>{formatArgTime(message.createdAt)} ARG</span>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">{messages.length} today</Badge>
+          <Badge variant="secondary">{incomingCount} incoming</Badge>
         </div>
       </div>
+
+      <div className="space-y-2">
+        {messages.map((message) => (
+          <div
+            key={message.messageId}
+            className={`max-w-[860px] rounded-lg border px-3 py-2 ${
+              message.incoming
+                ? 'border-border bg-background text-foreground'
+                : 'ml-auto border-muted bg-muted/40 text-foreground'
+            }`}
+          >
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{message.incoming ? senderLabel(message) : 'You'}</span>
+              <span className="flex items-center gap-1">
+                <IconClock className="size-3.5" />
+                {formatArgTime(message.createdAt)} ARG
+              </span>
+            </div>
+            <p className="whitespace-pre-wrap text-sm leading-6">{message.text}</p>
+          </div>
+        ))}
+      </div>
+
+      {draftResult && draftResult.action !== 'reply' ? (
+        <div className="sg-status-warning rounded-lg border p-3 text-sm">
+          <p className="font-medium">{draftResult.action === 'human' ? 'Needs human review' : 'No pending reply needed'}</p>
+          <p className="mt-1 text-xs">{draftResult.reason}</p>
+        </div>
+      ) : null}
+
       <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-end">
         <textarea
           value={draft}
@@ -104,10 +150,16 @@ function DmRow({
           placeholder="Write a reply..."
           className="sg-input min-h-20 resize-y px-3 py-2 text-sm"
         />
-        <Button onClick={onSend} disabled={sending || !draft.trim()}>
-          <IconSend />
-          {sending ? 'Sending...' : sent ? 'Sent' : 'Send'}
-        </Button>
+        <div className="flex flex-wrap gap-2 md:justify-end">
+          <Button variant="outline" onClick={onGenerateDraft} disabled={generating || sending}>
+            <IconSparkles />
+            {generating ? 'Thinking...' : 'Ask Claude'}
+          </Button>
+          <Button onClick={onSend} disabled={sending || !draft.trim()}>
+            <IconSend />
+            {sending ? 'Sending...' : sent ? 'Sent' : 'Send'}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -120,15 +172,17 @@ export default function DirectMessages() {
   const [error, setError] = useState('');
   const [reportSaved, setReportSaved] = useState(false);
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
-  const [sendingReplyId, setSendingReplyId] = useState<number | null>(null);
-  const [sentReplyIds, setSentReplyIds] = useState<Record<number, boolean>>({});
+  const [draftResults, setDraftResults] = useState<Record<number, DmDraftResult>>({});
+  const [generatingDraftId, setGeneratingDraftId] = useState<number | null>(null);
+  const [sendingChannelId, setSendingChannelId] = useState<number | null>(null);
+  const [sentChannelIds, setSentChannelIds] = useState<Record<number, boolean>>({});
 
   const load = async () => {
     setLoading(true);
     setError('');
     setReportSaved(false);
     try {
-      setResult(await api.getDmReview({ messageCount: 50, maxChannels: 5 }));
+      setResult(await api.getDmReview({ messageCount: 50, maxChannels: 5, fullScan: true }));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -156,7 +210,7 @@ export default function DirectMessages() {
   const groupedMessages = useMemo(() => {
     const messages = result?.messages || [];
     return messages.reduce<Record<string, DmReviewMessage[]>>((acc, message) => {
-      const key = message.channelTitle || String(message.channelId);
+      const key = String(message.channelId);
       acc[key] = [...(acc[key] || []), message];
       return acc;
     }, {});
@@ -164,23 +218,39 @@ export default function DirectMessages() {
 
   const hasMessages = Boolean(result && result.messages.length > 0);
 
-  const updateDraft = (messageId: number, value: string) => {
-    setReplyDrafts((current) => ({ ...current, [messageId]: value }));
+  const updateDraft = (channelId: number, value: string) => {
+    setReplyDrafts((current) => ({ ...current, [channelId]: value }));
   };
 
-  const sendReply = async (message: DmReviewMessage) => {
-    const draft = replyDrafts[message.messageId] || '';
-    if (!draft.trim()) return;
-    setSendingReplyId(message.messageId);
+  const generateDraft = async (channelId: number) => {
+    setGeneratingDraftId(channelId);
     setError('');
     try {
-      await api.sendDmReply(message.channelId, draft);
-      setReplyDrafts((current) => ({ ...current, [message.messageId]: '' }));
-      setSentReplyIds((current) => ({ ...current, [message.messageId]: true }));
+      const result = await api.draftDmReply(channelId, { messageCount: 50 });
+      setDraftResults((current) => ({ ...current, [channelId]: result }));
+      if (result.action === 'reply' && result.reply.trim()) {
+        setReplyDrafts((current) => ({ ...current, [channelId]: result.reply }));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setSendingReplyId(null);
+      setGeneratingDraftId(null);
+    }
+  };
+
+  const sendReply = async (channelId: number) => {
+    const draft = replyDrafts[channelId] || '';
+    if (!draft.trim()) return;
+    setSendingChannelId(channelId);
+    setError('');
+    try {
+      await api.sendDmReply(channelId, draft);
+      setReplyDrafts((current) => ({ ...current, [channelId]: '' }));
+      setSentChannelIds((current) => ({ ...current, [channelId]: true }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSendingChannelId(null);
     }
   };
 
@@ -214,7 +284,7 @@ export default function DirectMessages() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={IconInbox} label="Incoming" value={result?.incomingMessages ?? '-'} sub="DMs today" />
+        <Stat icon={IconInbox} label="Messages" value={result?.messages.length ?? '-'} sub={`${result?.incomingMessages ?? '-'} incoming`} />
         <Stat icon={IconUser} label="Channels" value={result?.scannedChannels ?? '-'} sub={`${result?.totalDirectChannels ?? '-'} total`} />
         <Stat icon={IconClock} label="Window" value={result?.window.argentinaDate || '-'} sub={result ? `${formatArgDateTime(result.window.startUtc)} - ${formatArgDateTime(result.window.endUtc)}` : 'ARG day'} />
         <Stat icon={IconCheck} label="Matched" value={result?.channelsWithTodayMessages ?? '-'} sub={`${result?.skippedInactiveChannels ?? '-'} inactive skipped`} />
@@ -229,7 +299,7 @@ export default function DirectMessages() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-foreground">Incoming DMs</h2>
+          <h2 className="text-lg font-semibold text-foreground">DM Threads</h2>
           {result && <p className="text-xs text-muted-foreground">Updated {formatArgDateTime(result.generatedAt)} ARG</p>}
         </div>
 
@@ -238,30 +308,26 @@ export default function DirectMessages() {
             <p className="text-sm text-muted-foreground">Loading...</p>
           ) : hasMessages ? (
             <div className="space-y-6">
-              {Object.entries(groupedMessages).map(([channel, messages]) => (
-                <div key={channel}>
-                  <div className="mb-1 flex items-center justify-between gap-3">
-                    <p className="truncate text-sm font-semibold text-foreground">{channel}</p>
-                    <Badge variant="outline">{messages.length}</Badge>
-                  </div>
-                  <div>
-                    {messages.map((message) => (
-                      <DmRow
-                        key={message.messageId}
-                        message={message}
-                        draft={replyDrafts[message.messageId] || ''}
-                        sending={sendingReplyId === message.messageId}
-                        sent={Boolean(sentReplyIds[message.messageId])}
-                        onDraftChange={(value) => updateDraft(message.messageId, value)}
-                        onSend={() => void sendReply(message)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
+              {Object.entries(groupedMessages).map(([channel, messages]) => {
+                const channelId = Number(channel);
+                return (
+                  <DmThread
+                    key={channel}
+                    messages={messages}
+                    draft={replyDrafts[channelId] || ''}
+                    draftResult={draftResults[channelId]}
+                    generating={generatingDraftId === channelId}
+                    sending={sendingChannelId === channelId}
+                    sent={Boolean(sentChannelIds[channelId])}
+                    onDraftChange={(value) => updateDraft(channelId, value)}
+                    onGenerateDraft={() => void generateDraft(channelId)}
+                    onSend={() => void sendReply(channelId)}
+                  />
+                );
+              })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No incoming DMs found for today.</p>
+            <p className="text-sm text-muted-foreground">No DM messages found for today.</p>
           )}
         </div>
       </section>

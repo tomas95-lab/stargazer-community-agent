@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   directMessagePeers,
+  filterTodayDmMessages,
   filterTodayIncomingDmMessages,
   getArgentinaDayWindow,
 } from '../dist/dm-review-job.js';
@@ -39,6 +40,24 @@ test('DM review keeps only incoming messages from today in Argentina', () => {
   assert.deepEqual(
     filtered.map((item) => item.id),
     [2]
+  );
+});
+
+test('DM review keeps every message from today in a DM thread', () => {
+  const window = getArgentinaDayWindow(new Date('2026-07-06T18:30:00.000Z'));
+  const filtered = filterTodayDmMessages(
+    [
+      message(1, 'latam.coder1232', '2026-07-05T17:51:31.000Z', 'yesterday reference'),
+      message(2, 'latam.coder1232', '2026-07-06T15:51:00.000Z', 'first today message'),
+      message(3, 'latam.coder1232', '2026-07-06T18:56:35.000Z', 'second today message'),
+      message(4, 'tomas.ruiz_OBIC', '2026-07-06T19:00:00.000Z', 'manager response'),
+    ],
+    window
+  );
+
+  assert.deepEqual(
+    filtered.map((item) => item.id),
+    [2, 3, 4]
   );
 });
 

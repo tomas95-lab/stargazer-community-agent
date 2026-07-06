@@ -11,7 +11,7 @@ Internal community-management toolkit for Stargazer Axiom. It generates daily th
 - Writes an operation log for publishes, chat sends, reminders, and data edits.
 - Exposes community actions through an MCP server.
 - Includes a Claude-powered community agent for today's chat messages.
-- Reviews today's incoming direct messages without auto-replying.
+- Reviews today's direct-message threads and can draft DM replies with Claude without auto-posting.
 
 ## Project Shape
 
@@ -161,7 +161,7 @@ npm run jobs:all        # reminders + daily publish only when DAILY_PUBLISH_ENAB
 
 The Community Agent checks only today's Argentina-day messages. It reads the public community chat, retrieves relevant snippets from `data/project-guidelines.txt`, and asks Claude whether to reply, ignore, or route to a human. Claude is instructed to answer only when the guideline/context supports the reply.
 
-The DM review job checks up to 5 active direct-message channels and stores only incoming messages from the current Argentina day in `output/dm-review-YYYY-MM-DD.json`. It does not answer DMs automatically. The UI preview uses one lightweight channel request; manual and scheduled runs do a full scan with a delay between DM channel reads to avoid Discourse rate limits.
+The DM review job checks up to 5 active direct-message channels and stores today's full DM thread timeline from the current Argentina day in `output/dm-review-YYYY-MM-DD.json`. It does not answer DMs automatically. The UI can ask Claude for a draft reply per DM thread, then a human sends it manually.
 
 Refresh the guideline text after replacing the PDF:
 
@@ -186,6 +186,7 @@ GET  /api/community-agent/overview
 POST /api/community-agent/run
 GET  /api/dm-review
 POST /api/dm-review/run
+POST /api/dm-review/draft
 POST /api/dm-review/reply
 GET  /api/cron/daily-thread
 GET  /api/cron/community-agent
@@ -202,7 +203,7 @@ For production cron, use `DATA_STORE=github` with `GITHUB_TOKEN` so the publish 
 
 Vercel calls `/api/cron/community-agent` roughly every 90 minutes between 10:00 and 19:00 Argentina time using UTC schedules in `vercel.json`.
 
-Vercel calls `/api/cron/dm-review` at 15:30 and 18:00 Argentina time. The job filters by the current Argentina day, so older DMs remain available for endpoint verification but are not included in the daily report. DM replies are sent manually from the UI via `/api/dm-review/reply`; there is no DM auto-responder.
+Vercel calls `/api/cron/dm-review` at 15:30 and 18:00 Argentina time. The job filters by the current Argentina day, so older DMs remain available for endpoint verification but are not included in the daily report. DM drafts are generated through `/api/dm-review/draft`, and replies are sent manually from the UI via `/api/dm-review/reply`; there is no DM auto-responder.
 
 ## Current Caveats
 

@@ -206,6 +206,7 @@ export interface DmReviewMessage {
   createdAt: string;
   text: string;
   peers: DmReviewPeer[];
+  incoming: boolean;
 }
 
 export interface DmReviewResult {
@@ -224,6 +225,19 @@ export interface DmReviewResult {
   channelsWithTodayMessages: number;
   messages: DmReviewMessage[];
   errors: string[];
+}
+
+export interface DmDraftResult {
+  channelId: number;
+  action: 'reply' | 'human' | 'ignore';
+  confidence: number;
+  reason: string;
+  reply: string;
+  needsHuman: boolean;
+  guidelineSnippets: string[];
+  lastIncomingMessageId?: number;
+  pendingIncomingMessages: number;
+  messages: DmReviewMessage[];
 }
 
 export const api = {
@@ -283,7 +297,7 @@ export const api = {
     const params = new URLSearchParams();
     if (opts.messageCount) params.set('messageCount', String(opts.messageCount));
     if (opts.maxChannels) params.set('maxChannels', String(opts.maxChannels));
-    if (opts.fullScan) params.set('fullScan', 'true');
+    if (opts.fullScan === false) params.set('fullScan', 'false');
     const query = params.toString();
     return request<DmReviewResult>(`/dm-review${query ? `?${query}` : ''}`);
   },
@@ -296,5 +310,10 @@ export const api = {
     request<{ ok: boolean; channelId: number; messageId?: number }>('/dm-review/reply', {
       method: 'POST',
       body: JSON.stringify({ channelId, message }),
+    }),
+  draftDmReply: (channelId: number, opts: { messageCount?: number } = {}) =>
+    request<DmDraftResult>('/dm-review/draft', {
+      method: 'POST',
+      body: JSON.stringify({ channelId, messageCount: opts.messageCount }),
     }),
 };

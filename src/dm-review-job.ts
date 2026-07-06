@@ -11,6 +11,12 @@ import {
 } from './discourse-client';
 import { writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
+import {
+  evaluateSupportMessage,
+  warRoomAvailabilityDecision,
+  warRoomIsOpenDay,
+} from './community-agent';
+import { loadProjectLinks } from './links';
 
 const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const DEFAULT_MESSAGE_COUNT = Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50);
@@ -39,6 +45,7 @@ export interface DmReviewMessage {
   createdAt: string;
   text: string;
   peers: DmReviewPeer[];
+  incoming: boolean;
 }
 
 export interface DmReviewResult {
@@ -68,6 +75,19 @@ export interface DmReplyResult {
   ok: boolean;
   channelId: number;
   messageId?: number;
+}
+
+export interface DmDraftResult {
+  channelId: number;
+  action: 'reply' | 'human' | 'ignore';
+  confidence: number;
+  reason: string;
+  reply: string;
+  needsHuman: boolean;
+  guidelineSnippets: string[];
+  lastIncomingMessageId?: number;
+  pendingIncomingMessages: number;
+  messages: DmReviewMessage[];
 }
 
 function argentinaDateParts(date: Date): { year: number; month: number; day: number; label: string } {
@@ -184,7 +204,24 @@ export function filterTodayIncomingDmMessages(
   });
 }
 
-function summarizeMessage(channel: DiscourseDirectMessageChannel, message: DiscourseChatMessage): DmReviewMessage {
+export function filterTodayDmMessages(
+  messages: DiscourseChatMessage[],
+  window: { start: Date; end: Date }
+): DiscourseChatMessage[] {
+  return messages.filter((message) => isWithinWindow(message.created_at, window));
+}
+
+function isIncomingMessage(message: DiscourseChatMessage, ownUsername: string): boolean {
+  const normalizedOwnUsername = ownUsername.trim().toLowerCase();
+  if (!normalizedOwnUsername) return true;
+  return message.user?.username?.trim().toLowerCase() !== normalizedOwnUsername;
+}
+
+function summarizeMessage(
+  channel: DiscourseDirectMessageChannel,
+  message: DiscourseChatMessage,
+  ownUsername: string
+): DmReviewMessage {
   return {
     channelId: channel.id,
     channelTitle: channel.title,
@@ -194,6 +231,7 @@ function summarizeMessage(channel: DiscourseDirectMessageChannel, message: Disco
     createdAt: message.created_at,
     text: messageText(message),
     peers: directMessagePeers(channel),
+    incoming: isIncomingMessage(message, ownUsername),
   };
 }
 
@@ -206,7 +244,7 @@ function summarizeChannelLastMessage(
   if (!lastMessage || !isWithinWindow(lastMessage.created_at, window)) return null;
 
   const normalizedOwnUsername = ownUsername.trim().toLowerCase();
-  if (lastMessage.user?.username?.trim().toLowerCase() === normalizedOwnUsername) return null;
+  const incoming = !normalizedOwnUsername || lastMessage.user?.username?.trim().toLowerCase() !== normalizedOwnUsername;
 
   const text = channelLastMessageText(lastMessage);
   if (!text) return null;
@@ -223,6 +261,7 @@ function summarizeChannelLastMessage(
     createdAt: lastMessage.created_at,
     text,
     peers,
+    incoming,
   };
 }
 
@@ -265,10 +304,10 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
       if (index > 0) await sleep(requestDelayMs);
 
       const channelMessages = await client.readChatMessages(String(channel.id), messageCount);
-      const todayIncoming = filterTodayIncomingDmMessages(channelMessages, ownUsername, window);
-      if (todayIncoming.length > 0) channelsWithTodayMessages += 1;
-      for (const message of todayIncoming) {
-        messages.push(summarizeMessage(channel, message));
+      const todayMessages = filterTodayDmMessages(channelMessages, window);
+      if (todayMessages.length > 0) channelsWithTodayMessages += 1;
+      for (const message of todayMessages) {
+        messages.push(summarizeMessage(channel, message, ownUsername));
       }
     } catch (err) {
       errors.push(`Channel ${channel.id}: ${err instanceof Error ? err.message : String(err)}`);
@@ -289,7 +328,7 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
     totalDirectChannels: directChannels.length,
     scannedChannels: channelsToScan.length,
     skippedInactiveChannels: directChannels.length - channelsToScan.length,
-    incomingMessages: messages.length,
+    incomingMessages: messages.filter((message) => message.incoming).length,
     channelsWithTodayMessages,
     messages,
     errors,
@@ -350,6 +389,100 @@ export async function sendDirectMessageReply(channelId: number, message: string)
     ok: true,
     channelId,
     messageId,
+  };
+}
+
+function formatArgTime(value: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: ARG_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+
+function messageTime(message: DmReviewMessage): number {
+  return new Date(message.createdAt).getTime();
+}
+
+function buildDmContext(messages: DmReviewMessage[]): string {
+  return messages
+    .sort((left, right) => messageTime(left) - messageTime(right))
+    .map((message) => {
+      const direction = message.incoming ? 'user' : 'manager';
+      return `[${formatArgTime(message.createdAt)} ARG/${direction}/${message.username}]: ${message.text.slice(0, 700)}`;
+    })
+    .join('\n');
+}
+
+export async function draftDirectMessageReply(
+  channelId: number,
+  options: Pick<DmReviewOptions, 'messageCount' | 'now'> = {}
+): Promise<DmDraftResult> {
+  if (!Number.isFinite(channelId) || channelId <= 0) throw new Error('Invalid DM channel ID');
+
+  const { client, ownUsername } = createClient();
+  const window = getArgentinaDayWindow(options.now || new Date());
+  const messageCount = options.messageCount ?? DEFAULT_MESSAGE_COUNT;
+  const directChannels = await client.readDirectMessageChannels();
+  const channel = directChannels.find((item) => item.id === channelId) || { id: channelId };
+  const rawMessages = await client.readChatMessages(String(channelId), messageCount);
+  const messages = filterTodayDmMessages(rawMessages, window)
+    .map((message) => summarizeMessage(channel, message, ownUsername))
+    .sort((left, right) => messageTime(left) - messageTime(right));
+
+  const incoming = messages.filter((message) => message.incoming);
+  const lastOutgoing = [...messages].reverse().find((message) => !message.incoming);
+  const pendingIncoming = incoming.filter((message) => !lastOutgoing || messageTime(message) > messageTime(lastOutgoing));
+  const lastIncoming = pendingIncoming[pendingIncoming.length - 1] || incoming[incoming.length - 1];
+
+  if (!lastIncoming || pendingIncoming.length === 0) {
+    return {
+      channelId,
+      action: 'ignore',
+      confidence: 1,
+      reason: 'No pending incoming DM after the latest outgoing reply.',
+      reply: '',
+      needsHuman: false,
+      guidelineSnippets: [],
+      lastIncomingMessageId: lastIncoming?.messageId,
+      pendingIncomingMessages: 0,
+      messages,
+    };
+  }
+
+  const { warRoom: warRoomLink } = await loadProjectLinks();
+  const pendingText = pendingIncoming
+    .map((message) => `${message.username}: ${message.text}`)
+    .join('\n\n');
+  const context = `Private DM thread from ${window.argentinaDate} ARG:\n${buildDmContext(messages) || 'No messages today.'}`;
+  const deterministicDecision =
+    warRoomAvailabilityDecision(pendingText, warRoomLink, options.now || new Date()) ||
+    await evaluateSupportMessage(lastIncoming.username, pendingText, context, warRoomLink, warRoomIsOpenDay(options.now || new Date()));
+
+  await appendOperationLog({
+    action: 'dm_draft',
+    status: deterministicDecision.action === 'reply' ? 'success' : deterministicDecision.action === 'human' ? 'skipped' : 'success',
+    message: `Claude DM draft evaluated channel ${channelId}.`,
+    metadata: {
+      channelId,
+      action: deterministicDecision.action,
+      confidence: deterministicDecision.confidence,
+      pendingIncomingMessages: pendingIncoming.length,
+      lastIncomingMessageId: lastIncoming.messageId,
+    },
+  });
+
+  return {
+    channelId,
+    action: deterministicDecision.action,
+    confidence: deterministicDecision.confidence,
+    reason: deterministicDecision.reason,
+    reply: deterministicDecision.action === 'reply' ? deterministicDecision.reply : '',
+    needsHuman: deterministicDecision.action === 'human',
+    guidelineSnippets: deterministicDecision.guidelineSnippets,
+    lastIncomingMessageId: lastIncoming.messageId,
+    pendingIncomingMessages: pendingIncoming.length,
+    messages,
   };
 }
 

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { fetchTodayDmReview, runDmReviewJob, sendDirectMessageReply } from '../../src/dm-review-job';
+import { draftDirectMessageReply, fetchTodayDmReview, runDmReviewJob, sendDirectMessageReply } from '../../src/dm-review-job';
 import { requireAdminToken } from '../auth';
 
 const router = Router();
@@ -15,7 +15,7 @@ router.get('/', requireAdminToken, async (req: Request, res: Response) => {
     const result = await fetchTodayDmReview({
       messageCount: clampNumber(req.query.messageCount, 50, 1, 100),
       maxChannels: clampNumber(req.query.maxChannels, 5, 1, 5),
-      fullScan: req.query.fullScan === 'true',
+      fullScan: req.query.fullScan !== 'false',
       writeReport: false,
     });
     res.json(result);
@@ -42,6 +42,18 @@ router.post('/reply', requireAdminToken, async (req: Request, res: Response) => 
     const channelId = clampNumber(req.body?.channelId, 0, 1, Number.MAX_SAFE_INTEGER);
     const message = typeof req.body?.message === 'string' ? req.body.message : '';
     const result = await sendDirectMessageReply(channelId, message);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/draft', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const channelId = clampNumber(req.body?.channelId, 0, 1, Number.MAX_SAFE_INTEGER);
+    const result = await draftDirectMessageReply(channelId, {
+      messageCount: clampNumber(req.body?.messageCount, 50, 1, 100),
+    });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
