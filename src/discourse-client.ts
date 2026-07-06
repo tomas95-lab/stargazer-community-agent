@@ -17,6 +17,18 @@ export interface DiscourseChatMessage {
   excerpt?: string;
   chat_channel_id?: number;
   thread_id?: number | null;
+  thread?: {
+    id: number;
+    preview?: {
+      last_reply_created_at?: string;
+      last_reply_excerpt?: string;
+      last_reply_id?: number;
+      last_reply_user?: {
+        username: string;
+      };
+      reply_count?: number;
+    };
+  };
   in_reply_to_id?: number;
   reply_to_msg_id?: number;
   reply_to_message_id?: number;

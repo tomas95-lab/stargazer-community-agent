@@ -391,8 +391,16 @@ export function annotateProbableReplies(items: CommunityAgentItem[]): CommunityA
       .filter((reply): reply is CommunityAgentReplyEvidence => Boolean(reply))
       .slice(0, 3);
 
-    if (replies.length > 0) {
-      repliesByItemId.set(item.id, replies);
+    const existingReplies = item.probableReplies || [];
+    const mergedReplies = [...existingReplies];
+    for (const reply of replies) {
+      if (!mergedReplies.some((existing) => existing.id === reply.id)) {
+        mergedReplies.push(reply);
+      }
+    }
+
+    if (mergedReplies.length > 0) {
+      repliesByItemId.set(item.id, mergedReplies.slice(0, 3));
     }
   }
 
@@ -411,6 +419,24 @@ function shouldIgnoreMessage(text: string): boolean {
   return trimmed.length < 8 || trimmed.startsWith('🚨') || trimmed.startsWith('Hey team');
 }
 
+function threadPreviewReply(message: DiscourseChatMessage): CommunityAgentReplyEvidence | null {
+  const preview = message.thread?.preview;
+  if (!preview?.last_reply_id || !preview.last_reply_created_at || !preview.last_reply_user?.username) return null;
+  if (preview.last_reply_id === message.id) return null;
+
+  const replyText = stripHtml(preview.last_reply_excerpt || '');
+  if (!replyText) return null;
+
+  return {
+    id: `community:${preview.last_reply_id}`,
+    username: preview.last_reply_user.username,
+    message: replyText,
+    createdAt: preview.last_reply_created_at,
+    chatMessageId: preview.last_reply_id,
+    match: 'direct_reply',
+  };
+}
+
 async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions, 'includeCommunity' | 'onlyToday' | 'messageCount'>>): Promise<{
   items: CommunityAgentItem[];
   errors: string[];
@@ -426,6 +452,7 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
       const messages = await client.readChatMessages(channelId, options.messageCount);
       for (const msg of messages) {
         if (options.onlyToday && !isWithinWindow(msg.created_at, window)) continue;
+        const previewReply = threadPreviewReply(msg);
         items.push({
           id: `community:${msg.id}`,
           source: 'community',
@@ -436,6 +463,7 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
           threadId: msg.thread_id,
           replyToChatMessageId: replyTargetId(msg),
           isStaff: Boolean(msg.user.staff || msg.user.moderator || msg.user.admin),
+          probableReplies: previewReply ? [previewReply] : [],
         });
       }
     } catch (err) {

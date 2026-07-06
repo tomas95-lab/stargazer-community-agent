@@ -87,3 +87,30 @@ test('annotateProbableReplies ignores same-user followups and old messages', () 
 
   assert.deepEqual(annotated[0].probableReplies, []);
 });
+
+test('annotateProbableReplies preserves replies discovered from Discourse thread preview', () => {
+  const annotated = annotateProbableReplies([
+    {
+      ...item({
+        id: 'community:30',
+        username: 'learner',
+        message: 'Will the War Room open today?',
+        createdAt: '2026-07-06T14:00:00.000Z',
+        chatMessageId: 30,
+      }),
+      probableReplies: [
+        {
+          id: 'community:31',
+          username: 'ops',
+          message: 'Good morning, the war room will be open at 11:15 am arg time',
+          createdAt: '2026-07-06T14:05:00.000Z',
+          chatMessageId: 31,
+          match: 'direct_reply',
+        },
+      ],
+    },
+  ]);
+
+  assert.equal(annotated[0].probableReplies?.length, 1);
+  assert.equal(annotated[0].probableReplies?.[0].id, 'community:31');
+});
