@@ -107,7 +107,7 @@ export default function Settings() {
   const inputCls = 'sg-input cursor-not-allowed px-3 py-2 text-sm text-muted-foreground';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
         <span className="rounded-full border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Environment managed</span>
