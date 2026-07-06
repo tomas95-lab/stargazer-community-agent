@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { fetchTodayDmReview, runDmReviewJob } from '../../src/dm-review-job';
+import { fetchTodayDmReview, runDmReviewJob, sendDirectMessageReply } from '../../src/dm-review-job';
 import { requireAdminToken } from '../auth';
 
 const router = Router();
@@ -31,6 +31,17 @@ router.post('/run', requireAdminToken, async (req: Request, res: Response) => {
       maxChannels: clampNumber(req.body?.maxChannels, 100, 1, 200),
       requestDelayMs: clampNumber(req.body?.requestDelayMs, Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500), 0, 10000),
     });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/reply', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const channelId = clampNumber(req.body?.channelId, 0, 1, Number.MAX_SAFE_INTEGER);
+    const message = typeof req.body?.message === 'string' ? req.body.message : '';
+    const result = await sendDirectMessageReply(channelId, message);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });

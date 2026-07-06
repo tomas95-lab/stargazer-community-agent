@@ -186,6 +186,7 @@ GET  /api/community-agent/overview
 POST /api/community-agent/run
 GET  /api/dm-review
 POST /api/dm-review/run
+POST /api/dm-review/reply
 GET  /api/cron/daily-thread
 GET  /api/cron/community-agent
 GET  /api/cron/dm-review
@@ -201,7 +202,7 @@ For production cron, use `DATA_STORE=github` with `GITHUB_TOKEN` so the publish 
 
 Vercel calls `/api/cron/community-agent` roughly every 90 minutes between 10:00 and 19:00 Argentina time using UTC schedules in `vercel.json`.
 
-Vercel calls `/api/cron/dm-review` at 15:30 and 18:00 Argentina time. The job filters by the current Argentina day, so older DMs remain available for endpoint verification but are not included in the daily report.
+Vercel calls `/api/cron/dm-review` at 15:30 and 18:00 Argentina time. The job filters by the current Argentina day, so older DMs remain available for endpoint verification but are not included in the daily report. DM replies are sent manually from the UI via `/api/dm-review/reply`; there is no DM auto-responder.
 
 ## Current Caveats
 

@@ -226,53 +226,6 @@ export interface DmReviewResult {
   errors: string[];
 }
 
-export interface DmAgentCandidate {
-  id: string;
-  channelId: number;
-  channelTitle?: string | null;
-  peer: DmReviewPeer;
-  username: string;
-  message: string;
-  createdAt: string;
-}
-
-export interface DmAgentDecision extends DmAgentCandidate {
-  action: CommunityAgentAction;
-  confidence: number;
-  reason: string;
-  reply: string;
-  posted: boolean;
-  needsHuman: boolean;
-  guidelineSnippets: string[];
-  error?: string;
-}
-
-export interface DmAgentOverview {
-  candidates: DmAgentCandidate[];
-  totalDirectChannels: number;
-  scannedChannels: number;
-  errors: string[];
-  guidelines: {
-    available: boolean;
-    characters: number;
-  };
-}
-
-export interface DmAgentResult {
-  mode: 'suggestion' | 'post';
-  generatedAt: string;
-  withinSchedule: boolean;
-  totalDirectChannels: number;
-  scannedChannels: number;
-  candidates: number;
-  handled: number;
-  posted: number;
-  needsHuman: number;
-  ignored: number;
-  decisions: DmAgentDecision[];
-  errors: string[];
-}
-
 export const api = {
   getTopics: () => request<Topic[]>('/topics'),
   getToday: () => request<{ date: string; topic: Topic | null }>('/topics/today'),
@@ -339,24 +292,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(opts),
     }),
-  getDmAgentOverview: (opts: { messageCount?: number; maxChannels?: number } = {}) => {
-    const params = new URLSearchParams();
-    if (opts.messageCount) params.set('messageCount', String(opts.messageCount));
-    if (opts.maxChannels) params.set('maxChannels', String(opts.maxChannels));
-    const query = params.toString();
-    return request<DmAgentOverview>(`/dm-agent/overview${query ? `?${query}` : ''}`);
-  },
-  runDmAgent: (opts: {
-    post?: boolean;
-    maxAnswers?: number;
-    messageCount?: number;
-    maxChannels?: number;
-    requestDelayMs?: number;
-    skipProcessed?: boolean;
-    markProcessed?: boolean;
-  } = {}) =>
-    request<DmAgentResult>('/dm-agent/run', {
+  sendDmReply: (channelId: number, message: string) =>
+    request<{ ok: boolean; channelId: number; messageId?: number }>('/dm-review/reply', {
       method: 'POST',
-      body: JSON.stringify(opts),
+      body: JSON.stringify({ channelId, message }),
     }),
 };

@@ -63,6 +63,12 @@ export interface DmReviewOptions {
   requestDelayMs?: number;
 }
 
+export interface DmReplyResult {
+  ok: boolean;
+  channelId: number;
+  messageId?: number;
+}
+
 function argentinaDateParts(date: Date): { year: number; month: number; day: number; label: string } {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: ARG_TIMEZONE,
@@ -286,6 +292,32 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
   }
 
   return result;
+}
+
+export async function sendDirectMessageReply(channelId: number, message: string): Promise<DmReplyResult> {
+  const trimmed = message.trim();
+  if (!Number.isFinite(channelId) || channelId <= 0) throw new Error('Invalid DM channel ID');
+  if (!trimmed) throw new Error('Reply message is required');
+
+  const { client } = createClient();
+  const response = await client.sendChatMessage(String(channelId), trimmed);
+  const messageId = response.message_id || response.id;
+
+  await appendOperationLog({
+    action: 'dm_reply',
+    status: 'success',
+    message: `Sent DM reply to channel ${channelId}.`,
+    metadata: {
+      channelId,
+      messageId,
+    },
+  });
+
+  return {
+    ok: true,
+    channelId,
+    messageId,
+  };
 }
 
 if (require.main === module) {

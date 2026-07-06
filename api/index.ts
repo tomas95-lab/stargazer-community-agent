@@ -11,7 +11,6 @@ import commsRouter from '../server/routes/comms';
 import webinarsRouter from '../server/routes/webinars';
 import communityAgentRouter from '../server/routes/community-agent';
 import dmReviewRouter from '../server/routes/dm-review';
-import dmAgentRouter from '../server/routes/dm-agent';
 import cronRouter from '../server/routes/cron';
 
 const app = express();
@@ -27,7 +26,6 @@ app.use('/api/comms', commsRouter);
 app.use('/api/webinars', webinarsRouter);
 app.use('/api/community-agent', communityAgentRouter);
 app.use('/api/dm-review', dmReviewRouter);
-app.use('/api/dm-agent', dmAgentRouter);
 app.use('/api/cron', cronRouter);
 
 export default app;

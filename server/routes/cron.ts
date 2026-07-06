@@ -3,7 +3,6 @@ import { Router, Request, Response } from 'express';
 import { runCommunityAgent } from '../../src/community-agent';
 import { runDailyPublishJob } from '../../src/daily-publish-job';
 import { runDmReviewJob } from '../../src/dm-review-job';
-import { runDmAgent } from '../../src/dm-agent';
 
 const router = Router();
 
@@ -90,42 +89,11 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
   }
 }
 
-async function handleDmAgentCron(req: Request, res: Response): Promise<void> {
-  if (!process.env.CRON_SECRET) {
-    res.status(503).json({ error: 'CRON_SECRET is not configured' });
-    return;
-  }
-
-  if (!isCronAuthorized(req)) {
-    res.status(401).json({ error: 'Unauthorized cron request' });
-    return;
-  }
-
-  try {
-    const result = await runDmAgent({
-      post: process.env.DM_AGENT_AUTO_POST === 'true',
-      respectSchedule: true,
-      skipProcessed: true,
-      markProcessed: true,
-      maxAnswers: Number(process.env.DM_AGENT_MAX_ANSWERS || process.env.AGENT_MAX_ANSWERS || 4),
-      messageCount: Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50),
-      maxChannels: Number(process.env.DM_REVIEW_MAX_CHANNELS || 100),
-      requestDelayMs: Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500),
-    });
-
-    res.json({ ok: true, result });
-  } catch (err) {
-    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
-  }
-}
-
 router.get('/daily-thread', handleDailyThreadCron);
 router.get('/daily-thread/:slot', handleDailyThreadCron);
 router.get('/community-agent', handleCommunityAgentCron);
 router.get('/community-agent/:slot', handleCommunityAgentCron);
 router.get('/dm-review', handleDmReviewCron);
 router.get('/dm-review/:slot', handleDmReviewCron);
-router.get('/dm-agent', handleDmAgentCron);
-router.get('/dm-agent/:slot', handleDmAgentCron);
 
 export default router;
