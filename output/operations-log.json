@@ -1,5 +1,24 @@
 [
   {
+    "id": "2f3e6832-8590-4f5f-be01-2562b93adae5",
+    "at": "2026-07-06T18:31:54.846Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 1,
+      "errors": [
+        "Channel 757780: fetch failed",
+        "Channel 792757: fetch failed",
+        "Channel 843041: fetch failed",
+        "Channel 786727: fetch failed"
+      ]
+    }
+  },
+  {
     "id": "e488aa31-656b-43c9-b1cf-d1dd52e04f7c",
     "at": "2026-07-06T18:20:26.054Z",
     "action": "dm_review",
