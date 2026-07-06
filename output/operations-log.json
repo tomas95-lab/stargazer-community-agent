@@ -1,5 +1,21 @@
 [
   {
+    "id": "ffa78b18-b7d6-49d9-9a90-3ea8bac37daa",
+    "at": "2026-07-06T18:33:59.399Z",
+    "action": "community_agent",
+    "status": "error",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 0,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": [
+        "community: fetch failed"
+      ]
+    }
+  },
+  {
     "id": "2f3e6832-8590-4f5f-be01-2562b93adae5",
     "at": "2026-07-06T18:31:54.846Z",
     "action": "dm_agent",
