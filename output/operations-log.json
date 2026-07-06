@@ -1,5 +1,20 @@
 [
   {
+    "id": "299cbf0d-ace0-41d6-b84b-977292287ce0",
+    "at": "2026-07-06T22:13:03.817Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "argentinaDate": "2026-07-06",
+        "startUtc": "2026-07-06T03:00:00.000Z",
+        "endUtc": "2026-07-07T03:00:00.000Z",
+        "operatingHours": "Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays"
+      }
+    }
+  },
+  {
     "id": "37b91188-1369-487c-ad80-7da662792f01",
     "at": "2026-07-06T21:14:46.513Z",
     "action": "dm_reply",
