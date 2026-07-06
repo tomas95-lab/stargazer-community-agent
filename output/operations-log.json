@@ -1,5 +1,16 @@
 [
   {
+    "id": "bab63fc6-674d-452e-97de-f2f2d1cdb0b4",
+    "at": "2026-07-06T19:24:42.821Z",
+    "action": "dm_reply",
+    "status": "success",
+    "message": "Sent DM reply to channel 855952.",
+    "metadata": {
+      "channelId": 855952,
+      "messageId": 27695309
+    }
+  },
+  {
     "id": "ffef97d3-11a1-454f-861f-a853ed3e5ab3",
     "at": "2026-07-06T19:09:25.825Z",
     "action": "dm_review",
