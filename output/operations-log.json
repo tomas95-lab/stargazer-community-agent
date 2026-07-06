@@ -1,5 +1,19 @@
 [
   {
+    "id": "053168ed-28ee-4e12-bd8f-5af94a06b8a8",
+    "at": "2026-07-06T17:42:07.479Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 5,
+      "candidates": 1,
+      "posted": 1,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
     "id": "9d0da6da-f3dd-4121-a1e0-8847b436422b",
     "at": "2026-07-06T17:12:15.115Z",
     "action": "dm_agent",
