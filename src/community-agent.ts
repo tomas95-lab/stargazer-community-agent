@@ -15,10 +15,12 @@ const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
 const MAX_ANSWERS = parseInt(process.env.RESPONDER_MAX_ANSWERS || process.env.AGENT_MAX_ANSWERS || '4', 10);
 const MESSAGE_COUNT = parseInt(process.env.AGENT_MESSAGE_COUNT || '50', 10);
 const MIN_CONFIDENCE = Number(process.env.AGENT_MIN_CONFIDENCE || '0.72');
+const REPLY_LOOKAHEAD_MINUTES = 45;
 const STATE_FILE = 'output/community-agent-state.json';
 const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
+const WAR_ROOM_OPEN_MINUTES = 11 * 60 + 15;
 const WAR_ROOM_WEEKEND_NOTICE =
-  'Today is a weekend day in Argentina, so the War Room is closed. Please come back on Monday between 10:30 AM and 7:00 PM ARG for live support.';
+  'Today is a weekend day in Argentina, so the War Room is closed. Please come back on Monday between 11:15 AM and 7:00 PM ARG for live support.';
 
 export type CommunityAgentSource = 'community';
 export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
@@ -41,6 +43,19 @@ export interface CommunityAgentItem {
   message: string;
   createdAt: string;
   chatMessageId?: number;
+  threadId?: number | null;
+  replyToChatMessageId?: number;
+  isStaff?: boolean;
+  probableReplies?: CommunityAgentReplyEvidence[];
+}
+
+export interface CommunityAgentReplyEvidence {
+  id: string;
+  username: string;
+  message: string;
+  createdAt: string;
+  chatMessageId?: number;
+  match: 'direct_reply' | 'mention' | 'staff_followup' | 'nearby_followup';
 }
 
 export interface CommunityAgentDecision {
@@ -136,7 +151,7 @@ function todayWindow(now = new Date()): CommunityAgentResult['window'] & { start
     end,
     startUtc: start.toISOString(),
     endUtc: end.toISOString(),
-    operatingHours: '10:00-19:00 America/Argentina/Buenos_Aires; War Room closed Saturdays and Sundays',
+    operatingHours: 'Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays',
   };
 }
 
@@ -146,6 +161,19 @@ function argentinaDayOfWeek(now = new Date()): number {
     weekday: 'short',
   }).format(now);
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(shortDay);
+}
+
+function argentinaMinutes(now = new Date()): number {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: ARG_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(now);
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value);
+  return hour * 60 + minute;
 }
 
 function isArgentinaWeekend(now = new Date()): boolean {
@@ -158,16 +186,7 @@ function warRoomIsOpenDay(now = new Date()): boolean {
 }
 
 function isWithinOperatingHours(now = new Date()): boolean {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: ARG_TIMEZONE,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-  const parts = formatter.formatToParts(now);
-  const hour = Number(parts.find((part) => part.type === 'hour')?.value);
-  const minute = Number(parts.find((part) => part.type === 'minute')?.value);
-  const minutes = hour * 60 + minute;
+  const minutes = argentinaMinutes(now);
   return minutes >= 10 * 60 && minutes <= 19 * 60;
 }
 
@@ -175,6 +194,14 @@ function isWithinWindow(createdAt: string | undefined, window: { start: Date; en
   if (!createdAt) return false;
   const time = new Date(createdAt).getTime();
   return Number.isFinite(time) && time >= window.start.getTime() && time < window.end.getTime();
+}
+
+function messageTime(item: CommunityAgentItem): number {
+  return new Date(item.createdAt).getTime();
+}
+
+function minutesBetween(left: CommunityAgentItem, right: CommunityAgentItem): number {
+  return (messageTime(right) - messageTime(left)) / 1000 / 60;
 }
 
 function stripHtml(html: string): string {
@@ -228,6 +255,153 @@ function isQuestionOrSupportRequest(text: string): boolean {
   return supportSignals.some((signal) => lower.includes(signal));
 }
 
+function isWarRoomAvailabilityQuestion(text: string): boolean {
+  const lower = normalizeText(text);
+  if (!lower.includes('war room')) return false;
+
+  const availabilitySignals = [
+    '?',
+    'open',
+    'available',
+    'availability',
+    'abierto',
+    'abierta',
+    'abre',
+    'abrira',
+    'va a estar',
+    'estara',
+    'hay war room',
+    'is there',
+  ];
+
+  return availabilitySignals.some((signal) => lower.includes(signal));
+}
+
+function replyTargetId(message: DiscourseChatMessage): number | undefined {
+  return message.in_reply_to_id || message.reply_to_msg_id || message.reply_to_message_id;
+}
+
+function mentionsAuthor(replyText: string, username: string): boolean {
+  const normalizedReply = normalizeText(replyText);
+  const normalizedUsername = normalizeText(username).replace(/^@/, '');
+  return normalizedReply.includes(`@${normalizedUsername}`) || normalizedReply.includes(normalizedUsername);
+}
+
+function hasAnswerSignal(text: string): boolean {
+  const lower = normalizeText(text);
+  const signals = [
+    'yes',
+    'yeah',
+    'yep',
+    'no',
+    'not yet',
+    'please',
+    'you need',
+    'you can',
+    'you should',
+    'try',
+    'join',
+    'war room',
+    'cursor',
+    'access',
+    'link',
+    'open',
+    'available',
+    'done',
+    'fixed',
+    'check',
+    'si',
+    'claro',
+    'podes',
+    'puedes',
+    'tenes que',
+    'deberias',
+    'entra',
+    'abierto',
+    'listo',
+  ];
+
+  return signals.some((signal) => lower.includes(signal));
+}
+
+function isFirstVisibleFollowup(
+  question: CommunityAgentItem,
+  candidateReply: CommunityAgentItem,
+  orderedItems: CommunityAgentItem[],
+): boolean {
+  const first = orderedItems.find((item) => {
+    if (item.id === question.id) return false;
+    if (messageTime(item) <= messageTime(question)) return false;
+    if (item.username.toLowerCase() === question.username.toLowerCase()) return false;
+    if (shouldIgnoreMessage(item.message)) return false;
+    return true;
+  });
+
+  return first?.id === candidateReply.id;
+}
+
+function replyEvidenceFor(
+  question: CommunityAgentItem,
+  candidateReply: CommunityAgentItem,
+  orderedItems: CommunityAgentItem[],
+): CommunityAgentReplyEvidence | null {
+  if (question.id === candidateReply.id) return null;
+  if (candidateReply.username.toLowerCase() === question.username.toLowerCase()) return null;
+  if (messageTime(candidateReply) <= messageTime(question)) return null;
+  if (shouldIgnoreMessage(candidateReply.message)) return null;
+
+  const directReply =
+    question.chatMessageId !== undefined &&
+    candidateReply.replyToChatMessageId !== undefined &&
+    candidateReply.replyToChatMessageId === question.chatMessageId;
+  const mention = mentionsAuthor(candidateReply.message, question.username);
+  const staffFollowup = candidateReply.isStaff === true && hasAnswerSignal(candidateReply.message);
+  const nearbyFollowup =
+    isFirstVisibleFollowup(question, candidateReply, orderedItems) &&
+    minutesBetween(question, candidateReply) <= REPLY_LOOKAHEAD_MINUTES &&
+    hasAnswerSignal(candidateReply.message);
+
+  let match: CommunityAgentReplyEvidence['match'] | null = null;
+  if (directReply) match = 'direct_reply';
+  else if (mention) match = 'mention';
+  else if (staffFollowup) match = 'staff_followup';
+  else if (nearbyFollowup) match = 'nearby_followup';
+
+  if (!match) return null;
+
+  return {
+    id: candidateReply.id,
+    username: candidateReply.username,
+    message: candidateReply.message,
+    createdAt: candidateReply.createdAt,
+    chatMessageId: candidateReply.chatMessageId,
+    match,
+  };
+}
+
+export function annotateProbableReplies(items: CommunityAgentItem[]): CommunityAgentItem[] {
+  const ordered = [...items].sort((a, b) => messageTime(a) - messageTime(b));
+  const repliesByItemId = new Map<string, CommunityAgentReplyEvidence[]>();
+
+  for (const item of ordered) {
+    if (!isQuestionOrSupportRequest(item.message) || shouldIgnoreMessage(item.message)) continue;
+
+    const replies = ordered
+      .map((candidate) => replyEvidenceFor(item, candidate, ordered))
+      .filter((reply): reply is CommunityAgentReplyEvidence => Boolean(reply))
+      .slice(0, 3);
+
+    if (replies.length > 0) {
+      repliesByItemId.set(item.id, replies);
+    }
+  }
+
+  return items.map((item) => ({
+    ...item,
+    probableReplies: repliesByItemId.get(item.id) || [],
+  }));
+}
+
 function shouldIgnoreAuthor(username: string): boolean {
   return username.toLowerCase() === BOT_USERNAME.toLowerCase();
 }
@@ -259,6 +433,9 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
           message: msg.message,
           createdAt: msg.created_at,
           chatMessageId: msg.id,
+          threadId: msg.thread_id,
+          replyToChatMessageId: replyTargetId(msg),
+          isStaff: Boolean(msg.user.staff || msg.user.moderator || msg.user.admin),
         });
       }
     } catch (err) {
@@ -266,13 +443,14 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
     }
   }
 
-  return { items, errors, window };
+  return { items: annotateProbableReplies(items), errors, window };
 }
 
 function relevantItems(items: CommunityAgentItem[]): CommunityAgentItem[] {
   return items.filter((item) => {
     if (shouldIgnoreAuthor(item.username)) return false;
     if (shouldIgnoreMessage(item.message)) return false;
+    if ((item.probableReplies || []).length > 0) return false;
     return isQuestionOrSupportRequest(item.message);
   });
 }
@@ -361,6 +539,42 @@ function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpe
   return `${trimmed}\n\nWar Room link:\n${warRoomLink}`;
 }
 
+export function warRoomAvailabilityDecision(
+  message: string,
+  warRoomLink: string,
+  now = new Date(),
+): Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'needsHuman'> | null {
+  if (!isWarRoomAvailabilityQuestion(message)) return null;
+
+  if (!warRoomIsOpenDay(now)) {
+    return {
+      action: 'reply',
+      confidence: 1,
+      reason: 'Deterministic War Room weekend availability rule',
+      reply: WAR_ROOM_WEEKEND_NOTICE,
+      guidelineSnippets: [],
+    };
+  }
+
+  if (argentinaMinutes(now) < WAR_ROOM_OPEN_MINUTES) {
+    return {
+      action: 'reply',
+      confidence: 1,
+      reason: 'Deterministic War Room pre-open availability rule',
+      reply: 'Not yet. The War Room will be open after 11:15 AM ARG today. Please come back then for live support.',
+      guidelineSnippets: [],
+    };
+  }
+
+  return {
+    action: 'reply',
+    confidence: 1,
+    reason: 'Deterministic War Room open availability rule',
+    reply: `Yes, the War Room is open now.\n\nWar Room link:\n${warRoomLink}`,
+    guidelineSnippets: [],
+  };
+}
+
 async function askClaude(
   item: CommunityAgentItem,
   context: string,
@@ -386,7 +600,7 @@ async function askClaude(
         'Keep replies under 4 short sentences.',
         isWarRoomOpenDay
           ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}.`
-          : 'Today is a weekend day in Argentina, so the War Room is closed. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, QM availability, or live support in any way, say exactly that the user should come back on Monday between 10:30 AM and 7:00 PM ARG.',
+          : 'Today is a weekend day in Argentina, so the War Room is closed. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, QM availability, or live support in any way, say exactly that the user should come back on Monday between 11:15 AM and 7:00 PM ARG.',
         'Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
       ].join(' '),
     messages: [
@@ -426,8 +640,11 @@ async function askClaude(
   };
 }
 
-async function postDecision(client: DiscourseClient, channelId: string, reply: string): Promise<boolean> {
-  await client.sendChatMessage(channelId, reply);
+async function postDecision(client: DiscourseClient, channelId: string, reply: string, item: CommunityAgentItem): Promise<boolean> {
+  await client.sendChatMessage(channelId, reply, {
+    inReplyToId: item.chatMessageId,
+    threadId: item.threadId,
+  });
   return true;
 }
 
@@ -517,10 +734,11 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
 
   for (const item of candidates) {
     try {
-      const decision = await askClaude(item, context, warRoomLink, isWarRoomOpenDay);
+      const decision = warRoomAvailabilityDecision(item.message, warRoomLink) ||
+        await askClaude(item, context, warRoomLink, isWarRoomOpenDay);
       let posted = false;
       if (post && decision.action === 'reply') {
-        posted = await postDecision(client, channelId, decision.reply);
+        posted = await postDecision(client, channelId, decision.reply, item);
       }
 
       decisions.push({

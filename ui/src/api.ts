@@ -122,6 +122,15 @@ export interface CommunityAgentSuggestion {
 export type CommunityAgentSource = 'community';
 export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
 
+export interface CommunityAgentReplyEvidence {
+  id: string;
+  username: string;
+  message: string;
+  createdAt: string;
+  chatMessageId?: number;
+  match: 'direct_reply' | 'mention' | 'staff_followup' | 'nearby_followup';
+}
+
 export interface CommunityAgentItem {
   id: string;
   source: CommunityAgentSource;
@@ -129,6 +138,10 @@ export interface CommunityAgentItem {
   message: string;
   createdAt: string;
   chatMessageId?: number;
+  threadId?: number | null;
+  replyToChatMessageId?: number;
+  isStaff?: boolean;
+  probableReplies?: CommunityAgentReplyEvidence[];
 }
 
 export interface CommunityAgentDecision {

@@ -16,6 +16,10 @@ export interface DiscourseChatMessage {
   cooked?: string;
   excerpt?: string;
   chat_channel_id?: number;
+  thread_id?: number | null;
+  in_reply_to_id?: number;
+  reply_to_msg_id?: number;
+  reply_to_message_id?: number;
   user: {
     id?: number;
     username: string;
@@ -112,10 +116,18 @@ export class DiscourseClient {
     });
   }
 
-  async sendChatMessage(channelId: string, message: string): Promise<{ message_id?: number; id?: number }> {
+  async sendChatMessage(
+    channelId: string,
+    message: string,
+    options: { inReplyToId?: number; threadId?: number | null } = {}
+  ): Promise<{ message_id?: number; id?: number }> {
+    const body: Record<string, string | number> = { message };
+    if (options.inReplyToId) body.in_reply_to_id = options.inReplyToId;
+    if (options.threadId) body.thread_id = options.threadId;
+
     return this.request<{ message_id?: number; id?: number }>(`/chat/${channelId}.json`, {
       method: 'POST',
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(body),
     });
   }
 

@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'crypto';
 import { Router, Request, Response } from 'express';
 import { runCommunityAgent } from '../../src/community-agent';
+import { runDailyPublishJob } from '../../src/daily-publish-job';
 
 const router = Router();
 
@@ -45,6 +46,27 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
   }
 }
 
+async function handleDailyThreadCron(req: Request, res: Response): Promise<void> {
+  if (!process.env.CRON_SECRET) {
+    res.status(503).json({ error: 'CRON_SECRET is not configured' });
+    return;
+  }
+
+  if (!isCronAuthorized(req)) {
+    res.status(401).json({ error: 'Unauthorized cron request' });
+    return;
+  }
+
+  try {
+    const result = await runDailyPublishJob();
+    res.json({ ok: true, result });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
+router.get('/daily-thread', handleDailyThreadCron);
+router.get('/daily-thread/:slot', handleDailyThreadCron);
 router.get('/community-agent', handleCommunityAgentCron);
 router.get('/community-agent/:slot', handleCommunityAgentCron);
 

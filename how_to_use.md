@@ -35,6 +35,7 @@ Variables principales:
 | `AGENT_MAX_ANSWERS` | Máximo de mensajes que Claude analiza por corrida |
 | `AGENT_MESSAGE_COUNT` | Cantidad de mensajes recientes a leer antes de filtrar por día |
 | `DAILY_PUBLISH_ENABLED` | Habilita publish dentro de `jobs:all` |
+| `DAILY_PUBLISH_POST_CHAT` | `false` para publicar thread sin announcement al chat |
 | `FORCE_DAILY_PUBLISH` | Fuerza publish aunque ya exista URL del día |
 
 ## Daily Thread
@@ -202,6 +203,7 @@ También existe API protegida para usarlo desde UI o scheduler HTTP:
 GET  /api/community-agent/messages?count=20
 GET  /api/community-agent/overview
 POST /api/community-agent/run
+GET  /api/cron/daily-thread
 GET  /api/cron/community-agent
 ```
 
@@ -219,7 +221,11 @@ AGENT_MESSAGE_COUNT=50
 AGENT_MIN_CONFIDENCE=0.72
 ```
 
-En Vercel, `vercel.json` programa `/api/cron/community-agent` cada 90 minutos entre 10 AM y 7 PM ARG. Vercel usa cron en UTC, por eso hay varias entradas horarias.
+En Vercel, `vercel.json` programa `/api/cron/daily-thread` a las 10:00 y 11:00 AM ARG. El segundo horario funciona como retry: si `output/published-url-YYYY-MM-DD.txt` ya existe, el job saltea la publicación para no duplicar. En Hobby, Vercel puede ejecutar los crons en cualquier momento dentro de la hora configurada, por eso el retry vive en la hora siguiente.
+
+Para producción, usá `DATA_STORE=github` con `GITHUB_TOKEN` para que ese marker persista entre corridas serverless. Además, antes de publicar, el job busca en la categoría de Community si ya existe un daily thread con el título del día; si existe, guarda el marker y saltea.
+
+También programa `/api/cron/community-agent` aproximadamente cada 90 minutos entre 10 AM y 7 PM ARG. Vercel usa cron en UTC, por eso hay varias entradas horarias.
 
 ## Archivos Generados
 

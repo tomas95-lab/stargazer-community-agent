@@ -66,6 +66,7 @@ AGENT_AUTO_POST=false
 AGENT_MAX_ANSWERS=4
 AGENT_MESSAGE_COUNT=50
 AGENT_MIN_CONFIDENCE=0.72
+DAILY_PUBLISH_POST_CHAT=true
 SERVER_PORT=3001
 ```
 
@@ -141,7 +142,7 @@ npm test
 
 ## Automation
 
-`run-daily-thread.sh` is a generic wrapper for cron/launchd-style schedulers. The repository also includes explicit local job commands, but no deploy or cloud scheduler is configured here.
+`run-daily-thread.sh` is a generic wrapper for cron/launchd-style schedulers. The repository also includes explicit local job commands and Vercel cron routes for production automation.
 
 Local job commands:
 
@@ -174,12 +175,19 @@ The same agent is available through protected API routes:
 GET  /api/community-agent/messages?count=20
 GET  /api/community-agent/overview
 POST /api/community-agent/run
+GET  /api/cron/daily-thread
 GET  /api/cron/community-agent
 ```
 
 `POST /api/community-agent/run` accepts `{ "post": false }` for suggestions and `{ "post": true }` for auto-posting. Community-agent routes require `X-Admin-Token`.
 
-The cron route is protected by `CRON_SECRET`. Vercel calls it every 90 minutes between 10:00 and 19:00 Argentina time using UTC schedules in `vercel.json`.
+The cron routes are protected by `CRON_SECRET`.
+
+Vercel calls `/api/cron/daily-thread` at 10:00 and 11:00 Argentina time. The second run is a retry window: `runDailyPublishJob` checks `output/published-url-YYYY-MM-DD.txt` first and skips when today's thread was already published. On Hobby plans, Vercel may invoke cron jobs at any point within the configured hour, so the retry intentionally lives in the next hour.
+
+For production cron, use `DATA_STORE=github` with `GITHUB_TOKEN` so the publish marker persists between serverless runs. The job also checks the Community category for an existing daily-thread title before publishing, which prevents duplicate posts if the marker file is missing.
+
+Vercel calls `/api/cron/community-agent` roughly every 90 minutes between 10:00 and 19:00 Argentina time using UTC schedules in `vercel.json`.
 
 ## Current Caveats
 

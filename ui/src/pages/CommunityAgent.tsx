@@ -30,16 +30,32 @@ function Badge({ children, tone }: { children: string; tone: 'green' | 'yellow' 
 }
 
 function ItemRow({ item }: { item: CommunityAgentItem }) {
+  const replies = item.probableReplies || [];
+
   return (
     <div className="border-b border-border py-3 last:border-0">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Badge tone="blue">Community</Badge>
+          {replies.length > 0 && <Badge tone="green">Answered</Badge>}
           <span className="truncate text-sm font-semibold text-foreground">{item.username}</span>
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleTimeString()}</span>
       </div>
       <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{item.message}</p>
+      {replies.length > 0 && (
+        <div className="mt-3 space-y-2 border-l-2 border-primary/25 pl-3">
+          {replies.map((reply) => (
+            <div key={reply.id}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-semibold text-foreground">{reply.username}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{new Date(reply.createdAt).toLocaleTimeString()}</span>
+              </div>
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{reply.message}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -71,7 +87,7 @@ function DecisionCard({ decision }: { decision: CommunityAgentDecision }) {
 
       {decision.reply && (
         <div className="sg-panel-muted p-3">
-          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Claude reply</p>
+          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Agent reply</p>
           <p className="whitespace-pre-wrap text-sm text-foreground">{decision.reply}</p>
         </div>
       )}
@@ -108,6 +124,7 @@ export default function CommunityAgent() {
     const items = overview?.items || [];
     return {
       community: items.filter((item) => item.source === 'community').length,
+      answered: items.filter((item) => (item.probableReplies || []).length > 0).length,
     };
   }, [overview]);
 
@@ -137,7 +154,7 @@ export default function CommunityAgent() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Community Agent</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{overview?.window.operatingHours || '10:00-19:00 America/Argentina/Buenos_Aires'}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{overview?.window.operatingHours || 'Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG'}</p>
         </div>
         <button
           onClick={load}
@@ -151,8 +168,8 @@ export default function CommunityAgent() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat label="Date" value={overview?.window.argentinaDate || '-'} sub="ARG" />
         <Stat label="Guideline" value={overview?.guidelines.available ? 'Ready' : 'Missing'} sub={overview ? `${overview.guidelines.characters} chars` : ''} />
-        <Stat label="Community" value={counts.community} sub="today" />
-        <Stat label="Candidates" value={overview?.candidates.length || 0} sub="Claude check" />
+        <Stat label="Community" value={counts.community} sub={`${counts.answered} answered`} />
+        <Stat label="Candidates" value={overview?.candidates.length || 0} sub="pending check" />
       </div>
 
       <div className="sg-panel space-y-4 p-5">
