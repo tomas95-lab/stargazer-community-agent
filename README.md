@@ -209,6 +209,22 @@ Vercel calls `/api/cron/community-agent` roughly every 90 minutes between 10:00 
 
 Vercel calls `/api/cron/dm-review` at 15:30 and 18:00 Argentina time. The job filters by the current Argentina day, so older DMs remain available for endpoint verification but are not included in the daily report. DM drafts are generated through `/api/dm-review/draft`, and replies are sent manually from the UI via `/api/dm-review/reply`; there is no DM auto-responder.
 
+Production cron schedule:
+
+| Job | Endpoint | UTC | ARG |
+|---|---|---:|---:|
+| Daily Thread | `/api/cron/daily-thread/1000` | 13:00 | 10:00 |
+| Daily Thread retry | `/api/cron/daily-thread/1100` | 14:00 | 11:00 |
+| Community Agent | `/api/cron/community-agent/1000` | 13:00 | 10:00 |
+| Community Agent | `/api/cron/community-agent/1130` | 14:30 | 11:30 |
+| Community Agent | `/api/cron/community-agent/1300` | 16:00 | 13:00 |
+| Community Agent | `/api/cron/community-agent/1430` | 17:30 | 14:30 |
+| Community Agent | `/api/cron/community-agent/1600` | 19:00 | 16:00 |
+| Community Agent | `/api/cron/community-agent/1730` | 20:30 | 17:30 |
+| Community Agent | `/api/cron/community-agent/1900` | 22:00 | 19:00 |
+| DM Review | `/api/cron/dm-review/1530` | 18:30 | 15:30 |
+| DM Review | `/api/cron/dm-review/1800` | 21:00 | 18:00 |
+
 ## Current Caveats
 
 - `templates/*.md` duplicate the hardcoded templates in `src/templates.ts`; the code currently uses `src/templates.ts`.

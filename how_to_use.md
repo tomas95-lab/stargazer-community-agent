@@ -241,6 +241,22 @@ También programa `/api/cron/community-agent` aproximadamente cada 90 minutos en
 
 También programa `/api/cron/dm-review` a las 3:30 PM y 6:00 PM ARG. Este job revisa como máximo 5 canales DM activos del día Argentina actual, guarda el timeline de mensajes del día en `output/dm-review-YYYY-MM-DD.json` y no responde automáticamente. Desde la UI se puede pedir un draft de Claude por conversación; las respuestas a DMs se envían manualmente, una conversación a la vez.
 
+### Horarios De Ejecución
+
+| Job | Endpoint | UTC | ARG |
+|---|---|---:|---:|
+| Daily Thread | `/api/cron/daily-thread/1000` | 13:00 | 10:00 |
+| Daily Thread retry | `/api/cron/daily-thread/1100` | 14:00 | 11:00 |
+| Community Agent | `/api/cron/community-agent/1000` | 13:00 | 10:00 |
+| Community Agent | `/api/cron/community-agent/1130` | 14:30 | 11:30 |
+| Community Agent | `/api/cron/community-agent/1300` | 16:00 | 13:00 |
+| Community Agent | `/api/cron/community-agent/1430` | 17:30 | 14:30 |
+| Community Agent | `/api/cron/community-agent/1600` | 19:00 | 16:00 |
+| Community Agent | `/api/cron/community-agent/1730` | 20:30 | 17:30 |
+| Community Agent | `/api/cron/community-agent/1900` | 22:00 | 19:00 |
+| DM Review | `/api/cron/dm-review/1530` | 18:30 | 15:30 |
+| DM Review | `/api/cron/dm-review/1800` | 21:00 | 18:00 |
+
 La campana del header activa notificaciones del navegador en la Mac actual. Avisa cuando hay nuevos candidatos de Community, cuando el bot posteó una respuesta, o cuando el scan de DMs detecta message IDs nuevos. Para este modo sin costo, la web debe quedar abierta en el navegador.
 
 ## Archivos Generados
