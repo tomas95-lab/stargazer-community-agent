@@ -229,7 +229,7 @@ Control de volumen:
 ```bash
 AGENT_MAX_ANSWERS=4
 AGENT_MESSAGE_COUNT=50
-AGENT_MIN_CONFIDENCE=0.72
+AGENT_MIN_CONFIDENCE=0.50
 ```
 
 En Vercel, `vercel.json` programa `/api/cron/daily-thread` a las 10:00 y 11:00 AM ARG. El segundo horario funciona como retry: si `output/published-url-YYYY-MM-DD.txt` ya existe, el job saltea la publicación para no duplicar. En Hobby, Vercel puede ejecutar los crons en cualquier momento dentro de la hora configurada, por eso el retry vive en la hora siguiente.
