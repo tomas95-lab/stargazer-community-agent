@@ -1,5 +1,84 @@
 [
   {
+    "id": "ffa78b18-b7d6-49d9-9a90-3ea8bac37daa",
+    "at": "2026-07-06T18:33:59.399Z",
+    "action": "community_agent",
+    "status": "error",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 0,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": [
+        "community: fetch failed"
+      ]
+    }
+  },
+  {
+    "id": "2f3e6832-8590-4f5f-be01-2562b93adae5",
+    "at": "2026-07-06T18:31:54.846Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 1,
+      "errors": [
+        "Channel 757780: fetch failed",
+        "Channel 792757: fetch failed",
+        "Channel 843041: fetch failed",
+        "Channel 786727: fetch failed"
+      ]
+    }
+  },
+  {
+    "id": "e488aa31-656b-43c9-b1cf-d1dd52e04f7c",
+    "at": "2026-07-06T18:20:26.054Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 1 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 12,
+      "incomingMessages": 1,
+      "channelsWithTodayMessages": 1,
+      "errors": 0
+    }
+  },
+  {
+    "id": "5c114d1a-3e39-4905-b5ce-6e0fef93dad7",
+    "at": "2026-07-06T18:16:35.854Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 1 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 12,
+      "incomingMessages": 1,
+      "channelsWithTodayMessages": 1,
+      "errors": 0
+    }
+  },
+  {
+    "id": "053168ed-28ee-4e12-bd8f-5af94a06b8a8",
+    "at": "2026-07-06T17:42:07.479Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 5,
+      "candidates": 1,
+      "posted": 1,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
     "id": "9d0da6da-f3dd-4121-a1e0-8847b436422b",
     "at": "2026-07-06T17:12:15.115Z",
     "action": "dm_agent",
