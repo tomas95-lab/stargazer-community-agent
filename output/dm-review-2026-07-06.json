@@ -1,7 +1,7 @@
 {
   "mode": "dm-review",
   "scanMode": "full",
-  "generatedAt": "2026-07-06T16:09:16.352Z",
+  "generatedAt": "2026-07-06T16:20:09.514Z",
   "window": {
     "argentinaDate": "2026-07-06",
     "startUtc": "2026-07-06T03:00:00.000Z",
@@ -31,6 +31,8 @@
     }
   ],
   "errors": [
-    "Channel 843041: Discourse API error 429: Slow down, you're making too many requests.\nPlease retry again in 1 seconds.\nError code: ip_10_secs_limit.\n"
+    "Channel 846107: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}",
+    "Channel 846819: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}",
+    "Channel 757783: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}"
   ]
 }
