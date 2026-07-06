@@ -1,5 +1,19 @@
 [
   {
+    "id": "675241fa-8fc1-4518-af84-7425d4430a29",
+    "at": "2026-07-06T16:19:09.872Z",
+    "action": "dm_agent",
+    "status": "success",
+    "message": "DM agent run in suggestion mode",
+    "metadata": {
+      "scannedChannels": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "errors": []
+    }
+  },
+  {
     "id": "bea59951-491d-4e70-850e-8ba192a2c16b",
     "at": "2026-07-06T16:17:11.303Z",
     "action": "community_agent",
