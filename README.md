@@ -68,7 +68,7 @@ AGENT_MAX_ANSWERS=4
 AGENT_MESSAGE_COUNT=50
 AGENT_MIN_CONFIDENCE=0.72
 DM_REVIEW_MESSAGE_COUNT=50
-DM_REVIEW_MAX_CHANNELS=100
+DM_REVIEW_MAX_CHANNELS=5
 DM_REVIEW_REQUEST_DELAY_MS=1500
 DISCOURSE_RATE_LIMIT_RETRIES=2
 DISCOURSE_RATE_LIMIT_MAX_WAIT_SECONDS=30
@@ -161,7 +161,7 @@ npm run jobs:all        # reminders + daily publish only when DAILY_PUBLISH_ENAB
 
 The Community Agent checks only today's Argentina-day messages. It reads the public community chat, retrieves relevant snippets from `data/project-guidelines.txt`, and asks Claude whether to reply, ignore, or route to a human. Claude is instructed to answer only when the guideline/context supports the reply.
 
-The DM review job checks direct-message channels and stores only incoming messages from the current Argentina day in `output/dm-review-YYYY-MM-DD.json`. It does not answer DMs automatically. The UI preview uses one lightweight channel request; manual and scheduled runs do a full scan with a delay between DM channel reads to avoid Discourse rate limits.
+The DM review job checks up to 5 active direct-message channels and stores only incoming messages from the current Argentina day in `output/dm-review-YYYY-MM-DD.json`. It does not answer DMs automatically. The UI preview uses one lightweight channel request; manual and scheduled runs do a full scan with a delay between DM channel reads to avoid Discourse rate limits.
 
 Refresh the guideline text after replacing the PDF:
 

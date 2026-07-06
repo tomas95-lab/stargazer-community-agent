@@ -14,7 +14,8 @@ import { appendOperationLog } from './operations-log';
 
 const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const DEFAULT_MESSAGE_COUNT = Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50);
-const DEFAULT_MAX_CHANNELS = Number(process.env.DM_REVIEW_MAX_CHANNELS || 100);
+const DM_CHANNEL_SCAN_CAP = 5;
+const DEFAULT_MAX_CHANNELS = Math.min(Number(process.env.DM_REVIEW_MAX_CHANNELS || DM_CHANNEL_SCAN_CAP), DM_CHANNEL_SCAN_CAP);
 const DEFAULT_REQUEST_DELAY_MS = Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500);
 
 export interface DmReviewWindow {
@@ -144,10 +145,8 @@ function messageText(message: DiscourseChatMessage): string {
   return (message.message || stripHtml(message.cooked || message.excerpt || '')).trim();
 }
 
-function hasMessageUser(
-  message: DiscourseDirectMessageChannel['last_message'] | undefined
-): message is DiscourseChatMessage {
-  return Boolean(message?.user?.username && typeof message.message === 'string');
+function channelLastMessageText(message: DiscourseDirectMessageChannel['last_message'] | undefined): string {
+  return (message?.message || stripHtml(message?.cooked || message?.excerpt || '')).trim();
 }
 
 function addUsers(target: Map<string, DmReviewPeer>, users: DiscourseChatUser[] | undefined): void {
@@ -198,6 +197,35 @@ function summarizeMessage(channel: DiscourseDirectMessageChannel, message: Disco
   };
 }
 
+function summarizeChannelLastMessage(
+  channel: DiscourseDirectMessageChannel,
+  ownUsername: string,
+  window: { start: Date; end: Date }
+): DmReviewMessage | null {
+  const lastMessage = channel.last_message;
+  if (!lastMessage || !isWithinWindow(lastMessage.created_at, window)) return null;
+
+  const normalizedOwnUsername = ownUsername.trim().toLowerCase();
+  if (lastMessage.user?.username?.trim().toLowerCase() === normalizedOwnUsername) return null;
+
+  const text = channelLastMessageText(lastMessage);
+  if (!text) return null;
+
+  const peers = directMessagePeers(channel);
+  const peer = peers[0] || { username: channel.title || 'unknown' };
+
+  return {
+    channelId: channel.id,
+    channelTitle: channel.title,
+    messageId: lastMessage.id,
+    username: lastMessage.user?.username || peer.username,
+    name: lastMessage.user?.name || peer.name,
+    createdAt: lastMessage.created_at,
+    text,
+    peers,
+  };
+}
+
 function createClient(): { client: DiscourseClient; ownUsername: string } {
   const config = loadBotConfig();
   return {
@@ -214,7 +242,7 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
   const { client, ownUsername } = createClient();
   const window = getArgentinaDayWindow(options.now || new Date());
   const messageCount = options.messageCount ?? DEFAULT_MESSAGE_COUNT;
-  const maxChannels = options.maxChannels ?? DEFAULT_MAX_CHANNELS;
+  const maxChannels = Math.min(Math.max(1, options.maxChannels ?? DEFAULT_MAX_CHANNELS), DM_CHANNEL_SCAN_CAP);
   const fullScan = options.fullScan ?? true;
   const requestDelayMs = Math.max(0, options.requestDelayMs ?? DEFAULT_REQUEST_DELAY_MS);
   const errors: string[] = [];
@@ -225,13 +253,18 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
 
   for (const [index, channel] of channelsToScan.entries()) {
     try {
-      if (fullScan && index > 0) await sleep(requestDelayMs);
+      if (!fullScan) {
+        const latest = summarizeChannelLastMessage(channel, ownUsername, window);
+        if (latest) {
+          channelsWithTodayMessages += 1;
+          messages.push(latest);
+        }
+        continue;
+      }
 
-      const channelMessages = fullScan
-        ? await client.readChatMessages(String(channel.id), messageCount)
-        : hasMessageUser(channel.last_message)
-          ? [channel.last_message]
-          : [];
+      if (index > 0) await sleep(requestDelayMs);
+
+      const channelMessages = await client.readChatMessages(String(channel.id), messageCount);
       const todayIncoming = filterTodayIncomingDmMessages(channelMessages, ownUsername, window);
       if (todayIncoming.length > 0) channelsWithTodayMessages += 1;
       for (const message of todayIncoming) {

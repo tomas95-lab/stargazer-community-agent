@@ -128,7 +128,7 @@ export default function DirectMessages() {
     setError('');
     setReportSaved(false);
     try {
-      setResult(await api.getDmReview({ messageCount: 50, maxChannels: 100 }));
+      setResult(await api.getDmReview({ messageCount: 50, maxChannels: 5 }));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -144,7 +144,7 @@ export default function DirectMessages() {
     setRunning(true);
     setError('');
     try {
-      setResult(await api.runDmReview({ messageCount: 50, maxChannels: 100, requestDelayMs: 1500 }));
+      setResult(await api.runDmReview({ messageCount: 50, maxChannels: 5, requestDelayMs: 1500 }));
       setReportSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

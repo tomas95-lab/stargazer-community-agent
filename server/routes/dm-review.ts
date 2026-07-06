@@ -14,7 +14,7 @@ router.get('/', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const result = await fetchTodayDmReview({
       messageCount: clampNumber(req.query.messageCount, 50, 1, 100),
-      maxChannels: clampNumber(req.query.maxChannels, 100, 1, 200),
+      maxChannels: clampNumber(req.query.maxChannels, 5, 1, 5),
       fullScan: req.query.fullScan === 'true',
       writeReport: false,
     });
@@ -28,7 +28,7 @@ router.post('/run', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const result = await runDmReviewJob({
       messageCount: clampNumber(req.body?.messageCount, 50, 1, 100),
-      maxChannels: clampNumber(req.body?.maxChannels, 100, 1, 200),
+      maxChannels: clampNumber(req.body?.maxChannels, 5, 1, 5),
       requestDelayMs: clampNumber(req.body?.requestDelayMs, Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500), 0, 10000),
     });
     res.json(result);
