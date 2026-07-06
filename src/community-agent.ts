@@ -609,7 +609,7 @@ export function warRoomAvailabilityDecision(
     action: 'reply',
     confidence: 1,
     reason: 'Deterministic War Room open availability rule',
-    reply: `Yes, the War Room is open now.\n\nWar Room link:\n${warRoomLink}`,
+    reply: `Yes, the War Room is open now.\n\nWar Room link:\n${warRoomLink}\n\n${WAR_ROOM_BREAKOUT_NOTICE}`,
     guidelineSnippets: [],
   };
 }
@@ -639,10 +639,13 @@ export async function evaluateSupportMessage(
         'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
         'Keep replies under 4 short sentences.',
         isWarRoomOpenDay
-          ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}.`
+          ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}. Always tell them that once inside the War Room they must join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`
           : 'Today is a weekend day in Argentina, so the War Room is closed. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, QM availability, or live support in any way, say exactly that the user should come back on Monday between 11:15 AM and 7:00 PM ARG.',
+        isWarRoomOpenDay
+          ? `If the user says they are already in the War Room / Zoom call and nobody is helping them, do not resend the Zoom link. Instead, tell them to join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}" inside the call.`
+          : '',
         'Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
-      ].join(' '),
+      ].filter(Boolean).join(' '),
     messages: [
       {
         role: 'user',
