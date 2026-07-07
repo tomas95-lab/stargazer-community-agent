@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-07T23:15:05.011Z",
+  "updatedAt": "2026-07-07T23:15:25.383Z",
   "facts": [
     {
       "id": "language",
@@ -42,6 +42,12 @@
       "title": "Step 0 after Cursor access",
       "body": "If a contributor has already completed the courses and received an invitation to enroll, they should go to the war room to request that their account be unlocked.",
       "source": "project guideline"
+    },
+    {
+      "id": "fact-1783466110188",
+      "title": "Recommend work in war room",
+      "body": "Always RECOMMEND entering the war room while working, in order to achieve better results",
+      "source": "project operations"
     }
   ]
 }
