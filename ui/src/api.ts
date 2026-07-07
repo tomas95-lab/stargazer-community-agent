@@ -257,6 +257,43 @@ export interface OperationLogEntry {
   metadata?: Record<string, unknown>;
 }
 
+export interface AutomationProviderJob {
+  provider: 'cron-job.org';
+  jobId: number;
+  title: string;
+  enabled: boolean;
+  url: string;
+  timezone?: string;
+  nextExecution?: string;
+  lastExecution?: string;
+  lastStatus: number;
+  lastStatusLabel: string;
+}
+
+export interface AutomationHealthJob {
+  id: string;
+  title: string;
+  job: string;
+  endpoint: string;
+  utc: string;
+  arg: string;
+  purpose: string;
+  action: string;
+  cronJobOrgTitle: string;
+  provider?: AutomationProviderJob;
+  lastCronRequest?: OperationLogEntry;
+  lastAppResult?: OperationLogEntry;
+  health: 'ok' | 'warning' | 'error' | 'pending';
+  healthReason: string;
+}
+
+export interface AutomationHealthResult {
+  generatedAt: string;
+  providerConfigured: boolean;
+  providerError?: string;
+  jobs: AutomationHealthJob[];
+}
+
 export type ComposerChannel = 'community' | 'dm' | 'daily_thread' | 'reminder' | 'announcement';
 export type ComposerTone = 'friendly' | 'professional' | 'direct' | 'warm_supportive' | 'urgent' | 'short_clear';
 export type ComposerObjective = 'inform' | 'remind' | 'ask_for_action' | 'de_escalate' | 'explain_guideline';
@@ -370,5 +407,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(opts),
     }),
+  getAutomationHealth: () => request<AutomationHealthResult>('/automation/health'),
   getOperations: (limit = 50) => request<{ entries: OperationLogEntry[] }>(`/operations?limit=${limit}`),
 };

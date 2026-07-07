@@ -14,6 +14,7 @@ import communityAgentRouter from './routes/community-agent';
 import dmReviewRouter from './routes/dm-review';
 import cronRouter from './routes/cron';
 import operationsRouter from './routes/operations';
+import automationRouter from './routes/automation';
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/community-agent', communityAgentRouter);
 app.use('/api/dm-review', dmReviewRouter);
 app.use('/api/cron', cronRouter);
 app.use('/api/operations', operationsRouter);
+app.use('/api/automation', automationRouter);
 
 const uiBuild = path.resolve(__dirname, '../ui/dist');
 app.use(express.static(uiBuild));
