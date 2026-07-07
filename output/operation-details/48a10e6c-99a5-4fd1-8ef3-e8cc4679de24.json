@@ -1,0 +1,36 @@
+{
+  "entry": {
+    "id": "48a10e6c-99a5-4fd1-8ef3-e8cc4679de24",
+    "at": "2026-07-07T19:01:34.291Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 1,
+      "deterministic": true
+    }
+  },
+  "detail": {
+    "type": "sandbox_evaluation",
+    "result": {
+      "mode": "sandbox",
+      "generatedAt": "2026-07-07T19:01:33.857Z",
+      "deterministic": true,
+      "input": {
+        "username": "sandbox.user",
+        "channel": "community",
+        "message": "Is the War Room open today?",
+        "nowIso": "2026-07-06T13:30:00.000Z",
+        "context": ""
+      },
+      "decision": {
+        "action": "reply",
+        "confidence": 1,
+        "reason": "Deterministic War Room pre-open availability rule",
+        "reply": "Not yet. The War Room will be open after 11:15 AM ARG today. Please come back then for live support.\n\n- Stargazer Support Assistant",
+        "guidelineSnippets": []
+      }
+    }
+  }
+}

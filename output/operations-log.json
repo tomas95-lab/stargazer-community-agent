@@ -1,5 +1,96 @@
 [
   {
+    "id": "adb6381a-77cf-47c8-8236-4007ba145f2f",
+    "at": "2026-07-07T19:26:33.184Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.85,
+      "deterministic": false
+    }
+  },
+  {
+    "id": "48a10e6c-99a5-4fd1-8ef3-e8cc4679de24",
+    "at": "2026-07-07T19:01:34.291Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 1,
+      "deterministic": true
+    }
+  },
+  {
+    "id": "f1ac485e-963d-42f3-89d6-de01a9d9b400",
+    "at": "2026-07-07T19:00:32.989Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 5,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "5d857947-98ad-4aa2-a943-8dfb9601cf98",
+    "at": "2026-07-07T18:59:19.380Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 1,
+      "deterministic": true
+    }
+  },
+  {
+    "id": "03addcc5-15df-4e33-8977-0483895d2281",
+    "at": "2026-07-07T18:30:37.896Z",
+    "action": "dm_review",
+    "status": "skipped",
+    "message": "No incoming DMs found for 2026-07-07.",
+    "metadata": {
+      "argentinaDate": "2026-07-07",
+      "totalDirectChannels": 56,
+      "scannedChannels": 5,
+      "incomingMessages": 0,
+      "newIncomingMessages": 0,
+      "newIncomingMessageIds": [],
+      "newDmSenders": [],
+      "channelsWithTodayMessages": 0,
+      "autoReplyEnabled": true,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  {
+    "id": "79ecba8a-1c2f-44b0-bf09-efa6187dcd9f",
+    "at": "2026-07-07T18:30:36.151Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 0,
+      "replied": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  {
     "id": "d7bbbb1c-495d-408e-bac0-bcff9c2def88",
     "at": "2026-07-07T17:30:29.168Z",
     "action": "community_agent",
