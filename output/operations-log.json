@@ -1,5 +1,75 @@
 [
   {
+    "id": "2aaca7ca-54db-4568-a538-513d3c09dde5",
+    "at": "2026-07-07T15:44:51.170Z",
+    "action": "send_chat_message",
+    "status": "success",
+    "message": "Sent chat message",
+    "metadata": {
+      "channelId": "828853",
+      "messageLength": 410
+    }
+  },
+  {
+    "id": "b18e1931-2887-4723-94dc-69d6f151f13d",
+    "at": "2026-07-07T15:44:38.532Z",
+    "action": "message_composer",
+    "status": "success",
+    "message": "Generated 2 message draft(s)",
+    "metadata": {
+      "channel": "announcement",
+      "tone": "friendly",
+      "objective": "inform",
+      "variantCount": 2,
+      "guidelineSnippets": 5
+    }
+  },
+  {
+    "id": "96c603aa-2c16-40b3-a52d-e4cc35884d61",
+    "at": "2026-07-07T15:44:13.277Z",
+    "action": "message_composer",
+    "status": "success",
+    "message": "Generated 2 message draft(s)",
+    "metadata": {
+      "channel": "announcement",
+      "tone": "friendly",
+      "objective": "inform",
+      "variantCount": 2,
+      "guidelineSnippets": 5
+    }
+  },
+  {
+    "id": "34a12790-687e-46ab-9817-5665409126b5",
+    "at": "2026-07-07T15:43:33.116Z",
+    "action": "message_composer",
+    "status": "success",
+    "message": "Generated 2 message draft(s)",
+    "metadata": {
+      "channel": "announcement",
+      "tone": "professional",
+      "objective": "inform",
+      "variantCount": 2,
+      "guidelineSnippets": 5
+    }
+  },
+  {
+    "id": "9407ac32-d554-4cae-a101-4bbafb84d18d",
+    "at": "2026-07-07T15:32:19.089Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 3,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
     "id": "6192dd1c-3d75-4fe8-8d69-6afdcfe7c58c",
     "at": "2026-07-07T15:13:48.430Z",
     "action": "dm_review",
