@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { readOperationLog } from '../../src/operations-log';
+import { readOperationDetail, readOperationLog } from '../../src/operations-log';
 import { requireAdminToken } from '../auth';
 
 const router = Router();
@@ -15,6 +15,20 @@ router.get('/', requireAdminToken, async (req: Request, res: Response) => {
     const limit = clampNumber(req.query.limit, 50, 1, 100);
     const entries = await readOperationLog(limit);
     res.json({ entries });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/:id', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const record = await readOperationDetail(req.params.id);
+    if (!record) {
+      res.status(404).json({ error: 'Operation not found' });
+      return;
+    }
+
+    res.json({ ...record, hasDetail: record.detail !== undefined });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

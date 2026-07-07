@@ -1,0 +1,35 @@
+{
+  "updatedAt": "2026-07-07T00:00:00.000Z",
+  "facts": [
+    {
+      "id": "language",
+      "title": "Support language",
+      "body": "All user-facing community and DM replies must be written in English.",
+      "source": "manager preference"
+    },
+    {
+      "id": "style",
+      "title": "Writing style",
+      "body": "Do not use the em dash character. Use commas, parentheses, or a regular hyphen instead.",
+      "source": "manager preference"
+    },
+    {
+      "id": "war-room-hours",
+      "title": "War Room hours",
+      "body": "The War Room is open Monday through Friday from 11:15 AM to 7:00 PM ARG. It is closed Saturdays and Sundays.",
+      "source": "project operations"
+    },
+    {
+      "id": "war-room-breakout",
+      "title": "War Room breakout room",
+      "body": "Once users enter the War Room, they must join the breakout room called Stargazer - Team.",
+      "source": "project operations"
+    },
+    {
+      "id": "step-zero-cursor",
+      "title": "Step 0 Cursor access",
+      "body": "Contributors who passed the courses and are now EQ or see the project as ineligible should come to the War Room to request Cursor access. This is step 0 of the project guideline.",
+      "source": "project guideline"
+    }
+  ]
+}

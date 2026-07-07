@@ -15,6 +15,10 @@ import dmReviewRouter from '../server/routes/dm-review';
 import cronRouter from '../server/routes/cron';
 import operationsRouter from '../server/routes/operations';
 import automationRouter from '../server/routes/automation';
+import reviewQueueRouter from '../server/routes/review-queue';
+import sandboxRouter from '../server/routes/sandbox';
+import memoryRouter from '../server/routes/memory';
+import usageRouter from '../server/routes/usage';
 
 const app = express();
 app.use(cors());
@@ -33,5 +37,9 @@ app.use('/api/dm-review', dmReviewRouter);
 app.use('/api/cron', cronRouter);
 app.use('/api/operations', operationsRouter);
 app.use('/api/automation', automationRouter);
+app.use('/api/review-queue', reviewQueueRouter);
+app.use('/api/sandbox', sandboxRouter);
+app.use('/api/memory', memoryRouter);
+app.use('/api/usage', usageRouter);
 
 export default app;

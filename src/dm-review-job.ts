@@ -51,6 +51,19 @@ export interface DmReviewMessage {
   incoming: boolean;
 }
 
+export interface DmReviewThreadSummary {
+  channelId: number;
+  channelTitle?: string | null;
+  peers: DmReviewPeer[];
+  totalMessages: number;
+  incomingMessages: number;
+  outgoingMessages: number;
+  pendingIncomingMessages: number;
+  needsReply: boolean;
+  lastIncomingMessageId?: number;
+  lastMessageAt?: string;
+}
+
 export interface DmReviewResult {
   mode: 'dm-review';
   scanMode: 'quick' | 'full';
@@ -60,7 +73,10 @@ export interface DmReviewResult {
   scannedChannels: number;
   skippedInactiveChannels: number;
   incomingMessages: number;
+  pendingIncomingMessages: number;
+  unresolvedChannels: number;
   channelsWithTodayMessages: number;
+  threads: DmReviewThreadSummary[];
   messages: DmReviewMessage[];
   errors: string[];
   autoReply?: DmAutoReplySummary;
@@ -420,6 +436,7 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
   }
 
   messages.sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
+  const threads = summarizeDmThreads(messages);
 
   return {
     mode: 'dm-review',
@@ -434,7 +451,10 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
     scannedChannels: channelsToScan.length,
     skippedInactiveChannels: directChannels.length - channelsToScan.length,
     incomingMessages: messages.filter((message) => message.incoming).length,
+    pendingIncomingMessages: threads.reduce((sum, thread) => sum + thread.pendingIncomingMessages, 0),
+    unresolvedChannels: threads.filter((thread) => thread.needsReply).length,
     channelsWithTodayMessages,
+    threads,
     messages,
     errors,
   };
@@ -469,6 +489,8 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
         totalDirectChannels: result.totalDirectChannels,
         scannedChannels: result.scannedChannels,
         incomingMessages: result.incomingMessages,
+        pendingIncomingMessages: result.pendingIncomingMessages,
+        unresolvedChannels: result.unresolvedChannels,
         newIncomingMessages: newIncomingMessages.length,
         newIncomingMessageIds: newIncomingMessages.map((message) => message.messageId),
         newDmSenders: Array.from(new Set(newIncomingMessages.map((message) => message.username))),
@@ -478,6 +500,17 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
         autoNeedsHuman: result.autoReply?.needsHuman || 0,
         errors: result.errors.length,
       },
+    }, {
+      type: 'dm_review',
+      options: {
+        messageCount: options.messageCount ?? DEFAULT_MESSAGE_COUNT,
+        maxChannels: options.maxChannels ?? DEFAULT_MAX_CHANNELS,
+        fullScan: options.fullScan ?? true,
+        autoReply: options.autoReply === true,
+        maxAutoReplies: options.maxAutoReplies ?? DEFAULT_DM_AUTO_REPLY_MAX,
+      },
+      result,
+      newIncomingMessages,
     });
   }
 
@@ -537,6 +570,32 @@ function pendingIncomingMessages(messages: DmReviewMessage[]): DmReviewMessage[]
   const incoming = messages.filter((message) => message.incoming);
   const lastOutgoing = [...messages].reverse().find((message) => !message.incoming);
   return incoming.filter((message) => !lastOutgoing || messageTime(message) > messageTime(lastOutgoing));
+}
+
+function summarizeDmThreads(messages: DmReviewMessage[]): DmReviewThreadSummary[] {
+  const summaries: DmReviewThreadSummary[] = [];
+  for (const [channelId, threadMessages] of groupedMessagesByChannel(messages).entries()) {
+    const ordered = threadMessages.slice().sort((left, right) => messageTime(left) - messageTime(right));
+    const incoming = ordered.filter((message) => message.incoming);
+    const pending = pendingIncomingMessages(ordered);
+    const lastIncoming = incoming[incoming.length - 1];
+    const lastMessage = ordered[ordered.length - 1];
+
+    summaries.push({
+      channelId,
+      channelTitle: lastMessage?.channelTitle,
+      peers: lastMessage?.peers || [],
+      totalMessages: ordered.length,
+      incomingMessages: incoming.length,
+      outgoingMessages: ordered.length - incoming.length,
+      pendingIncomingMessages: pending.length,
+      needsReply: pending.length > 0,
+      lastIncomingMessageId: lastIncoming?.messageId,
+      lastMessageAt: lastMessage?.createdAt,
+    });
+  }
+
+  return summaries.sort((left, right) => (right.lastMessageAt || '').localeCompare(left.lastMessageAt || ''));
 }
 
 async function evaluateDirectMessageThread(
@@ -743,6 +802,10 @@ async function runDmAutoRepliesFromReview(
       humanUsers: decisions.filter((decision) => decision.action === 'human' && !decision.posted).map((decision) => decision.username),
       errors: decisions.filter((decision) => decision.error).length,
     },
+  }, {
+    type: 'dm_auto_reply',
+    result: summary,
+    decisions,
   });
 
   return summary;

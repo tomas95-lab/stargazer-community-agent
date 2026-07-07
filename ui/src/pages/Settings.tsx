@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { api, type AutomationHealthJob, type AutomationHealthResult } from '../api';
+import { api, type AiUsageSummary, type AutomationHealthJob, type AutomationHealthResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -20,6 +20,9 @@ const LABELS: Record<string, string> = {
   AGENT_AUTO_POST: 'Agent Auto Post',
   DM_AUTO_REPLY: 'DM Auto Reply',
   DM_AUTO_REPLY_MAX: 'DM Auto Reply Max',
+  AI_DAILY_TOKEN_LIMIT: 'AI Daily Token Limit',
+  AI_DAILY_CALL_LIMIT: 'AI Daily Call Limit',
+  AI_GUARDRAILS_ENFORCE: 'AI Guardrails Enforced',
 };
 
 function formatArgDate(value?: string): string {
@@ -59,15 +62,24 @@ function metricValue(job: AutomationHealthJob): string {
   return '-';
 }
 
+function formatNumber(value?: number | null): string {
+  if (value === null || value === undefined) return 'Not set';
+  return new Intl.NumberFormat('en-US').format(value);
+}
+
 export default function Settings() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [health, setHealth] = useState<AutomationHealthResult | null>(null);
   const [healthLoading, setHealthLoading] = useState(true);
   const [healthError, setHealthError] = useState('');
+  const [usage, setUsage] = useState<AiUsageSummary | null>(null);
+  const [usageLoading, setUsageLoading] = useState(true);
+  const [usageError, setUsageError] = useState('');
 
   useEffect(() => {
     api.getConfig().then(setConfig);
     loadHealth();
+    loadUsage();
   }, []);
 
   const loadHealth = () => {
@@ -77,6 +89,15 @@ export default function Settings() {
       .then(setHealth)
       .catch((err) => setHealthError(err instanceof Error ? err.message : String(err)))
       .finally(() => setHealthLoading(false));
+  };
+
+  const loadUsage = () => {
+    setUsageLoading(true);
+    setUsageError('');
+    api.getAiUsage()
+      .then(setUsage)
+      .catch((err) => setUsageError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setUsageLoading(false));
   };
 
   const inputCls = 'sg-input cursor-not-allowed px-3 py-2 text-sm text-muted-foreground';
@@ -161,6 +182,92 @@ export default function Settings() {
               ) : (
                 <tr>
                   <td colSpan={7} className="px-4 py-6 text-sm text-muted-foreground">No automation jobs found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="sg-panel overflow-hidden p-0">
+        <div className="flex flex-col gap-3 border-b border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">AI Cost Guardrails</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Daily calls and token usage tracked from local Claude requests.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={usage?.limits.enforce ? 'secondary' : 'outline'}>
+              {usage?.limits.enforce ? 'enforced' : 'observe only'}
+            </Badge>
+            <Button onClick={loadUsage} disabled={usageLoading} variant="outline" size="sm">
+              <RefreshCw className={usageLoading ? 'animate-spin' : ''} />
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        {usageError ? (
+          <div className="sg-status-warning m-4 rounded-lg border p-3 text-sm">{usageError}</div>
+        ) : null}
+
+        <div className="grid gap-3 p-4 md:grid-cols-4">
+          <div className="rounded-md border border-border bg-background p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Calls Today</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.calls)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Limit {formatNumber(usage?.limits.dailyCallLimit)}</p>
+          </div>
+          <div className="rounded-md border border-border bg-background p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Tokens Today</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.totalTokens)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Limit {formatNumber(usage?.limits.dailyTokenLimit)}</p>
+          </div>
+          <div className="rounded-md border border-border bg-background p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Input Tokens</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.inputTokens)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{usage?.argentinaDate || 'ARG day'}</p>
+          </div>
+          <div className="rounded-md border border-border bg-background p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Output Tokens</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.outputTokens)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Remaining {formatNumber(usage?.remaining.tokens)}</p>
+          </div>
+        </div>
+
+        {usage?.warnings.length ? (
+          <div className="mx-4 mb-4 space-y-1 rounded-lg border p-3 text-sm sg-status-warning">
+            {usage.warnings.map((warning) => <p key={warning}>{warning}</p>)}
+          </div>
+        ) : null}
+
+        <div className="overflow-x-auto border-t border-border">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead className="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">Time</th>
+                <th className="px-4 py-3 text-left font-semibold">Feature</th>
+                <th className="px-4 py-3 text-left font-semibold">Model</th>
+                <th className="px-4 py-3 text-left font-semibold">Tokens</th>
+                <th className="px-4 py-3 text-left font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {usageLoading && !usage ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-sm text-muted-foreground">Loading AI usage...</td>
+                </tr>
+              ) : usage?.recentEvents.length ? (
+                usage.recentEvents.slice(0, 10).map((event) => (
+                  <tr key={event.id} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3 text-muted-foreground">{formatArgDate(event.at)}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{event.feature}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{event.model}</td>
+                    <td className="px-4 py-3 text-foreground">{formatNumber(event.totalTokens)}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{event.status}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-sm text-muted-foreground">No AI usage recorded yet.</td>
                 </tr>
               )}
             </tbody>

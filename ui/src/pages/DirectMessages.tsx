@@ -9,7 +9,7 @@ import {
   IconSparkles,
   IconUser,
 } from '@tabler/icons-react';
-import { api, type DmDraftResult, type DmReviewMessage, type DmReviewResult } from '../api';
+import { api, type DmDraftResult, type DmReviewMessage, type DmReviewResult, type DmReviewThreadSummary } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -75,6 +75,7 @@ function threadLabel(messages: DmReviewMessage[]): string {
 
 function DmThread({
   messages,
+  summary,
   draft,
   draftResult,
   generating,
@@ -85,6 +86,7 @@ function DmThread({
   onSend,
 }: {
   messages: DmReviewMessage[];
+  summary?: DmReviewThreadSummary;
   draft: string;
   draftResult?: DmDraftResult;
   generating: boolean;
@@ -110,6 +112,13 @@ function DmThread({
         <div className="flex items-center gap-2">
           <Badge variant="outline">{messages.length} today</Badge>
           <Badge variant="secondary">{incomingCount} incoming</Badge>
+          {summary?.needsReply ? (
+            <Badge className="border-transparent bg-warning text-warning-foreground">
+              {summary.pendingIncomingMessages} pending
+            </Badge>
+          ) : (
+            <Badge variant="outline">answered</Badge>
+          )}
         </div>
       </div>
 
@@ -216,6 +225,14 @@ export default function DirectMessages() {
     }, {});
   }, [result]);
 
+  const threadSummaries = useMemo(() => {
+    const summaries: Record<number, DmReviewThreadSummary> = {};
+    for (const thread of result?.threads || []) {
+      summaries[thread.channelId] = thread;
+    }
+    return summaries;
+  }, [result]);
+
   const hasMessages = Boolean(result && result.messages.length > 0);
 
   const updateDraft = (channelId: number, value: string) => {
@@ -287,7 +304,7 @@ export default function DirectMessages() {
         <Stat icon={IconInbox} label="Messages" value={result?.messages.length ?? '-'} sub={`${result?.incomingMessages ?? '-'} incoming`} />
         <Stat icon={IconUser} label="Channels" value={result?.scannedChannels ?? '-'} sub={`${result?.totalDirectChannels ?? '-'} total`} />
         <Stat icon={IconClock} label="Window" value={result?.window.argentinaDate || '-'} sub={result ? `${formatArgDateTime(result.window.startUtc)} - ${formatArgDateTime(result.window.endUtc)}` : 'ARG day'} />
-        <Stat icon={IconCheck} label="Matched" value={result?.channelsWithTodayMessages ?? '-'} sub={`${result?.skippedInactiveChannels ?? '-'} inactive skipped`} />
+        <Stat icon={IconCheck} label="Open Threads" value={result?.unresolvedChannels ?? '-'} sub={`${result?.pendingIncomingMessages ?? '-'} pending incoming`} />
       </div>
 
       {error && (
@@ -314,6 +331,7 @@ export default function DirectMessages() {
                   <DmThread
                     key={channel}
                     messages={messages}
+                    summary={threadSummaries[channelId]}
                     draft={replyDrafts[channelId] || ''}
                     draftResult={draftResults[channelId]}
                     generating={generatingDraftId === channelId}

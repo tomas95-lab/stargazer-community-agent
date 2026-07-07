@@ -209,6 +209,19 @@ export interface DmReviewMessage {
   incoming: boolean;
 }
 
+export interface DmReviewThreadSummary {
+  channelId: number;
+  channelTitle?: string | null;
+  peers: DmReviewPeer[];
+  totalMessages: number;
+  incomingMessages: number;
+  outgoingMessages: number;
+  pendingIncomingMessages: number;
+  needsReply: boolean;
+  lastIncomingMessageId?: number;
+  lastMessageAt?: string;
+}
+
 export interface DmReviewResult {
   mode: 'dm-review';
   scanMode: 'quick' | 'full';
@@ -222,7 +235,10 @@ export interface DmReviewResult {
   scannedChannels: number;
   skippedInactiveChannels: number;
   incomingMessages: number;
+  pendingIncomingMessages: number;
+  unresolvedChannels: number;
   channelsWithTodayMessages: number;
+  threads: DmReviewThreadSummary[];
   messages: DmReviewMessage[];
   errors: string[];
   autoReply?: {
@@ -255,6 +271,12 @@ export interface OperationLogEntry {
   status: 'success' | 'error' | 'skipped';
   message: string;
   metadata?: Record<string, unknown>;
+}
+
+export interface OperationDetailResult {
+  entry: OperationLogEntry;
+  detail?: unknown;
+  hasDetail: boolean;
 }
 
 export interface AutomationProviderJob {
@@ -314,6 +336,115 @@ export interface ComposerResult {
   audience: string;
   variants: ComposerVariant[];
   guidelineSnippets: string[];
+}
+
+export interface ComposerTemplate {
+  id: string;
+  name: string;
+  description: string;
+  prompt: string;
+  audience: string;
+  channel: ComposerChannel;
+  tone: ComposerTone;
+  objective: ComposerObjective;
+  extraContext: string;
+  includeWarRoomLink: boolean;
+  includeSignature: boolean;
+}
+
+export interface ReviewQueueItem {
+  id: string;
+  runId: string;
+  runAt: string;
+  source: 'community' | 'dm';
+  priority: 'high' | 'medium' | 'low';
+  username: string;
+  message: string;
+  reason: string;
+  action: 'human' | 'error' | 'pending';
+  confidence?: number;
+  channelId?: number;
+  messageId?: number;
+  createdAt?: string;
+}
+
+export interface ReviewQueueResult {
+  generatedAt: string;
+  items: ReviewQueueItem[];
+  totals: {
+    all: number;
+    high: number;
+    medium: number;
+    low: number;
+    community: number;
+    dm: number;
+  };
+}
+
+export interface SandboxResult {
+  mode: 'sandbox';
+  generatedAt: string;
+  deterministic: boolean;
+  input: {
+    username: string;
+    channel: string;
+    message: string;
+    nowIso: string;
+    context: string;
+  };
+  decision: {
+    action: CommunityAgentAction;
+    confidence: number;
+    reason: string;
+    reply: string;
+    guidelineSnippets: string[];
+  };
+}
+
+export interface ProjectMemoryFact {
+  id: string;
+  title: string;
+  body: string;
+  source?: string;
+}
+
+export interface ProjectMemory {
+  updatedAt: string;
+  facts: ProjectMemoryFact[];
+}
+
+export interface AiUsageEvent {
+  id: string;
+  at: string;
+  argentinaDate: string;
+  feature: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  status: 'success' | 'error' | 'blocked';
+}
+
+export interface AiUsageSummary {
+  generatedAt: string;
+  argentinaDate: string;
+  today: {
+    calls: number;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
+  limits: {
+    dailyTokenLimit: number | null;
+    dailyCallLimit: number | null;
+    enforce: boolean;
+  };
+  remaining: {
+    tokens: number | null;
+    calls: number | null;
+  };
+  warnings: string[];
+  recentEvents: AiUsageEvent[];
 }
 
 export const api = {
@@ -392,6 +523,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ channelId, messageCount: opts.messageCount }),
     }),
+  getComposerTemplates: () => request<{ templates: ComposerTemplate[] }>('/composer/templates'),
   generateComposedMessage: (opts: {
     prompt: string;
     audience?: string;
@@ -409,4 +541,24 @@ export const api = {
     }),
   getAutomationHealth: () => request<AutomationHealthResult>('/automation/health'),
   getOperations: (limit = 50) => request<{ entries: OperationLogEntry[] }>(`/operations?limit=${limit}`),
+  getOperationDetail: (id: string) => request<OperationDetailResult>(`/operations/${id}`),
+  getReviewQueue: (limit = 150) => request<ReviewQueueResult>(`/review-queue?limit=${limit}`),
+  evaluateSandboxMessage: (opts: {
+    username?: string;
+    channel?: string;
+    message: string;
+    nowIso?: string;
+    context?: string;
+  }) =>
+    request<SandboxResult>('/sandbox/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
+  getProjectMemory: () => request<ProjectMemory>('/memory'),
+  updateProjectMemory: (memory: ProjectMemory) =>
+    request<ProjectMemory>('/memory', {
+      method: 'PUT',
+      body: JSON.stringify(memory),
+    }),
+  getAiUsage: () => request<AiUsageSummary>('/usage'),
 };

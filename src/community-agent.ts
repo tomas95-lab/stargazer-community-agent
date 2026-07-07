@@ -8,8 +8,10 @@ import { DiscourseChatMessage, DiscourseClient } from './discourse-client';
 import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
+import { projectMemoryText } from './project-memory';
 import { loadProjectLinks } from './links';
 import { sanitizeGeneratedText } from './text-safety';
+import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 
 const BOT_USERNAME = process.env.DISCOURSE_USERNAME || 'tomas.ruiz_OBIC';
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
@@ -516,6 +518,14 @@ function anthropicText(response: { content?: Array<{ type: string; text?: string
   return block?.text || '';
 }
 
+function anthropicUsage(response: unknown): { inputTokens?: number; outputTokens?: number } {
+  const usage = (response as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
+  return {
+    inputTokens: usage?.input_tokens,
+    outputTokens: usage?.output_tokens,
+  };
+}
+
 function replyIncludesWarRoomLink(reply: string, warRoomLink: string): boolean {
   const normalizedReply = normalizeText(reply);
   const normalizedLink = normalizeText(warRoomLink);
@@ -638,42 +648,58 @@ export async function evaluateSupportMessage(
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
   const snippets = await findProjectGuidelineSnippets(message, 4);
+  const memory = await projectMemoryText(12);
   const anthropic = new Anthropic({ apiKey });
+  const systemPrompt = [
+    'You are a community management agent for Stargazer Axiom.',
+    'Always write user-facing replies in English, even if the incoming message is Spanish, Portuguese, or any other language.',
+    'Never write the reply in Spanish.',
+    'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
+    'Use the provided project memory, project guideline excerpts, and recent chat context as the source of truth.',
+    'You may answer only when the answer is clearly supported by the provided project memory, project guideline excerpts, or by the recent chat context.',
+    'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
+    'Keep replies under 4 short sentences.',
+    `Do not add a signature. The system will append "${SUPPORT_ASSISTANT_SIGNATURE}" to user-facing replies.`,
+    isWarRoomOpenDay
+      ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}. Always tell them that once inside the War Room they must join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`
+      : 'Today is a weekend day in Argentina, so the War Room is closed. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, QM availability, or live support in any way, say exactly that the user should come back on Monday between 11:15 AM and 7:00 PM ARG.',
+    isWarRoomOpenDay
+      ? `If the user says they are already in the War Room / Zoom call and nobody is helping them, do not resend the Zoom link. Instead, tell them to join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}" inside the call.`
+      : '',
+    'Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
+  ].filter(Boolean).join(' ');
+  const userPrompt = [
+    `Today/context:\n${context || 'No recent context.'}`,
+    `Project memory:\n${memory || 'No project memory available.'}`,
+    `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
+    `Incoming message from ${username}:\n${message}`,
+  ].join('\n\n');
 
+  await assertAiUsageAllowed('support_evaluation', estimateTokens(`${systemPrompt}\n\n${userPrompt}`), 450);
   const response = await anthropic.messages.create({
     model: ANTHROPIC_MODEL,
     max_tokens: 450,
-    system:
-      [
-        'You are a community management agent for Stargazer Axiom.',
-        'Always write user-facing replies in English, even if the incoming message is Spanish, Portuguese, or any other language.',
-        'Never write the reply in Spanish.',
-        'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
-        'You may answer only when the answer is clearly supported by the provided project guideline excerpts or by the recent chat context.',
-        'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
-        'Keep replies under 4 short sentences.',
-        `Do not add a signature. The system will append "${SUPPORT_ASSISTANT_SIGNATURE}" to user-facing replies.`,
-        isWarRoomOpenDay
-          ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}. Always tell them that once inside the War Room they must join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`
-          : 'Today is a weekend day in Argentina, so the War Room is closed. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, QM availability, or live support in any way, say exactly that the user should come back on Monday between 11:15 AM and 7:00 PM ARG.',
-        isWarRoomOpenDay
-          ? `If the user says they are already in the War Room / Zoom call and nobody is helping them, do not resend the Zoom link. Instead, tell them to join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}" inside the call.`
-          : '',
-        'Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
-      ].filter(Boolean).join(' '),
+    system: systemPrompt,
     messages: [
       {
         role: 'user',
-        content: [
-          `Today/context:\n${context || 'No recent context.'}`,
-          `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
-          `Incoming message from ${username}:\n${message}`,
-        ].join('\n\n'),
+        content: userPrompt,
       },
     ],
   });
 
-  const parsed = extractJson(anthropicText(response));
+  const rawResponseText = anthropicText(response);
+  const usage = anthropicUsage(response);
+  await recordAiUsage({
+    feature: 'support_evaluation',
+    model: ANTHROPIC_MODEL,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    inputText: `${systemPrompt}\n\n${userPrompt}`,
+    outputText: rawResponseText,
+  });
+
+  const parsed = extractJson(rawResponseText);
   const action: CommunityAgentAction =
     parsed.action === 'reply' || parsed.action === 'human' || parsed.action === 'ignore' ? parsed.action : 'human';
   const confidence = typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0;
@@ -755,13 +781,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
   };
 
   if (respectSchedule && !withinSchedule) {
-    await appendOperationLog({
-      action: 'community_agent',
-      status: 'skipped',
-      message: 'Outside operating hours',
-      metadata: { window },
-    });
-    return {
+    const result: CommunityAgentResult = {
       mode: post ? 'post' : 'suggestion',
       checked: fetched.items.length,
       candidates: 0,
@@ -775,6 +795,20 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       decisions: [],
       errors: fetched.errors,
     };
+    await appendOperationLog({
+      action: 'community_agent',
+      status: 'skipped',
+      message: 'Outside operating hours',
+      metadata: { window },
+    }, {
+      type: 'community_agent',
+      options: { post, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount },
+      result,
+      items: fetched.items,
+      candidates: [],
+      decisions: [],
+    });
+    return result;
   }
 
   const state = await readState();
@@ -841,6 +875,20 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
   const posted = decisions.filter((decision) => decision.posted).length;
   const needsHuman = decisions.filter((decision) => decision.needsHuman).length;
   const ignored = decisions.filter((decision) => decision.action === 'ignore').length;
+  const result: CommunityAgentResult = {
+    mode: post ? 'post' : 'suggestion',
+    checked: fetched.items.length,
+    candidates: candidates.length,
+    handled: decisions.length,
+    posted,
+    needsHuman,
+    ignored,
+    withinSchedule,
+    window,
+    items: fetched.items,
+    decisions,
+    errors: fetched.errors,
+  };
 
   await appendOperationLog({
     action: 'community_agent',
@@ -856,20 +904,14 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       humanUsers: decisions.filter((decision) => decision.needsHuman).map((decision) => decision.username),
       errors: fetched.errors,
     },
+  }, {
+    type: 'community_agent',
+    options: { post, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount },
+    result,
+    items: fetched.items,
+    candidates,
+    decisions,
   });
 
-  return {
-    mode: post ? 'post' : 'suggestion',
-    checked: fetched.items.length,
-    candidates: candidates.length,
-    handled: decisions.length,
-    posted,
-    needsHuman,
-    ignored,
-    withinSchedule,
-    window,
-    items: fetched.items,
-    decisions,
-    errors: fetched.errors,
-  };
+  return result;
 }

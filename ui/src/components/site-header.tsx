@@ -14,6 +14,10 @@ const TITLES: Record<string, string> = {
   "/webinars": "Sessions",
   "/links": "Link Manager",
   "/history": "History",
+  "/runs": "Run Details",
+  "/review": "Human Review Queue",
+  "/sandbox": "Testing Sandbox",
+  "/memory": "Project Memory",
   "/settings": "Settings",
 }
 

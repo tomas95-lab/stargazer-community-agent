@@ -2,12 +2,16 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 import {
   IconCalendarEvent,
+  IconAlertTriangle,
+  IconDatabase,
   IconDashboard,
+  IconFlask,
   IconHistory,
   IconInbox,
   IconInnerShadowTop,
   IconLink,
   IconListDetails,
+  IconLogs,
   IconMessage,
   IconPencil,
   IconRobot,
@@ -66,6 +70,11 @@ const data = {
       icon: IconInbox,
     },
     {
+      title: "Review Queue",
+      url: "/review",
+      icon: IconAlertTriangle,
+    },
+    {
       title: "Sessions",
       url: "/webinars",
       icon: IconCalendarEvent,
@@ -88,6 +97,21 @@ const data = {
       name: "Run History",
       url: "/history",
       icon: IconHistory,
+    },
+    {
+      name: "Run Details",
+      url: "/runs",
+      icon: IconLogs,
+    },
+    {
+      name: "Testing Sandbox",
+      url: "/sandbox",
+      icon: IconFlask,
+    },
+    {
+      name: "Project Memory",
+      url: "/memory",
+      icon: IconDatabase,
     },
   ],
 }

@@ -12,7 +12,11 @@ import DirectMessages from "@/pages/DirectMessages"
 import History from "@/pages/History"
 import LinkManager from "@/pages/LinkManager"
 import MessageComposer from "@/pages/MessageComposer"
+import ProjectMemoryPage from "@/pages/ProjectMemory"
+import ReviewQueue from "@/pages/ReviewQueue"
+import RunDetails from "@/pages/RunDetails"
 import Settings from "@/pages/Settings"
+import TestingSandbox from "@/pages/TestingSandbox"
 import TopicEditor from "@/pages/TopicEditor"
 import WebinarScheduler from "@/pages/WebinarScheduler"
 
@@ -44,6 +48,10 @@ export default function App() {
                     <Route path="/webinars" element={<WebinarScheduler />} />
                     <Route path="/links" element={<LinkManager />} />
                     <Route path="/history" element={<History />} />
+                    <Route path="/runs" element={<RunDetails />} />
+                    <Route path="/review" element={<ReviewQueue />} />
+                    <Route path="/sandbox" element={<TestingSandbox />} />
+                    <Route path="/memory" element={<ProjectMemoryPage />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="*" element={<Dashboard />} />
                   </Routes>

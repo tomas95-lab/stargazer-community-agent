@@ -6,7 +6,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { loadProjectLinks } from './links';
 import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
+import { projectMemoryText } from './project-memory';
 import { sanitizeGeneratedText } from './text-safety';
+import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
 const SUPPORT_ASSISTANT_SIGNATURE = '- Stargazer Support Assistant';
@@ -121,6 +123,14 @@ function anthropicText(response: { content?: Array<{ type: string; text?: string
   return block?.text || '';
 }
 
+function anthropicUsage(response: unknown): { inputTokens?: number; outputTokens?: number } {
+  const usage = (response as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
+  return {
+    inputTokens: usage?.input_tokens,
+    outputTokens: usage?.output_tokens,
+  };
+}
+
 function label(value: string): string {
   return value.replace(/_/g, ' ');
 }
@@ -154,45 +164,62 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
 
   const links = await loadProjectLinks();
   const snippets = await findProjectGuidelineSnippets(`${request.prompt}\n${request.extraContext}`, 5);
+  const memory = await projectMemoryText(12);
   const anthropic = new Anthropic({ apiKey });
+  const maxTokens = request.variantCount === 1 ? 700 : 1200;
+  const systemPrompt = [
+    'You are a message composer for the Stargazer Axiom community management team.',
+    'Always write user-facing content in English, even when the user request is in Spanish or another language.',
+    'Do not write Spanish user-facing copy.',
+    'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
+    'Use the provided project memory, project guideline excerpts, and project links as the source of truth.',
+    'Do not invent deadlines, eligibility rules, project policy, pay details, access rules, or links.',
+    'If a requested detail is not supported, keep the message general and add a concise warning in the JSON warnings array.',
+    'Keep copy operational, clear, and suitable for repeated community workflows.',
+    'Return only valid JSON with key "variants". Each variant must contain: title, message, notes, warnings.',
+  ].join(' ');
+  const userPrompt = [
+    `Task:\n${request.prompt}`,
+    `Audience:\n${request.audience}`,
+    `Channel:\n${label(request.channel)}`,
+    `Tone:\n${label(request.tone)}`,
+    `Objective:\n${label(request.objective)}`,
+    `Number of variants:\n${request.variantCount}`,
+    request.extraContext ? `Additional context:\n${request.extraContext}` : '',
+    `War Room handling:\n${request.includeWarRoomLink ? `Include this War Room link when relevant: ${links.warRoom}` : 'Do not include the War Room link unless the task explicitly requires mentioning it.'}`,
+    'Signature handling:\nDo not add an assistant signature yourself. The system handles signatures after generation when enabled.',
+    `Project memory:\n${memory || 'No project memory available.'}`,
+    `Project links:\nGuidelines: ${links.guidelines}\nTemplates: ${links.templatesZip}\nValidation script: ${links.validationScript}\nCommon errors: ${links.commonErrorsDocument}`,
+    `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
+  ].filter(Boolean).join('\n\n');
 
   try {
+    await assertAiUsageAllowed('message_composer', estimateTokens(`${systemPrompt}\n\n${userPrompt}`), maxTokens);
+
     const response = await anthropic.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: request.variantCount === 1 ? 700 : 1200,
+      max_tokens: maxTokens,
       temperature: 0.4,
-      system: [
-        'You are a message composer for the Stargazer Axiom community management team.',
-        'Always write user-facing content in English, even when the user request is in Spanish or another language.',
-        'Do not write Spanish user-facing copy.',
-        'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
-        'Use the provided project guideline excerpts and project links as the source of truth.',
-        'Do not invent deadlines, eligibility rules, project policy, pay details, access rules, or links.',
-        'If a requested detail is not supported, keep the message general and add a concise warning in the JSON warnings array.',
-        'Keep copy operational, clear, and suitable for repeated community workflows.',
-        'Return only valid JSON with key "variants". Each variant must contain: title, message, notes, warnings.',
-      ].join(' '),
+      system: systemPrompt,
       messages: [
         {
           role: 'user',
-          content: [
-            `Task:\n${request.prompt}`,
-            `Audience:\n${request.audience}`,
-            `Channel:\n${label(request.channel)}`,
-            `Tone:\n${label(request.tone)}`,
-            `Objective:\n${label(request.objective)}`,
-            `Number of variants:\n${request.variantCount}`,
-            request.extraContext ? `Additional context:\n${request.extraContext}` : '',
-            `War Room handling:\n${request.includeWarRoomLink ? `Include this War Room link when relevant: ${links.warRoom}` : 'Do not include the War Room link unless the task explicitly requires mentioning it.'}`,
-            'Signature handling:\nDo not add an assistant signature yourself. The system handles signatures after generation when enabled.',
-            `Project links:\nGuidelines: ${links.guidelines}\nTemplates: ${links.templatesZip}\nValidation script: ${links.validationScript}\nCommon errors: ${links.commonErrorsDocument}`,
-            `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
-          ].filter(Boolean).join('\n\n'),
+          content: userPrompt,
         },
       ],
     });
+    const rawResponseText = anthropicText(response);
+    const usage = anthropicUsage(response);
+    await recordAiUsage({
+      feature: 'message_composer',
+      model: ANTHROPIC_MODEL,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      inputText: `${systemPrompt}\n\n${userPrompt}`,
+      outputText: rawResponseText,
+    });
 
-    const parsed = extractJson(anthropicText(response));
+    const parsed = extractJson(rawResponseText);
     const variants = (parsed.variants || [])
       .map((variant) => normalizeVariant(variant, request.includeSignature))
       .filter((variant): variant is ComposerVariant => Boolean(variant))

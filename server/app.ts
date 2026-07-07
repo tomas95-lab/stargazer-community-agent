@@ -15,6 +15,10 @@ import dmReviewRouter from './routes/dm-review';
 import cronRouter from './routes/cron';
 import operationsRouter from './routes/operations';
 import automationRouter from './routes/automation';
+import reviewQueueRouter from './routes/review-queue';
+import sandboxRouter from './routes/sandbox';
+import memoryRouter from './routes/memory';
+import usageRouter from './routes/usage';
 
 const app = express();
 
@@ -35,6 +39,10 @@ app.use('/api/dm-review', dmReviewRouter);
 app.use('/api/cron', cronRouter);
 app.use('/api/operations', operationsRouter);
 app.use('/api/automation', automationRouter);
+app.use('/api/review-queue', reviewQueueRouter);
+app.use('/api/sandbox', sandboxRouter);
+app.use('/api/memory', memoryRouter);
+app.use('/api/usage', usageRouter);
 
 const uiBuild = path.resolve(__dirname, '../ui/dist');
 app.use(express.static(uiBuild));

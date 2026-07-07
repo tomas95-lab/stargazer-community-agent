@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Clipboard,
   Loader2,
@@ -12,6 +13,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import {
   api,
+  type ComposerTemplate,
   type ComposerChannel,
   type ComposerObjective,
   type ComposerResult,
@@ -61,6 +63,9 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 }
 
 export default function MessageComposer() {
+  const [searchParams] = useSearchParams();
+  const [templates, setTemplates] = useState<ComposerTemplate[]>([]);
+  const [templateId, setTemplateId] = useState('custom');
   const [prompt, setPrompt] = useState('');
   const [audience, setAudience] = useState('Stargazer contributors');
   const [extraContext, setExtraContext] = useState('');
@@ -86,8 +91,40 @@ export default function MessageComposer() {
   }, [result]);
 
   useEffect(() => {
+    api.getComposerTemplates()
+      .then((result) => setTemplates(result.templates))
+      .catch(() => setTemplates([]));
+  }, []);
+
+  useEffect(() => {
+    const queryPrompt = searchParams.get('prompt');
+    const queryChannel = searchParams.get('channel') as ComposerChannel | null;
+    const queryAudience = searchParams.get('audience');
+    if (queryPrompt) setPrompt(queryPrompt);
+    if (queryAudience) setAudience(queryAudience);
+    if (queryChannel && CHANNELS.some((item) => item.value === queryChannel)) setChannel(queryChannel);
+  }, [searchParams]);
+
+  useEffect(() => {
     setDraft(selectedVariant?.message || '');
   }, [selectedVariant?.message]);
+
+  const applyTemplate = (id: string) => {
+    setTemplateId(id);
+    if (id === 'custom') return;
+    const template = templates.find((item) => item.id === id);
+    if (!template) return;
+    setPrompt(template.prompt);
+    setAudience(template.audience);
+    setExtraContext(template.extraContext);
+    setChannel(template.channel);
+    setTone(template.tone);
+    setObjective(template.objective);
+    setIncludeWarRoomLink(template.includeWarRoomLink);
+    setIncludeSignature(template.includeSignature);
+    setResult(null);
+    setDraft('');
+  };
 
   const generate = async () => {
     setLoading(true);
@@ -156,6 +193,26 @@ export default function MessageComposer() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(340px,420px)_1fr]">
         <section className="sg-panel space-y-4 p-5">
+          <div>
+            <FieldLabel>Template</FieldLabel>
+            <Select value={templateId} onValueChange={applyTemplate}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="custom">Custom message</SelectItem>
+                {templates.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {templateId !== 'custom' && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {templates.find((item) => item.id === templateId)?.description}
+              </p>
+            )}
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
             <div>
               <FieldLabel>Channel</FieldLabel>
