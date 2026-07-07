@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-07T00:00:00.000Z",
+  "updatedAt": "2026-07-07T23:15:25.383Z",
   "facts": [
     {
       "id": "language",
@@ -30,6 +30,24 @@
       "title": "Step 0 Cursor access",
       "body": "Contributors who passed the courses and are now EQ or see the project as ineligible should come to the War Room to request Cursor access. This is step 0 of the project guideline.",
       "source": "project guideline"
+    },
+    {
+      "id": "fact-1783452717175",
+      "title": "Model changes",
+      "body": "The Qwen model is deprecated now; the contributors must make Sonnet 4.6 fail.",
+      "source": "project operations"
+    },
+    {
+      "id": "fact-1783465904053",
+      "title": "Step 0 after Cursor access",
+      "body": "If a contributor has already completed the courses and received an invitation to enroll, they should go to the war room to request that their account be unlocked.",
+      "source": "project guideline"
+    },
+    {
+      "id": "fact-1783466110188",
+      "title": "Recommend work in war room",
+      "body": "Always RECOMMEND entering the war room while working, in order to achieve better results",
+      "source": "project operations"
     }
   ]
 }

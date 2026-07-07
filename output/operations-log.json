@@ -1,5 +1,224 @@
 [
   {
+    "id": "5407b929-3171-4db2-8e51-ff8277ef51f3",
+    "at": "2026-07-07T23:20:23.142Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 1,
+      "deterministic": true
+    }
+  },
+  {
+    "id": "5182e975-78f5-4695-9ac6-3aef4e26a933",
+    "at": "2026-07-07T23:18:12.927Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 1,
+      "deterministic": true
+    }
+  },
+  {
+    "id": "bccb3db3-7c4e-453b-b559-77573974bcf9",
+    "at": "2026-07-07T23:16:18.968Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.85,
+      "deterministic": false
+    }
+  },
+  {
+    "id": "95f48b40-15d6-4173-bd00-74a26f321079",
+    "at": "2026-07-07T23:15:50.531Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.85,
+      "deterministic": false
+    }
+  },
+  {
+    "id": "617f2a9a-6836-4b5f-b3bf-953dee8c104b",
+    "at": "2026-07-07T23:13:46.501Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.85,
+      "deterministic": false
+    }
+  },
+  {
+    "id": "2e944e77-2a93-4bf3-8d53-a3d031d64590",
+    "at": "2026-07-07T23:13:35.411Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 1,
+      "deterministic": true
+    }
+  },
+  {
+    "id": "7598e7ee-a29c-46d0-84c7-8d886d073d05",
+    "at": "2026-07-07T22:00:38.341Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1900",
+      "slot": "1900",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 5,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "fa733e4b-6342-43d4-8584-df311f1257be",
+    "at": "2026-07-07T22:00:30.867Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 5,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "5e78768c-ad77-444f-bbfa-adee1a4bd754",
+    "at": "2026-07-07T21:00:45.654Z",
+    "action": "cron_request",
+    "status": "skipped",
+    "message": "DM review cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/dm-review/1800",
+      "slot": "1800",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "dm_review",
+      "incomingMessages": 0,
+      "scannedChannels": 5,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  {
+    "id": "512c6f31-75b3-4ec9-9676-ac09da62fb2d",
+    "at": "2026-07-07T21:00:43.897Z",
+    "action": "dm_review",
+    "status": "skipped",
+    "message": "No incoming DMs found for 2026-07-07.",
+    "metadata": {
+      "argentinaDate": "2026-07-07",
+      "totalDirectChannels": 56,
+      "scannedChannels": 5,
+      "incomingMessages": 0,
+      "pendingIncomingMessages": 0,
+      "unresolvedChannels": 0,
+      "newIncomingMessages": 0,
+      "newIncomingMessageIds": [],
+      "newDmSenders": [],
+      "channelsWithTodayMessages": 0,
+      "autoReplyEnabled": true,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  {
+    "id": "e9aff19a-12e3-4abb-83d0-f5f67ef6f71a",
+    "at": "2026-07-07T21:00:41.086Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 0,
+      "replied": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  {
+    "id": "b065398e-43dc-4796-97f8-d1ae8edea6a4",
+    "at": "2026-07-07T20:30:37.449Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1730",
+      "slot": "1730",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 5,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "38ceba7c-cf3d-491e-bdf0-957eb49cfafc",
+    "at": "2026-07-07T20:30:35.249Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 5,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "4bd310a8-c362-4a43-a07c-5924c274e628",
+    "at": "2026-07-07T19:34:26.849Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.95,
+      "deterministic": false
+    }
+  },
+  {
     "id": "adb6381a-77cf-47c8-8236-4007ba145f2f",
     "at": "2026-07-07T19:26:33.184Z",
     "action": "sandbox_evaluation",

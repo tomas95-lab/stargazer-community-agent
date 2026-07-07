@@ -1,6 +1,50 @@
 {
   "events": [
     {
+      "id": "7649d009-670b-48f5-9f79-d0d6e71b1070",
+      "at": "2026-07-07T23:16:18.065Z",
+      "argentinaDate": "2026-07-07",
+      "feature": "support_evaluation",
+      "model": "claude-haiku-4-5",
+      "inputTokens": 4760,
+      "outputTokens": 234,
+      "totalTokens": 4994,
+      "status": "success"
+    },
+    {
+      "id": "01a2e7bf-66b3-46a7-91db-ca3e412d325d",
+      "at": "2026-07-07T23:15:49.499Z",
+      "argentinaDate": "2026-07-07",
+      "feature": "support_evaluation",
+      "model": "claude-haiku-4-5",
+      "inputTokens": 4760,
+      "outputTokens": 200,
+      "totalTokens": 4960,
+      "status": "success"
+    },
+    {
+      "id": "eda4f96d-5a4e-4feb-bd26-55c28f4f9996",
+      "at": "2026-07-07T23:13:45.649Z",
+      "argentinaDate": "2026-07-07",
+      "feature": "support_evaluation",
+      "model": "claude-haiku-4-5",
+      "inputTokens": 4735,
+      "outputTokens": 250,
+      "totalTokens": 4985,
+      "status": "success"
+    },
+    {
+      "id": "fab8e1c2-8a3f-4a15-b907-d7bfdcd1294e",
+      "at": "2026-07-07T19:34:25.911Z",
+      "argentinaDate": "2026-07-07",
+      "feature": "support_evaluation",
+      "model": "claude-haiku-4-5",
+      "inputTokens": 4877,
+      "outputTokens": 191,
+      "totalTokens": 5068,
+      "status": "success"
+    },
+    {
       "id": "6d0e2464-db09-4287-aad9-e674f40cc6c4",
       "at": "2026-07-07T19:26:31.428Z",
       "argentinaDate": "2026-07-07",

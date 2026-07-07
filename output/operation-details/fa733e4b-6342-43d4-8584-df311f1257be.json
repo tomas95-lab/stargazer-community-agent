@@ -1,0 +1,202 @@
+{
+  "entry": {
+    "id": "fa733e4b-6342-43d4-8584-df311f1257be",
+    "at": "2026-07-07T22:00:30.867Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 5,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": true,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": true,
+      "skipProcessed": true,
+      "markProcessed": true,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "post",
+      "checked": 5,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": true,
+      "window": {
+        "argentinaDate": "2026-07-07",
+        "startUtc": "2026-07-07T03:00:00.000Z",
+        "endUtc": "2026-07-08T03:00:00.000Z",
+        "operatingHours": "Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays"
+      },
+      "items": [
+        {
+          "id": "community:27699907",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-07/2902883) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Rubric Quality**, with a reminder about **A missing rubric criterion is a free pass for the model to skip that requirement.**.\n\nQuick rule: List every prompt requirement. Verify each has a rubric criterion. No gaps allowed.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-07T13:01:27Z",
+          "chatMessageId": 27699907,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": []
+        },
+        {
+          "id": "community:27700520",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "🚨 **Cursor access update** 🚨\n\nTeam, we’re currently waiting for the following contributors to join the War Room so we can help activate them in the project:\n\n[latam.coder2217@outlier.ai](mailto:latam.coder2217@outlier.ai)+outlier\n[latam.coder2260@outlier.ai](mailto:latam.coder2260@outlier.ai)+outlier\n[amanburman039@gmail.com](mailto:amanburman039@gmail.com)+outlier\n[latam.coder2184@outlier.ai](mailto:latam.coder2184@outlier.ai)+outlier\n[latam.coder2366@outlier.ai](mailto:latam.coder2366@outlier.ai)+outlier\n[inqa-coder0146@outlier.ai](mailto:inqa-coder0146@outlier.ai)+outlier\n[latam.coder2609@outlier.ai](mailto:latam.coder2609@outlier.ai)+outlier\n[coder_turkey_referral_320@outlier.ai](mailto:coder_turkey_referral_320@outlier.ai)+outlier\n[latam.coder2306@outlier.ai](mailto:latam.coder2306@outlier.ai)+outlier\n[latam.coder056@remotasks.com](mailto:latam.coder056@remotasks.com)+outlier\n\nAlso, for anyone who completed the required courses but is currently EQ, this is most likely because you still need Cursor access.\n\nPlease join the War Room and ask for Cursor access so we can check your status and help you get set up.\n\nThank you!",
+          "createdAt": "2026-07-07T14:14:57Z",
+          "chatMessageId": 27700520,
+          "threadId": 1500817,
+          "isStaff": false,
+          "probableReplies": []
+        },
+        {
+          "id": "community:27700588",
+          "source": "community",
+          "username": "amanburman039",
+          "message": "Can I get the waroom link?",
+          "createdAt": "2026-07-07T14:27:08Z",
+          "chatMessageId": 27700588,
+          "threadId": 1500762,
+          "isStaff": false,
+          "probableReplies": [
+            {
+              "id": "community:27700680",
+              "username": "tomas.ruiz_OBIC",
+              "message": "Of course! Join us here: https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success. Once inside, please join the breakout room &hellip;",
+              "createdAt": "2026-07-07T14:42:06Z",
+              "chatMessageId": 27700680,
+              "match": "direct_reply"
+            }
+          ]
+        },
+        {
+          "id": "community:27701163",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey everyone,\n\nQuick heads up: we're phasing out the QWEN model for this project effective immediately. All contributors should switch to **Claude Sonnet 4.6** for their work.\n\nIf you haven't updated your Cursor configuration yet, check the Environment Setup section in the project guidelines—it has everything you need to get Sonnet 4.6 up and running.\n\nReach out if you hit any snags with the setup!\n\nThanks!",
+          "createdAt": "2026-07-07T15:44:48Z",
+          "chatMessageId": 27701163,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": []
+        },
+        {
+          "id": "community:27701938",
+          "source": "community",
+          "username": "latam.coder2348",
+          "message": "Hi guys, is anyone in the war room?",
+          "createdAt": "2026-07-07T17:05:13Z",
+          "chatMessageId": 27701938,
+          "threadId": 1500882,
+          "isStaff": false,
+          "probableReplies": [
+            {
+              "id": "community:27702129",
+              "username": "tomas.ruiz_OBIC",
+              "message": "Yes, the War Room is open now. War Room link: Once you are in the War Room, join the breakout room called \"Stargazer - Team\".",
+              "createdAt": "2026-07-07T17:30:27Z",
+              "chatMessageId": 27702129,
+              "match": "direct_reply"
+            }
+          ]
+        }
+      ],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27699907",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-07/2902883) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Rubric Quality**, with a reminder about **A missing rubric criterion is a free pass for the model to skip that requirement.**.\n\nQuick rule: List every prompt requirement. Verify each has a rubric criterion. No gaps allowed.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-07T13:01:27Z",
+        "chatMessageId": 27699907,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      },
+      {
+        "id": "community:27700520",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "🚨 **Cursor access update** 🚨\n\nTeam, we’re currently waiting for the following contributors to join the War Room so we can help activate them in the project:\n\n[latam.coder2217@outlier.ai](mailto:latam.coder2217@outlier.ai)+outlier\n[latam.coder2260@outlier.ai](mailto:latam.coder2260@outlier.ai)+outlier\n[amanburman039@gmail.com](mailto:amanburman039@gmail.com)+outlier\n[latam.coder2184@outlier.ai](mailto:latam.coder2184@outlier.ai)+outlier\n[latam.coder2366@outlier.ai](mailto:latam.coder2366@outlier.ai)+outlier\n[inqa-coder0146@outlier.ai](mailto:inqa-coder0146@outlier.ai)+outlier\n[latam.coder2609@outlier.ai](mailto:latam.coder2609@outlier.ai)+outlier\n[coder_turkey_referral_320@outlier.ai](mailto:coder_turkey_referral_320@outlier.ai)+outlier\n[latam.coder2306@outlier.ai](mailto:latam.coder2306@outlier.ai)+outlier\n[latam.coder056@remotasks.com](mailto:latam.coder056@remotasks.com)+outlier\n\nAlso, for anyone who completed the required courses but is currently EQ, this is most likely because you still need Cursor access.\n\nPlease join the War Room and ask for Cursor access so we can check your status and help you get set up.\n\nThank you!",
+        "createdAt": "2026-07-07T14:14:57Z",
+        "chatMessageId": 27700520,
+        "threadId": 1500817,
+        "isStaff": false,
+        "probableReplies": []
+      },
+      {
+        "id": "community:27700588",
+        "source": "community",
+        "username": "amanburman039",
+        "message": "Can I get the waroom link?",
+        "createdAt": "2026-07-07T14:27:08Z",
+        "chatMessageId": 27700588,
+        "threadId": 1500762,
+        "isStaff": false,
+        "probableReplies": [
+          {
+            "id": "community:27700680",
+            "username": "tomas.ruiz_OBIC",
+            "message": "Of course! Join us here: https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success. Once inside, please join the breakout room &hellip;",
+            "createdAt": "2026-07-07T14:42:06Z",
+            "chatMessageId": 27700680,
+            "match": "direct_reply"
+          }
+        ]
+      },
+      {
+        "id": "community:27701163",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey everyone,\n\nQuick heads up: we're phasing out the QWEN model for this project effective immediately. All contributors should switch to **Claude Sonnet 4.6** for their work.\n\nIf you haven't updated your Cursor configuration yet, check the Environment Setup section in the project guidelines—it has everything you need to get Sonnet 4.6 up and running.\n\nReach out if you hit any snags with the setup!\n\nThanks!",
+        "createdAt": "2026-07-07T15:44:48Z",
+        "chatMessageId": 27701163,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      },
+      {
+        "id": "community:27701938",
+        "source": "community",
+        "username": "latam.coder2348",
+        "message": "Hi guys, is anyone in the war room?",
+        "createdAt": "2026-07-07T17:05:13Z",
+        "chatMessageId": 27701938,
+        "threadId": 1500882,
+        "isStaff": false,
+        "probableReplies": [
+          {
+            "id": "community:27702129",
+            "username": "tomas.ruiz_OBIC",
+            "message": "Yes, the War Room is open now. War Room link: Once you are in the War Room, join the breakout room called \"Stargazer - Team\".",
+            "createdAt": "2026-07-07T17:30:27Z",
+            "chatMessageId": 27702129,
+            "match": "direct_reply"
+          }
+        ]
+      }
+    ],
+    "candidates": [],
+    "decisions": []
+  }
+}
