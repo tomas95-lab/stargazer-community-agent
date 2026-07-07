@@ -1,5 +1,17 @@
 [
   {
+    "id": "bccb3db3-7c4e-453b-b559-77573974bcf9",
+    "at": "2026-07-07T23:16:18.968Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.85,
+      "deterministic": false
+    }
+  },
+  {
     "id": "95f48b40-15d6-4173-bd00-74a26f321079",
     "at": "2026-07-07T23:15:50.531Z",
     "action": "sandbox_evaluation",
