@@ -1,5 +1,16 @@
 [
   {
+    "id": "2aaca7ca-54db-4568-a538-513d3c09dde5",
+    "at": "2026-07-07T15:44:51.170Z",
+    "action": "send_chat_message",
+    "status": "success",
+    "message": "Sent chat message",
+    "metadata": {
+      "channelId": "828853",
+      "messageLength": 410
+    }
+  },
+  {
     "id": "b18e1931-2887-4723-94dc-69d6f151f13d",
     "at": "2026-07-07T15:44:38.532Z",
     "action": "message_composer",
