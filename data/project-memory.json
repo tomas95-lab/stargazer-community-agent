@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-07T19:33:39.950Z",
+  "updatedAt": "2026-07-07T23:11:59.133Z",
   "facts": [
     {
       "id": "language",
@@ -36,6 +36,12 @@
       "title": "Model changes",
       "body": "The Qwen model is deprecated now; the contributors must make Sonnet 4.6 fail.",
       "source": "project operations"
+    },
+    {
+      "id": "fact-1783465904053",
+      "title": "Step 0 after Cursor access",
+      "body": "If a contributor has already completed the courses and received an invitation to enroll, they should go to the war room to request that their account be unlocked.",
+      "source": "project guideline"
     }
   ]
 }
