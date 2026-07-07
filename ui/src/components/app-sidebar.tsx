@@ -9,6 +9,7 @@ import {
   IconLink,
   IconListDetails,
   IconMessage,
+  IconPencil,
   IconRobot,
   IconSettings,
 } from "@tabler/icons-react"
@@ -48,6 +49,11 @@ const data = {
       title: "Comms",
       url: "/comms",
       icon: IconMessage,
+    },
+    {
+      title: "Composer",
+      url: "/composer",
+      icon: IconPencil,
     },
     {
       title: "Community Agent",

@@ -257,6 +257,28 @@ export interface OperationLogEntry {
   metadata?: Record<string, unknown>;
 }
 
+export type ComposerChannel = 'community' | 'dm' | 'daily_thread' | 'reminder' | 'announcement';
+export type ComposerTone = 'friendly' | 'professional' | 'direct' | 'warm_supportive' | 'urgent' | 'short_clear';
+export type ComposerObjective = 'inform' | 'remind' | 'ask_for_action' | 'de_escalate' | 'explain_guideline';
+
+export interface ComposerVariant {
+  title?: string;
+  message: string;
+  notes?: string;
+  warnings: string[];
+}
+
+export interface ComposerResult {
+  mode: 'composer';
+  generatedAt: string;
+  channel: ComposerChannel;
+  tone: ComposerTone;
+  objective: ComposerObjective;
+  audience: string;
+  variants: ComposerVariant[];
+  guidelineSnippets: string[];
+}
+
 export const api = {
   getTopics: () => request<Topic[]>('/topics'),
   getToday: () => request<{ date: string; topic: Topic | null }>('/topics/today'),
@@ -332,6 +354,21 @@ export const api = {
     request<DmDraftResult>('/dm-review/draft', {
       method: 'POST',
       body: JSON.stringify({ channelId, messageCount: opts.messageCount }),
+    }),
+  generateComposedMessage: (opts: {
+    prompt: string;
+    audience?: string;
+    channel?: ComposerChannel;
+    tone?: ComposerTone;
+    objective?: ComposerObjective;
+    extraContext?: string;
+    variantCount?: number;
+    includeWarRoomLink?: boolean;
+    includeSignature?: boolean;
+  }) =>
+    request<ComposerResult>('/composer/generate', {
+      method: 'POST',
+      body: JSON.stringify(opts),
     }),
   getOperations: (limit = 50) => request<{ entries: OperationLogEntry[] }>(`/operations?limit=${limit}`),
 };

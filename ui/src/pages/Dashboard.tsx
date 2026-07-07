@@ -8,6 +8,7 @@ import {
   Link2,
   Loader2,
   MessageSquareText,
+  PencilLine,
   Target,
 } from "lucide-react"
 
@@ -149,9 +150,10 @@ export default function Dashboard() {
 
       <div className="px-4 lg:px-6">
         <p className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Quick Actions</p>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           <QuickAction Icon={FileText} label="Manage Topics" onClick={() => navigate("/topics")} />
           <QuickAction Icon={MessageSquareText} label="Send a Comm" onClick={() => navigate("/comms")} />
+          <QuickAction Icon={PencilLine} label="Compose Draft" onClick={() => navigate("/composer")} />
           <QuickAction Icon={Bot} label="Community Agent" onClick={() => navigate("/agent")} />
           <QuickAction Icon={Target} label="Schedule Session" onClick={() => navigate("/webinars")} />
           <QuickAction Icon={Link2} label="Edit Links" onClick={() => navigate("/links")} />

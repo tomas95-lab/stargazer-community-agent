@@ -8,6 +8,7 @@ const TITLES: Record<string, string> = {
   "/": "Stargazer Dashboard",
   "/topics": "Topics",
   "/comms": "Comms Automator",
+  "/composer": "Message Composer",
   "/agent": "Community Agent",
   "/dms": "DM Review",
   "/webinars": "Sessions",

@@ -11,6 +11,7 @@ import Dashboard from "@/pages/Dashboard"
 import DirectMessages from "@/pages/DirectMessages"
 import History from "@/pages/History"
 import LinkManager from "@/pages/LinkManager"
+import MessageComposer from "@/pages/MessageComposer"
 import Settings from "@/pages/Settings"
 import TopicEditor from "@/pages/TopicEditor"
 import WebinarScheduler from "@/pages/WebinarScheduler"
@@ -37,6 +38,7 @@ export default function App() {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/topics" element={<TopicEditor />} />
                     <Route path="/comms" element={<CommsAutomator />} />
+                    <Route path="/composer" element={<MessageComposer />} />
                     <Route path="/agent" element={<CommunityAgent />} />
                     <Route path="/dms" element={<DirectMessages />} />
                     <Route path="/webinars" element={<WebinarScheduler />} />
