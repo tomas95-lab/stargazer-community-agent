@@ -1,5 +1,15 @@
 [
   {
+    "id": "3982fe15-53de-4e86-ac82-830d20145795",
+    "at": "2026-07-07T15:10:08.509Z",
+    "action": "daily_publish_job",
+    "status": "skipped",
+    "message": "Daily thread for 2026-07-07 was already published",
+    "metadata": {
+      "date": "2026-07-07"
+    }
+  },
+  {
     "id": "b257e06a-5099-4fea-af7c-cf6897668dee",
     "at": "2026-07-07T14:43:21.051Z",
     "action": "community_agent",
