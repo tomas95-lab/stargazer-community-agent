@@ -19,6 +19,7 @@
     "job:dms": "node node_modules/tsx/dist/cli.mjs src/dm-review-job.ts",
     "job:webinars": "node node_modules/tsx/dist/cli.mjs src/webinar-reminder.ts",
     "jobs:all": "node node_modules/tsx/dist/cli.mjs src/run-community-jobs.ts",
+    "scheduler:setup:cron-job-org": "node scripts/setup-cron-job-org.mjs",
     "ai:respond": "node node_modules/tsx/dist/cli.mjs src/claude-responder.ts",
     "guidelines:extract": "node scripts/extract-guidelines.mjs"
   },

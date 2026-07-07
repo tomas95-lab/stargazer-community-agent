@@ -227,6 +227,22 @@ Production cron schedule:
 | DM Review | `/api/cron/dm-review/1530` | 18:30 | 15:30 |
 | DM Review | `/api/cron/dm-review/1800` | 21:00 | 18:00 |
 
+External scheduler setup:
+
+`cron-job.org` can mirror the production schedule and call the same protected cron endpoints. Add `CRON_JOB_ORG_API_KEY` to `.env`, keep `CRON_SECRET` set, then run:
+
+```bash
+npm run scheduler:setup:cron-job-org
+```
+
+To preview the jobs without creating or updating anything:
+
+```bash
+npm run scheduler:setup:cron-job-org -- --dry-run
+```
+
+The setup script creates a `Stargazer Community Agent` folder, upserts the daily thread, community agent, and DM review jobs, and sends `Authorization: Bearer <CRON_SECRET>` on every request.
+
 ## Current Caveats
 
 - `templates/*.md` duplicate the hardcoded templates in `src/templates.ts`; the code currently uses `src/templates.ts`.
