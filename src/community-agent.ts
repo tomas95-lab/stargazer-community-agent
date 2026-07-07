@@ -19,6 +19,8 @@ const MAX_ANSWERS = parseInt(process.env.RESPONDER_MAX_ANSWERS || process.env.AG
 const MESSAGE_COUNT = parseInt(process.env.AGENT_MESSAGE_COUNT || '50', 10);
 const MIN_CONFIDENCE = Number(process.env.AGENT_MIN_CONFIDENCE || '0.50');
 const REPLY_LOOKAHEAD_MINUTES = 45;
+const THREAD_SCAN_LIMIT = parseInt(process.env.AGENT_THREAD_SCAN_LIMIT || '6', 10);
+const THREAD_MESSAGE_COUNT = parseInt(process.env.AGENT_THREAD_MESSAGE_COUNT || '30', 10);
 const STATE_FILE = 'output/community-agent-state.json';
 const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const WAR_ROOM_OPEN_MINUTES = 11 * 60 + 15;
@@ -26,7 +28,6 @@ const WAR_ROOM_BREAKOUT_ROOM = 'Stargazer - Team';
 const WAR_ROOM_BREAKOUT_NOTICE = `Once you are in the War Room, join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`;
 const WAR_ROOM_WEEKEND_NOTICE =
   'Today is a weekend day in Argentina, so the War Room is closed. Please come back on Monday between 11:15 AM and 7:00 PM ARG for live support.';
-const SUPPORT_ASSISTANT_SIGNATURE = '- Stargazer Support Assistant';
 
 export type CommunityAgentSource = 'community';
 export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
@@ -53,6 +54,7 @@ export interface CommunityAgentItem {
   replyToChatMessageId?: number;
   isStaff?: boolean;
   probableReplies?: CommunityAgentReplyEvidence[];
+  ignoredReason?: string;
 }
 
 export interface CommunityAgentReplyEvidence {
@@ -425,6 +427,29 @@ function shouldIgnoreMessage(text: string): boolean {
   return trimmed.length < 8 || trimmed.startsWith('🚨') || trimmed.startsWith('Hey team');
 }
 
+function baseIgnoreReason(item: CommunityAgentItem): string | null {
+  const isOwnAuthor = shouldIgnoreAuthor(item.username);
+  const isBroadcast = item.message.trim().startsWith('🚨');
+  const isTeamAnnouncement = item.message.trim().startsWith('Hey team');
+  if (isOwnAuthor && (isBroadcast || isTeamAnnouncement)) {
+    return 'Manager announcement authored by the configured bot user, not a contributor support request.';
+  }
+  if (isBroadcast) return 'Broadcast announcement, not a contributor support request.';
+  if (isTeamAnnouncement) return 'Team announcement, not a contributor support request.';
+  if (shouldIgnoreAuthor(item.username)) return 'Authored by the configured manager/bot user.';
+  if (item.message.trim().length < 8) return 'Message is too short to evaluate safely.';
+  if ((item.probableReplies || []).length > 0) return 'Already has a probable reply in the chat or thread.';
+  if (!isQuestionOrSupportRequest(item.message)) return 'No question or support signal detected.';
+  return null;
+}
+
+function withIgnoredReasons(items: CommunityAgentItem[]): CommunityAgentItem[] {
+  return items.map((item) => ({
+    ...item,
+    ignoredReason: baseIgnoreReason(item) || undefined,
+  }));
+}
+
 function threadPreviewReply(message: DiscourseChatMessage): CommunityAgentReplyEvidence | null {
   const preview = message.thread?.preview;
   if (!preview?.last_reply_id || !preview.last_reply_created_at || !preview.last_reply_user?.username) return null;
@@ -456,9 +481,13 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
   if (options.includeCommunity) {
     try {
       const messages = await client.readChatMessages(channelId, options.messageCount);
+      const seenMessageIds = new Set<number>();
+      const threadRoots = new Map<number, number>();
       for (const msg of messages) {
         if (options.onlyToday && !isWithinWindow(msg.created_at, window)) continue;
         const previewReply = threadPreviewReply(msg);
+        seenMessageIds.add(msg.id);
+        if (msg.thread_id) threadRoots.set(msg.thread_id, msg.id);
         items.push({
           id: `community:${msg.id}`,
           source: 'community',
@@ -472,12 +501,40 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
           probableReplies: previewReply ? [previewReply] : [],
         });
       }
+
+      const threadIds = Array.from(threadRoots.keys()).slice(0, Math.max(0, THREAD_SCAN_LIMIT));
+      for (const threadId of threadIds) {
+        try {
+          const threadMessages = await client.readChatThreadMessages(channelId, threadId, THREAD_MESSAGE_COUNT);
+          const rootMessageId = threadRoots.get(threadId);
+          for (const msg of threadMessages) {
+            if (seenMessageIds.has(msg.id)) continue;
+            if (options.onlyToday && !isWithinWindow(msg.created_at, window)) continue;
+            seenMessageIds.add(msg.id);
+            const previewReply = threadPreviewReply(msg);
+            items.push({
+              id: `community:${msg.id}`,
+              source: 'community',
+              username: msg.user.username,
+              message: msg.message,
+              createdAt: msg.created_at,
+              chatMessageId: msg.id,
+              threadId: msg.thread_id || threadId,
+              replyToChatMessageId: replyTargetId(msg) || rootMessageId,
+              isStaff: Boolean(msg.user.staff || msg.user.moderator || msg.user.admin),
+              probableReplies: previewReply ? [previewReply] : [],
+            });
+          }
+        } catch (err) {
+          errors.push(`community thread ${threadId}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
     } catch (err) {
       errors.push(`community: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  return { items: annotateProbableReplies(items), errors, window };
+  return { items: withIgnoredReasons(annotateProbableReplies(items)), errors, window };
 }
 
 function relevantItems(items: CommunityAgentItem[]): CommunityAgentItem[] {
@@ -570,15 +627,18 @@ function looksNonEnglish(reply: string): boolean {
   return NON_ENGLISH_REPLY_PATTERN.test(reply);
 }
 
-function withSupportAssistantSignature(reply: string): string {
-  const trimmed = sanitizeGeneratedText(reply).trim();
-  if (!trimmed) return trimmed;
-  if (normalizeText(trimmed).includes(normalizeText(SUPPORT_ASSISTANT_SIGNATURE))) return trimmed;
-  return `${trimmed}\n\n${SUPPORT_ASSISTANT_SIGNATURE}`;
+function cleanGeneratedReply(reply: string): string {
+  const lines = sanitizeGeneratedText(reply).trim().split(/\n/);
+  while (lines.length > 0) {
+    const last = lines[lines.length - 1].trim().toLowerCase();
+    if (!(last.includes('support') && last.includes('assistant'))) break;
+    lines.pop();
+  }
+  return lines.join('\n').trim();
 }
 
 function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpenDay: boolean): string {
-  const trimmed = reply.trim();
+  const trimmed = cleanGeneratedReply(reply);
   if (!trimmed) return trimmed;
 
   if (!isWarRoomOpenDay) {
@@ -609,7 +669,7 @@ export function warRoomAvailabilityDecision(
       action: 'reply',
       confidence: 1,
       reason: 'Deterministic War Room weekend availability rule',
-      reply: withSupportAssistantSignature(WAR_ROOM_WEEKEND_NOTICE),
+      reply: cleanGeneratedReply(WAR_ROOM_WEEKEND_NOTICE),
       guidelineSnippets: [],
     };
   }
@@ -619,7 +679,7 @@ export function warRoomAvailabilityDecision(
       action: 'reply',
       confidence: 1,
       reason: 'Deterministic War Room pre-open availability rule',
-      reply: withSupportAssistantSignature(
+      reply: cleanGeneratedReply(
         'Not yet. The War Room will be open after 11:15 AM ARG today. Please come back then for live support.'
       ),
       guidelineSnippets: [],
@@ -630,7 +690,7 @@ export function warRoomAvailabilityDecision(
     action: 'reply',
     confidence: 1,
     reason: 'Deterministic War Room open availability rule',
-    reply: withSupportAssistantSignature(
+    reply: cleanGeneratedReply(
       `Yes, the War Room is open now.\n\nWar Room link:\n${warRoomLink}\n\n${WAR_ROOM_BREAKOUT_NOTICE}`
     ),
     guidelineSnippets: [],
@@ -659,7 +719,7 @@ export async function evaluateSupportMessage(
     'You may answer only when the answer is clearly supported by the provided project memory, project guideline excerpts, or by the recent chat context.',
     'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
     'Keep replies under 4 short sentences.',
-    `Do not add a signature. The system will append "${SUPPORT_ASSISTANT_SIGNATURE}" to user-facing replies.`,
+    'Do not add a footer, attribution, or assistant name.',
     isWarRoomOpenDay
       ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}. Always tell them that once inside the War Room they must join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`
       : 'Today is a weekend day in Argentina, so the War Room is closed. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, QM availability, or live support in any way, say exactly that the user should come back on Monday between 11:15 AM and 7:00 PM ARG.',
@@ -710,8 +770,8 @@ export async function evaluateSupportMessage(
       ? 'human'
       : action;
   const reply = finalAction === 'reply'
-    ? withSupportAssistantSignature(withWarRoomSupportInfo(rawReply, warRoomLink, isWarRoomOpenDay))
-    : rawReply;
+    ? cleanGeneratedReply(withWarRoomSupportInfo(rawReply, warRoomLink, isWarRoomOpenDay))
+    : cleanGeneratedReply(rawReply);
 
   return {
     action: finalAction,

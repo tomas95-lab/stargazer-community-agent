@@ -107,6 +107,7 @@ function CommunityDetail({ detail }: { detail: DetailRecord }) {
                 : candidateIds.has(id)
                   ? 'candidate'
                   : 'ignored';
+            const ignoredReason = asString(item.ignoredReason);
 
             return (
               <div key={id || `${asString(item.username)}-${asString(item.createdAt)}`} className="p-4">
@@ -121,6 +122,20 @@ function CommunityDetail({ detail }: { detail: DetailRecord }) {
                   <span className="text-xs text-muted-foreground">{formatTime(asString(item.createdAt))}</span>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{asString(item.message)}</p>
+                {!decision && status === 'ignored' && ignoredReason && (
+                  <div className="mt-3 rounded-md border border-border bg-muted/40 p-3">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Skipped reason</p>
+                    <p className="mt-1 text-sm text-foreground">{ignoredReason}</p>
+                  </div>
+                )}
+                {!decision && status === 'answered' && probableReplies.length > 0 && (
+                  <div className="mt-3 rounded-md border border-border bg-muted/40 p-3">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Probable reply found</p>
+                    <p className="mt-1 text-sm text-foreground">
+                      {asString(probableReplies[0].username, 'unknown')}: {asString(probableReplies[0].message)}
+                    </p>
+                  </div>
+                )}
                 {decision && (
                   <div className="mt-3 rounded-md border border-border bg-surface p-3">
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Decision</p>

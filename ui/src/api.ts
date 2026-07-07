@@ -142,6 +142,7 @@ export interface CommunityAgentItem {
   replyToChatMessageId?: number;
   isStaff?: boolean;
   probableReplies?: CommunityAgentReplyEvidence[];
+  ignoredReason?: string;
 }
 
 export interface CommunityAgentDecision {
@@ -349,7 +350,6 @@ export interface ComposerTemplate {
   objective: ComposerObjective;
   extraContext: string;
   includeWarRoomLink: boolean;
-  includeSignature: boolean;
 }
 
 export interface ReviewQueueItem {
@@ -533,7 +533,6 @@ export const api = {
     extraContext?: string;
     variantCount?: number;
     includeWarRoomLink?: boolean;
-    includeSignature?: boolean;
   }) =>
     request<ComposerResult>('/composer/generate', {
       method: 'POST',

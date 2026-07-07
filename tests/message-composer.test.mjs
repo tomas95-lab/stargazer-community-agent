@@ -16,7 +16,6 @@ test('message composer normalizes defaults and trims text fields', () => {
   assert.equal(result.objective, 'inform');
   assert.equal(result.variantCount, 3);
   assert.equal(result.includeWarRoomLink, false);
-  assert.equal(result.includeSignature, false);
 });
 
 test('message composer accepts supported options', () => {
@@ -27,7 +26,6 @@ test('message composer accepts supported options', () => {
     objective: 'explain_guideline',
     variantCount: 2,
     includeWarRoomLink: true,
-    includeSignature: true,
   });
 
   assert.equal(result.channel, 'dm');
@@ -35,7 +33,6 @@ test('message composer accepts supported options', () => {
   assert.equal(result.objective, 'explain_guideline');
   assert.equal(result.variantCount, 2);
   assert.equal(result.includeWarRoomLink, true);
-  assert.equal(result.includeSignature, true);
 });
 
 test('message composer requires a prompt', () => {

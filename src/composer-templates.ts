@@ -14,7 +14,6 @@ export interface ComposerTemplate {
   objective: ComposerObjective;
   extraContext: string;
   includeWarRoomLink: boolean;
-  includeSignature: boolean;
 }
 
 const DEFAULT_TEMPLATES: ComposerTemplate[] = [
@@ -29,7 +28,6 @@ const DEFAULT_TEMPLATES: ComposerTemplate[] = [
     objective: 'ask_for_action',
     extraContext: 'Keep it concise and operational.',
     includeWarRoomLink: true,
-    includeSignature: false,
   },
   {
     id: 'war_room_open',
@@ -42,7 +40,6 @@ const DEFAULT_TEMPLATES: ComposerTemplate[] = [
     objective: 'inform',
     extraContext: 'Tell them to join the Stargazer - Team breakout room once inside.',
     includeWarRoomLink: true,
-    includeSignature: false,
   },
   {
     id: 'war_room_weekend_closed',
@@ -55,7 +52,6 @@ const DEFAULT_TEMPLATES: ComposerTemplate[] = [
     objective: 'inform',
     extraContext: 'Do not include the War Room link.',
     includeWarRoomLink: false,
-    includeSignature: false,
   },
   {
     id: 'guideline_clarification',
@@ -68,7 +64,6 @@ const DEFAULT_TEMPLATES: ComposerTemplate[] = [
     objective: 'de_escalate',
     extraContext: 'Do not invent policy. Ask them to share the exact screen or issue and say a human will review if needed.',
     includeWarRoomLink: false,
-    includeSignature: false,
   },
   {
     id: 'webinar_reminder',
@@ -81,7 +76,6 @@ const DEFAULT_TEMPLATES: ComposerTemplate[] = [
     objective: 'remind',
     extraContext: 'Add the session time and link in the context before generating.',
     includeWarRoomLink: false,
-    includeSignature: false,
   },
 ];
 
@@ -119,7 +113,6 @@ function normalizeTemplate(raw: unknown, index: number): ComposerTemplate | null
     objective: oneOf(record.objective, COMPOSER_OBJECTIVES, 'inform'),
     extraContext: text(record.extraContext).slice(0, 3000),
     includeWarRoomLink: record.includeWarRoomLink === true,
-    includeSignature: record.includeSignature === true,
   };
 }
 

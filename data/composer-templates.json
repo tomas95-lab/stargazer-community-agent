@@ -9,8 +9,7 @@
     "tone": "professional",
     "objective": "ask_for_action",
     "extraContext": "Keep it concise and operational.",
-    "includeWarRoomLink": true,
-    "includeSignature": false
+    "includeWarRoomLink": true
   },
   {
     "id": "war_room_open",
@@ -22,8 +21,7 @@
     "tone": "friendly",
     "objective": "inform",
     "extraContext": "Tell them to join the Stargazer - Team breakout room once inside.",
-    "includeWarRoomLink": true,
-    "includeSignature": false
+    "includeWarRoomLink": true
   },
   {
     "id": "war_room_weekend_closed",
@@ -35,8 +33,7 @@
     "tone": "warm_supportive",
     "objective": "inform",
     "extraContext": "Do not include the War Room link.",
-    "includeWarRoomLink": false,
-    "includeSignature": false
+    "includeWarRoomLink": false
   },
   {
     "id": "guideline_clarification",
@@ -48,8 +45,7 @@
     "tone": "warm_supportive",
     "objective": "de_escalate",
     "extraContext": "Do not invent policy. Ask them to share the exact screen or issue and say a human will review if needed.",
-    "includeWarRoomLink": false,
-    "includeSignature": false
+    "includeWarRoomLink": false
   },
   {
     "id": "webinar_reminder",
@@ -61,7 +57,6 @@
     "tone": "professional",
     "objective": "remind",
     "extraContext": "Add the session time and link in the context before generating.",
-    "includeWarRoomLink": false,
-    "includeSignature": false
+    "includeWarRoomLink": false
   }
 ]

@@ -11,7 +11,6 @@ import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
-const SUPPORT_ASSISTANT_SIGNATURE = '- Stargazer Support Assistant';
 
 export const COMPOSER_CHANNELS = ['community', 'dm', 'daily_thread', 'reminder', 'announcement'] as const;
 export const COMPOSER_TONES = ['friendly', 'professional', 'direct', 'warm_supportive', 'urgent', 'short_clear'] as const;
@@ -30,7 +29,6 @@ export interface MessageComposerInput {
   extraContext?: unknown;
   variantCount?: unknown;
   includeWarRoomLink?: unknown;
-  includeSignature?: unknown;
 }
 
 export interface NormalizedComposerRequest {
@@ -42,7 +40,6 @@ export interface NormalizedComposerRequest {
   extraContext: string;
   variantCount: number;
   includeWarRoomLink: boolean;
-  includeSignature: boolean;
 }
 
 export interface ComposerVariant {
@@ -105,7 +102,6 @@ export function normalizeComposerRequest(input: MessageComposerInput): Normalize
     extraContext,
     variantCount: clampNumber(input.variantCount, 1, 1, 3),
     includeWarRoomLink: input.includeWarRoomLink === true,
-    includeSignature: input.includeSignature === true,
   };
 }
 
@@ -135,14 +131,17 @@ function label(value: string): string {
   return value.replace(/_/g, ' ');
 }
 
-function withSignature(message: string, includeSignature: boolean): string {
-  const trimmed = sanitizeGeneratedText(message).trim();
-  if (!includeSignature || !trimmed) return trimmed;
-  if (trimmed.toLowerCase().includes(SUPPORT_ASSISTANT_SIGNATURE.toLowerCase())) return trimmed;
-  return `${trimmed}\n\n${SUPPORT_ASSISTANT_SIGNATURE}`;
+function removeGeneratedFooter(message: string): string {
+  const lines = sanitizeGeneratedText(message).trim().split(/\n/);
+  while (lines.length > 0) {
+    const last = lines[lines.length - 1].trim().toLowerCase();
+    if (!(last.includes('support') && last.includes('assistant'))) break;
+    lines.pop();
+  }
+  return lines.join('\n').trim();
 }
 
-function normalizeVariant(raw: ClaudeComposerVariant | undefined, includeSignature: boolean): ComposerVariant | null {
+function normalizeVariant(raw: ClaudeComposerVariant | undefined): ComposerVariant | null {
   const message = text(raw?.message);
   if (!message) return null;
   const warnings = Array.isArray(raw?.warnings)
@@ -151,7 +150,7 @@ function normalizeVariant(raw: ClaudeComposerVariant | undefined, includeSignatu
 
   return {
     title: text(raw?.title) || undefined,
-    message: withSignature(message, includeSignature),
+    message: removeGeneratedFooter(message),
     notes: text(raw?.notes) || undefined,
     warnings,
   };
@@ -187,7 +186,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
     `Number of variants:\n${request.variantCount}`,
     request.extraContext ? `Additional context:\n${request.extraContext}` : '',
     `War Room handling:\n${request.includeWarRoomLink ? `Include this War Room link when relevant: ${links.warRoom}` : 'Do not include the War Room link unless the task explicitly requires mentioning it.'}`,
-    'Signature handling:\nDo not add an assistant signature yourself. The system handles signatures after generation when enabled.',
+    'Do not add a footer, attribution, or assistant name.',
     `Project memory:\n${memory || 'No project memory available.'}`,
     `Project links:\nGuidelines: ${links.guidelines}\nTemplates: ${links.templatesZip}\nValidation script: ${links.validationScript}\nCommon errors: ${links.commonErrorsDocument}`,
     `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
@@ -221,7 +220,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
 
     const parsed = extractJson(rawResponseText);
     const variants = (parsed.variants || [])
-      .map((variant) => normalizeVariant(variant, request.includeSignature))
+      .map((variant) => normalizeVariant(variant))
       .filter((variant): variant is ComposerVariant => Boolean(variant))
       .slice(0, request.variantCount);
 

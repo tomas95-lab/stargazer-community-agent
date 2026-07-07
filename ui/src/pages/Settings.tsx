@@ -18,6 +18,8 @@ const LABELS: Record<string, string> = {
   ANTHROPIC_MODEL: 'Claude Model',
   CRON_CONFIGURED: 'Cron Configured',
   AGENT_AUTO_POST: 'Agent Auto Post',
+  AGENT_THREAD_SCAN_LIMIT: 'Agent Thread Scan Limit',
+  AGENT_THREAD_MESSAGE_COUNT: 'Agent Thread Message Count',
   DM_AUTO_REPLY: 'DM Auto Reply',
   DM_AUTO_REPLY_MAX: 'DM Auto Reply Max',
   AI_DAILY_TOKEN_LIMIT: 'AI Daily Token Limit',

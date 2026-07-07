@@ -74,7 +74,6 @@ export default function MessageComposer() {
   const [objective, setObjective] = useState<ComposerObjective>('inform');
   const [variantCount, setVariantCount] = useState('2');
   const [includeWarRoomLink, setIncludeWarRoomLink] = useState(false);
-  const [includeSignature, setIncludeSignature] = useState(false);
   const [result, setResult] = useState<ComposerResult | null>(null);
   const [activeVariant, setActiveVariant] = useState('0');
   const [draft, setDraft] = useState('');
@@ -121,7 +120,6 @@ export default function MessageComposer() {
     setTone(template.tone);
     setObjective(template.objective);
     setIncludeWarRoomLink(template.includeWarRoomLink);
-    setIncludeSignature(template.includeSignature);
     setResult(null);
     setDraft('');
   };
@@ -140,7 +138,6 @@ export default function MessageComposer() {
         extraContext,
         variantCount: Number(variantCount),
         includeWarRoomLink,
-        includeSignature,
       });
       setResult(next);
       setActiveVariant('0');
@@ -309,15 +306,6 @@ export default function MessageComposer() {
                 className="accent-primary"
               />
               War Room link
-            </label>
-            <label className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={includeSignature}
-                onChange={(event) => setIncludeSignature(event.target.checked)}
-                className="accent-primary"
-              />
-              Support signature
             </label>
           </div>
 

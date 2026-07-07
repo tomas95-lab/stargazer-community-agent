@@ -226,6 +226,13 @@ export class DiscourseClient {
     return data.messages || [];
   }
 
+  async readChatThreadMessages(channelId: string, threadId: number | string, count = 30): Promise<DiscourseChatMessage[]> {
+    const data = await this.request<{ messages?: DiscourseChatMessage[] }>(
+      `/chat/api/channels/${channelId}/threads/${threadId}/messages.json?page_size=${count}`
+    );
+    return data.messages || [];
+  }
+
   async readMyChatChannels(): Promise<{
     publicChannels: unknown[];
     directMessageChannels: DiscourseDirectMessageChannel[];

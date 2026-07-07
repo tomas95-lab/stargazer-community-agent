@@ -76,3 +76,33 @@ test('DiscourseClient reads direct-message channels from the current user chat e
     global.fetch = previousFetch;
   }
 });
+
+test('DiscourseClient reads chat thread messages from a channel thread endpoint', async () => {
+  const previousFetch = global.fetch;
+  const calls = [];
+  global.fetch = async (url, init) => {
+    calls.push({ url, init });
+    return {
+      ok: true,
+      json: async () => ({
+        messages: [{ id: 2, message: 'Thread reply', user: { username: 'latam.coder' }, created_at: '2026-07-07T16:00:00Z' }],
+      }),
+    };
+  };
+
+  try {
+    const client = new DiscourseClient({
+      baseUrl: 'https://community.example/',
+      apiKey: 'key',
+      apiClientId: 'client',
+    });
+
+    const messages = await client.readChatThreadMessages('42', 999, 15);
+
+    assert.equal(calls[0].url, 'https://community.example/chat/api/channels/42/threads/999/messages.json?page_size=15');
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].message, 'Thread reply');
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
