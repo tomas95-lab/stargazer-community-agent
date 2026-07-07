@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-07T00:00:00.000Z",
+  "updatedAt": "2026-07-07T19:33:39.950Z",
   "facts": [
     {
       "id": "language",
@@ -30,6 +30,12 @@
       "title": "Step 0 Cursor access",
       "body": "Contributors who passed the courses and are now EQ or see the project as ineligible should come to the War Room to request Cursor access. This is step 0 of the project guideline.",
       "source": "project guideline"
+    },
+    {
+      "id": "fact-1783452717175",
+      "title": "Model changes",
+      "body": "The Qwen model is deprecated now; the contributors must make Sonnet 4.6 fail.",
+      "source": "project operations"
     }
   ]
 }
