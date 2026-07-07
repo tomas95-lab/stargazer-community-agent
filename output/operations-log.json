@@ -1,5 +1,303 @@
 [
   {
+    "id": "6192dd1c-3d75-4fe8-8d69-6afdcfe7c58c",
+    "at": "2026-07-07T15:13:48.430Z",
+    "action": "dm_review",
+    "status": "skipped",
+    "message": "No incoming DMs found for 2026-07-07.",
+    "metadata": {
+      "argentinaDate": "2026-07-07",
+      "totalDirectChannels": 56,
+      "scannedChannels": 5,
+      "incomingMessages": 0,
+      "newIncomingMessages": 0,
+      "newIncomingMessageIds": [],
+      "newDmSenders": [],
+      "channelsWithTodayMessages": 0,
+      "autoReplyEnabled": true,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  {
+    "id": "41724489-0bff-4705-b9b5-c60c5c157119",
+    "at": "2026-07-07T15:13:46.487Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 0,
+      "replied": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  {
+    "id": "8d852240-41fd-4a3b-8db1-58eb6640b972",
+    "at": "2026-07-07T15:10:12.226Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 3,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "3982fe15-53de-4e86-ac82-830d20145795",
+    "at": "2026-07-07T15:10:08.509Z",
+    "action": "daily_publish_job",
+    "status": "skipped",
+    "message": "Daily thread for 2026-07-07 was already published",
+    "metadata": {
+      "date": "2026-07-07"
+    }
+  },
+  {
+    "id": "b257e06a-5099-4fea-af7c-cf6897668dee",
+    "at": "2026-07-07T14:43:21.051Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 3,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "e6db9d7a-693f-48d8-96a5-44f0d9a54d08",
+    "at": "2026-07-07T14:42:08.403Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 3,
+      "candidates": 1,
+      "posted": 1,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "amanburman039"
+      ],
+      "postedUsers": [
+        "amanburman039"
+      ],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "d2411aeb-8df4-42b9-a43d-342ec59a719b",
+    "at": "2026-07-07T14:17:20.865Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 2,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "3fcd1029-0a9d-4016-aab0-18a65b79401c",
+    "at": "2026-07-07T13:01:28.219Z",
+    "action": "publish_daily_thread",
+    "status": "success",
+    "message": "Published daily thread for 2026-07-07",
+    "metadata": {
+      "date": "2026-07-07",
+      "url": "https://community.outlier.ai/t/daily-thread-07-07/2902883",
+      "postChat": true
+    }
+  },
+  {
+    "id": "993fe132-5397-4301-8883-a97b6c9939bd",
+    "at": "2026-07-07T13:01:02.478Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 0,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "616668be-b809-4bd6-848b-e607b63a5b62",
+    "at": "2026-07-07T01:08:08.777Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 9,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "latam.coder2184"
+      ],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "033c88e2-461f-4557-8c94-3cdb6636aaad",
+    "at": "2026-07-06T23:13:29.448Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 9,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "latam.coder2184"
+      ],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "a62630b2-7ce0-45c6-abd6-cf8d7f0c9e6f",
+    "at": "2026-07-06T23:13:06.461Z",
+    "action": "dm_draft",
+    "status": "success",
+    "message": "Claude DM draft evaluated channel 856180.",
+    "metadata": {
+      "channelId": 856180,
+      "action": "ignore",
+      "confidence": 0.95,
+      "pendingIncomingMessages": 2,
+      "lastIncomingMessageId": 27696296
+    }
+  },
+  {
+    "id": "299cbf0d-ace0-41d6-b84b-977292287ce0",
+    "at": "2026-07-06T22:13:03.817Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "argentinaDate": "2026-07-06",
+        "startUtc": "2026-07-06T03:00:00.000Z",
+        "endUtc": "2026-07-07T03:00:00.000Z",
+        "operatingHours": "Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays"
+      }
+    }
+  },
+  {
+    "id": "37b91188-1369-487c-ad80-7da662792f01",
+    "at": "2026-07-06T21:14:46.513Z",
+    "action": "dm_reply",
+    "status": "success",
+    "message": "Sent DM reply to channel 856180.",
+    "metadata": {
+      "channelId": 856180,
+      "messageId": 27696061
+    }
+  },
+  {
+    "id": "0e7275ca-511c-4ca8-8632-0cb145c471ea",
+    "at": "2026-07-06T21:14:03.885Z",
+    "action": "dm_draft",
+    "status": "success",
+    "message": "Claude DM draft evaluated channel 856180.",
+    "metadata": {
+      "channelId": 856180,
+      "action": "reply",
+      "confidence": 0.92,
+      "pendingIncomingMessages": 1,
+      "lastIncomingMessageId": 27696052
+    }
+  },
+  {
+    "id": "adfb3626-1724-468d-8824-b6ebadc2fc95",
+    "at": "2026-07-06T21:07:51.703Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 14 incoming DM(s) for 2026-07-06.",
+    "metadata": {
+      "argentinaDate": "2026-07-06",
+      "totalDirectChannels": 55,
+      "scannedChannels": 5,
+      "incomingMessages": 14,
+      "newIncomingMessages": 14,
+      "newIncomingMessageIds": [
+        27692973,
+        27695066,
+        27695069,
+        27695414,
+        27695416,
+        27695423,
+        27695438,
+        27695479,
+        27695496,
+        27695777,
+        27695860,
+        27695926,
+        27695940,
+        27695963
+      ],
+      "newDmSenders": [
+        "latam.coder2366",
+        "latam.coder1232",
+        "inqa-coder0146"
+      ],
+      "channelsWithTodayMessages": 3,
+      "autoReplyEnabled": true,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  {
+    "id": "d1e2d2bf-a742-4fc3-a68d-7163976b1394",
+    "at": "2026-07-06T21:07:48.630Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 1,
+      "replied": 0,
+      "needsHuman": 0,
+      "ignored": 1,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  {
     "id": "1872e418-2709-4d5c-8ac1-78a93771a1b3",
     "at": "2026-07-06T20:43:15.471Z",
     "action": "dm_draft",
