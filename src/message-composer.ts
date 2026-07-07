@@ -6,6 +6,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { loadProjectLinks } from './links';
 import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
+import { sanitizeGeneratedText } from './text-safety';
 
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
 const SUPPORT_ASSISTANT_SIGNATURE = '- Stargazer Support Assistant';
@@ -125,7 +126,7 @@ function label(value: string): string {
 }
 
 function withSignature(message: string, includeSignature: boolean): string {
-  const trimmed = message.trim();
+  const trimmed = sanitizeGeneratedText(message).trim();
   if (!includeSignature || !trimmed) return trimmed;
   if (trimmed.toLowerCase().includes(SUPPORT_ASSISTANT_SIGNATURE.toLowerCase())) return trimmed;
   return `${trimmed}\n\n${SUPPORT_ASSISTANT_SIGNATURE}`;
@@ -164,6 +165,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
         'You are a message composer for the Stargazer Axiom community management team.',
         'Always write user-facing content in English, even when the user request is in Spanish or another language.',
         'Do not write Spanish user-facing copy.',
+        'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
         'Use the provided project guideline excerpts and project links as the source of truth.',
         'Do not invent deadlines, eligibility rules, project policy, pay details, access rules, or links.',
         'If a requested detail is not supported, keep the message general and add a concise warning in the JSON warnings array.',
@@ -182,7 +184,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
             `Number of variants:\n${request.variantCount}`,
             request.extraContext ? `Additional context:\n${request.extraContext}` : '',
             `War Room handling:\n${request.includeWarRoomLink ? `Include this War Room link when relevant: ${links.warRoom}` : 'Do not include the War Room link unless the task explicitly requires mentioning it.'}`,
-            `Signature handling:\n${request.includeSignature ? `The final message should end with "${SUPPORT_ASSISTANT_SIGNATURE}".` : 'Do not add an assistant signature.'}`,
+            'Signature handling:\nDo not add an assistant signature yourself. The system handles signatures after generation when enabled.',
             `Project links:\nGuidelines: ${links.guidelines}\nTemplates: ${links.templatesZip}\nValidation script: ${links.validationScript}\nCommon errors: ${links.commonErrorsDocument}`,
             `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
           ].filter(Boolean).join('\n\n'),

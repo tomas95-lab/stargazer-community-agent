@@ -9,6 +9,7 @@ import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
 import { loadProjectLinks } from './links';
+import { sanitizeGeneratedText } from './text-safety';
 
 const BOT_USERNAME = process.env.DISCOURSE_USERNAME || 'tomas.ruiz_OBIC';
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
@@ -560,7 +561,7 @@ function looksNonEnglish(reply: string): boolean {
 }
 
 function withSupportAssistantSignature(reply: string): string {
-  const trimmed = reply.trim();
+  const trimmed = sanitizeGeneratedText(reply).trim();
   if (!trimmed) return trimmed;
   if (normalizeText(trimmed).includes(normalizeText(SUPPORT_ASSISTANT_SIGNATURE))) return trimmed;
   return `${trimmed}\n\n${SUPPORT_ASSISTANT_SIGNATURE}`;
@@ -647,6 +648,7 @@ export async function evaluateSupportMessage(
         'You are a community management agent for Stargazer Axiom.',
         'Always write user-facing replies in English, even if the incoming message is Spanish, Portuguese, or any other language.',
         'Never write the reply in Spanish.',
+        'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
         'You may answer only when the answer is clearly supported by the provided project guideline excerpts or by the recent chat context.',
         'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
         'Keep replies under 4 short sentences.',
