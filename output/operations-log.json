@@ -1,5 +1,17 @@
 [
   {
+    "id": "bc2b293c-e501-460e-b750-12189af0072a",
+    "at": "2026-07-08T16:09:35.750Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated dm message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.95,
+      "deterministic": false
+    }
+  },
+  {
     "id": "e6e89f53-fc09-44e3-8f21-36be845641ac",
     "at": "2026-07-08T16:00:33.229Z",
     "action": "cron_request",
