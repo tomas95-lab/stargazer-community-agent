@@ -19,6 +19,7 @@ import reviewQueueRouter from './routes/review-queue';
 import sandboxRouter from './routes/sandbox';
 import memoryRouter from './routes/memory';
 import usageRouter from './routes/usage';
+import platformRouter from './routes/platform';
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use('/api/review-queue', reviewQueueRouter);
 app.use('/api/sandbox', sandboxRouter);
 app.use('/api/memory', memoryRouter);
 app.use('/api/usage', usageRouter);
+app.use('/api/platform', platformRouter);
 
 const uiBuild = path.resolve(__dirname, '../ui/dist');
 app.use(express.static(uiBuild));

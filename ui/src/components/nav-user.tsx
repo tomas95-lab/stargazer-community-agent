@@ -2,11 +2,13 @@ import {
   IconDotsVertical,
   IconHistory,
   IconLink,
+  IconLogout,
   IconSettings,
   IconUserCircle,
 } from "@tabler/icons-react"
 import { Link } from "react-router-dom"
 
+import { useAuth } from "@/auth"
 import {
   Avatar,
   AvatarFallback,
@@ -29,15 +31,24 @@ import {
 } from "@/components/ui/sidebar"
 
 export function NavUser({
-  user,
+  user: fallbackUser,
 }: {
-  user: {
+  user?: {
     name: string
     email: string
     avatar: string
   }
 }) {
   const { isMobile } = useSidebar()
+  const auth = useAuth()
+  const name = String(auth.user?.user_metadata?.name || auth.user?.email || fallbackUser?.name || "Stargazer")
+  const email = auth.user?.email || fallbackUser?.email || "Community Ops"
+  const initials = name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "SG"
 
   return (
     <SidebarMenu>
@@ -49,13 +60,13 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
                 <Avatar className="h-8 w-8 rounded-lg grayscale">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">SG</AvatarFallback>
+                  <AvatarImage src={fallbackUser?.avatar || ""} alt={name} />
+                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium">{name}</span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {user.email}
+                  {email}
                 </span>
               </div>
               <IconDotsVertical className="ml-auto size-4" />
@@ -70,13 +81,13 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">SG</AvatarFallback>
+                  <AvatarImage src={fallbackUser?.avatar || ""} alt={name} />
+                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">{name}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {user.email}
+                    {email}
                   </span>
                 </div>
               </div>
@@ -108,6 +119,11 @@ export function NavUser({
                 <IconSettings />
                 Settings
               </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => void auth.signOut()}>
+              <IconLogout />
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

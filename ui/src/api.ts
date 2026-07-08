@@ -1,5 +1,10 @@
 const BASE = '/api';
 const ADMIN_TOKEN_KEY = 'stargazer_admin_token';
+let authTokenProvider: (() => string) | null = null;
+
+export function setApiAuthTokenProvider(provider: (() => string) | null): void {
+  authTokenProvider = provider;
+}
 
 function getStoredAdminToken(): string {
   if (typeof window === 'undefined') return '';
@@ -18,8 +23,10 @@ function setStoredAdminToken(token: string): void {
 
 async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   const token = getStoredAdminToken();
+  const authToken = authTokenProvider?.() || '';
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['X-Admin-Token'] = token;
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
 
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
@@ -447,6 +454,39 @@ export interface AiUsageSummary {
   recentEvents: AiUsageEvent[];
 }
 
+export interface PlatformProfile {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  enabled: boolean;
+}
+
+export interface PlatformProject {
+  id: string;
+  name: string;
+  category: {
+    id: string;
+    slug: string;
+  };
+  channel: {
+    id: string;
+  };
+  projectGuidelines: string;
+  discourseApiKeyConfigured: boolean;
+  enabled: boolean;
+}
+
+export interface PlatformContext {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  profile: PlatformProfile;
+  projects: PlatformProject[];
+}
+
 export const api = {
   getTopics: () => request<Topic[]>('/topics'),
   getToday: () => request<{ date: string; topic: Topic | null }>('/topics/today'),
@@ -560,4 +600,20 @@ export const api = {
       body: JSON.stringify(memory),
     }),
   getAiUsage: () => request<AiUsageSummary>('/usage'),
+  getPlatformHealth: () => request<{ configured: boolean; urlConfigured: boolean; publishableKeyConfigured: boolean; secretKeyConfigured: boolean }>('/platform/health'),
+  getPlatformMe: () => request<PlatformContext>('/platform/me'),
+  savePlatformProject: (opts: {
+    id?: string;
+    name: string;
+    categoryId: string;
+    categorySlug: string;
+    channelId: string;
+    projectGuidelines: string;
+    discourseApiKey?: string;
+    enabled?: boolean;
+  }) =>
+    request<PlatformContext>('/platform/projects', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
 };

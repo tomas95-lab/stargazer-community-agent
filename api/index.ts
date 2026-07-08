@@ -19,6 +19,7 @@ import reviewQueueRouter from '../server/routes/review-queue';
 import sandboxRouter from '../server/routes/sandbox';
 import memoryRouter from '../server/routes/memory';
 import usageRouter from '../server/routes/usage';
+import platformRouter from '../server/routes/platform';
 
 const app = express();
 app.use(cors());
@@ -41,5 +42,6 @@ app.use('/api/review-queue', reviewQueueRouter);
 app.use('/api/sandbox', sandboxRouter);
 app.use('/api/memory', memoryRouter);
 app.use('/api/usage', usageRouter);
+app.use('/api/platform', platformRouter);
 
 export default app;

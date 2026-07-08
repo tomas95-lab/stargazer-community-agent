@@ -79,6 +79,20 @@ DAILY_PUBLISH_POST_CHAT=true
 SERVER_PORT=3001
 ```
 
+Optional for platform login:
+
+```bash
+SUPABASE_PROJECT_ID=...
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_PUBLISHABLE_KEY=...
+SUPABASE_SECRET_KEY=...
+SUPABASE_JWT_SECRET=...
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=...
+```
+
+Run `docs/supabase-platform.sql` in the Supabase SQL editor before using `/signup`, `/login`, and the Platform Setup page. See `docs/platform-auth.md` for the full setup notes.
+
 ## Daily Thread CLI
 
 Dry run:
@@ -114,6 +128,8 @@ npm run dev
 Vite proxies `/api` to `http://localhost:3001`.
 
 Protected actions require an admin token. Set `ADMIN_TOKEN` on the server, then open the UI Settings page and save the same token locally in your browser. The token is sent as `X-Admin-Token` for publish, send, sync, create, update, and delete actions.
+
+When Supabase is configured, the dashboard also supports `/signup` and `/login`. Logged-in sessions send a Supabase bearer token to the API, and Platform Setup stores per-user category, channel, guidelines, and Discourse API key references without exposing the real key back to the browser.
 
 Build the UI:
 

@@ -23,6 +23,7 @@ router.get('/', (_req: Request, res: Response) => {
     ...env,
     DATA_STORE_REQUESTED: store.requested,
     DATA_STORE_ACTIVE: store.active,
+    SUPABASE_CONFIGURED: String(Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY)),
     ANTHROPIC_CONFIGURED: String(Boolean(process.env.ANTHROPIC_API_KEY)),
     ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
     CRON_CONFIGURED: String(Boolean(process.env.CRON_SECRET)),
