@@ -1,5 +1,24 @@
 [
   {
+    "id": "ea89c9ad-5218-4a5e-973e-05b44cc88473",
+    "at": "2026-07-08T13:00:35.576Z",
+    "action": "community_agent",
+    "status": "error",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 0,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": [
+        "state: GitHub API error 409: {\"message\":\"is at 4b179fdf9f80c31e5cee14c02e07de89bf80e929 but expected 4e9c6e55b51f5d0c44e0d9ce5d9536668a65ee89\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
+      ]
+    }
+  },
+  {
     "id": "efe0503f-ce61-4698-8727-86f3f7a28293",
     "at": "2026-07-08T13:00:34.218Z",
     "action": "daily_publish_job",
