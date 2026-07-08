@@ -1,5 +1,15 @@
 [
   {
+    "id": "7724cc52-5b06-48b6-a1b3-5f55eeec163f",
+    "at": "2026-07-08T13:01:35.735Z",
+    "action": "publish_daily_thread",
+    "status": "error",
+    "message": "Discourse API error 422: {\"action\":\"create_post\",\"errors\":[\"Title has already been used\"]}",
+    "metadata": {
+      "date": "2026-07-08"
+    }
+  },
+  {
     "id": "3c2292d4-a6f3-466e-88b0-e7dc53adecdb",
     "at": "2026-07-08T13:00:37.411Z",
     "action": "cron_request",
