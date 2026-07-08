@@ -1,5 +1,17 @@
 [
   {
+    "id": "d84aefbc-faa7-4d50-ac1f-5711831b1c09",
+    "at": "2026-07-08T16:10:07.093Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated dm message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.85,
+      "deterministic": false
+    }
+  },
+  {
     "id": "bc2b293c-e501-460e-b750-12189af0072a",
     "at": "2026-07-08T16:09:35.750Z",
     "action": "sandbox_evaluation",
