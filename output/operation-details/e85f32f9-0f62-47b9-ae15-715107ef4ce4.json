@@ -1,0 +1,104 @@
+{
+  "entry": {
+    "id": "e85f32f9-0f62-47b9-ae15-715107ef4ce4",
+    "at": "2026-07-08T17:30:35.276Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 2,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": true,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": true,
+      "skipProcessed": true,
+      "markProcessed": true,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "post",
+      "checked": 2,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": true,
+      "window": {
+        "argentinaDate": "2026-07-08",
+        "startUtc": "2026-07-08T03:00:00.000Z",
+        "endUtc": "2026-07-09T03:00:00.000Z",
+        "operatingHours": "Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays"
+      },
+      "items": [
+        {
+          "id": "community:27708601",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-08/2903090) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Test Quality**, with a reminder about **F2P = Fail in Phase 1, Pass in Phase 2. For the right reason.**.\n\nQuick rule: If your F2P test passes before the gold patch, it's not an F2P test.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-08T13:00:33Z",
+          "chatMessageId": 27708601,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+        },
+        {
+          "id": "community:27710040",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Team,\n\nWe have confirmed that the following contributors have completed onboarding and are ready to begin work on the project:\n\nlatam.coder2305@outlier.ai\npandeyshubhranshu6@gmail.com\nlatam.coder787@remotasks.com\nlatam.coder2217@outlier.ai\nlatam.coder1989@outlier.ai\nlatam.coder056@remotasks.com\nlatam.coder2609@outlier.ai\nlatam.coder1243@remotasks.com\nlatam.coder2002@outlier.ai\ncoder_turkey_referral_320@outlier.ai\n\nTo proceed with tasking, please complete the following mandatory step:\n\n1. Join the War Room at https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success (Monday-Friday, 11:15 AM to 7:00 PM ARG)\n2. Enter the breakout room called Stargazer - Team\n3. Request Cursor access from the QMs\n\nWe recommend working in the War Room while you set up your environment to achieve better results and get immediate support.\n\nIf you have questions, reach out in the War Room.",
+          "createdAt": "2026-07-08T15:35:15Z",
+          "chatMessageId": 27710040,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Authored by the configured manager/bot user."
+        }
+      ],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27708601",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-08/2903090) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Test Quality**, with a reminder about **F2P = Fail in Phase 1, Pass in Phase 2. For the right reason.**.\n\nQuick rule: If your F2P test passes before the gold patch, it's not an F2P test.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-08T13:00:33Z",
+        "chatMessageId": 27708601,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+      },
+      {
+        "id": "community:27710040",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Team,\n\nWe have confirmed that the following contributors have completed onboarding and are ready to begin work on the project:\n\nlatam.coder2305@outlier.ai\npandeyshubhranshu6@gmail.com\nlatam.coder787@remotasks.com\nlatam.coder2217@outlier.ai\nlatam.coder1989@outlier.ai\nlatam.coder056@remotasks.com\nlatam.coder2609@outlier.ai\nlatam.coder1243@remotasks.com\nlatam.coder2002@outlier.ai\ncoder_turkey_referral_320@outlier.ai\n\nTo proceed with tasking, please complete the following mandatory step:\n\n1. Join the War Room at https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success (Monday-Friday, 11:15 AM to 7:00 PM ARG)\n2. Enter the breakout room called Stargazer - Team\n3. Request Cursor access from the QMs\n\nWe recommend working in the War Room while you set up your environment to achieve better results and get immediate support.\n\nIf you have questions, reach out in the War Room.",
+        "createdAt": "2026-07-08T15:35:15Z",
+        "chatMessageId": 27710040,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Authored by the configured manager/bot user."
+      }
+    ],
+    "candidates": [],
+    "decisions": []
+  }
+}
