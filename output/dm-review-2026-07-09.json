@@ -1,7 +1,7 @@
 {
   "mode": "dm-review",
   "scanMode": "full",
-  "generatedAt": "2026-07-09T18:32:21.077Z",
+  "generatedAt": "2026-07-09T21:00:29.072Z",
   "window": {
     "argentinaDate": "2026-07-09",
     "startUtc": "2026-07-09T03:00:00.000Z",
@@ -104,5 +104,14 @@
       "incoming": true
     }
   ],
-  "errors": []
+  "errors": [],
+  "autoReply": {
+    "enabled": true,
+    "checked": 1,
+    "replied": 0,
+    "needsHuman": 0,
+    "ignored": 0,
+    "skippedProcessed": 1,
+    "decisions": []
+  }
 }
