@@ -1,7 +1,7 @@
 {
   "mode": "dm-review",
   "scanMode": "full",
-  "generatedAt": "2026-07-09T18:30:24.754Z",
+  "generatedAt": "2026-07-09T18:32:21.077Z",
   "window": {
     "argentinaDate": "2026-07-09",
     "startUtc": "2026-07-09T03:00:00.000Z",
@@ -104,24 +104,5 @@
       "incoming": true
     }
   ],
-  "errors": [],
-  "autoReply": {
-    "enabled": true,
-    "checked": 1,
-    "replied": 0,
-    "needsHuman": 1,
-    "ignored": 0,
-    "skippedProcessed": 0,
-    "decisions": [
-      {
-        "channelId": 857787,
-        "action": "human",
-        "posted": false,
-        "confidence": 0.3,
-        "reason": "The user states they are already in the War Room and in the Stargazer - Team breakout room, and have passed the assessment. However, their next steps (Cursor access provision, account unlocking, or task assignment) involve account management, access provisioning, or backend operations that require human verification and action. This is outside the scope of what I can handle as a community management agent without direct access to account systems.",
-        "username": "latam.coder1989",
-        "lastIncomingMessageId": 27720972
-      }
-    ]
-  }
+  "errors": []
 }
