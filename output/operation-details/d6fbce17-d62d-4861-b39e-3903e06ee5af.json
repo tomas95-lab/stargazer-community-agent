@@ -1,0 +1,56 @@
+{
+  "entry": {
+    "id": "d6fbce17-d62d-4861-b39e-3903e06ee5af",
+    "at": "2026-07-10T18:30:49.398Z",
+    "action": "dm_auto_reply",
+    "status": "success",
+    "message": "Auto-replied to 1 DM thread(s).",
+    "metadata": {
+      "checked": 1,
+      "replied": 1,
+      "needsHuman": 0,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [
+        "latam.coder2184"
+      ],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  "detail": {
+    "type": "dm_auto_reply",
+    "result": {
+      "enabled": true,
+      "checked": 1,
+      "replied": 1,
+      "needsHuman": 0,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "decisions": [
+        {
+          "channelId": 854960,
+          "action": "reply",
+          "posted": true,
+          "confidence": 0.75,
+          "reason": "User is reporting that a task closed/timed out with 1.5 hours remaining. This relates to task timing and technical issues. I can recommend the War Room for live support during business hours, which is appropriate for technical troubleshooting. The user mentioned they'll create a ticket, which is also valid.",
+          "username": "latam.coder2184",
+          "lastIncomingMessageId": 27725355,
+          "messageId": 27733123
+        }
+      ]
+    },
+    "decisions": [
+      {
+        "channelId": 854960,
+        "action": "reply",
+        "posted": true,
+        "confidence": 0.75,
+        "reason": "User is reporting that a task closed/timed out with 1.5 hours remaining. This relates to task timing and technical issues. I can recommend the War Room for live support during business hours, which is appropriate for technical troubleshooting. The user mentioned they'll create a ticket, which is also valid.",
+        "username": "latam.coder2184",
+        "lastIncomingMessageId": 27725355,
+        "messageId": 27733123
+      }
+    ]
+  }
+}
