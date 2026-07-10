@@ -1,5 +1,24 @@
 [
   {
+    "id": "d6fbce17-d62d-4861-b39e-3903e06ee5af",
+    "at": "2026-07-10T18:30:49.398Z",
+    "action": "dm_auto_reply",
+    "status": "success",
+    "message": "Auto-replied to 1 DM thread(s).",
+    "metadata": {
+      "checked": 1,
+      "replied": 1,
+      "needsHuman": 0,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [
+        "latam.coder2184"
+      ],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  {
     "id": "2d3bf3a1-1cd6-47cc-98fe-965988a058cb",
     "at": "2026-07-10T18:30:41.447Z",
     "action": "dm_reply",
