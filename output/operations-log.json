@@ -1,5 +1,26 @@
 [
   {
+    "id": "890aae02-8ba2-48d1-8db8-45550246c71b",
+    "at": "2026-07-10T13:59:20.361Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 2,
+      "candidates": 1,
+      "posted": 1,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "amanburman039"
+      ],
+      "postedUsers": [
+        "amanburman039"
+      ],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
     "id": "c3592d8e-cadb-44cc-aee8-73341e80a452",
     "at": "2026-07-10T13:59:13.622Z",
     "action": "community_agent",
