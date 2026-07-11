@@ -1,5 +1,24 @@
 [
   {
+    "id": "24fd8ee7-7985-4ec2-94c9-88540065b8cf",
+    "at": "2026-07-11T22:07:35.492Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 12,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "pilots-coder625"
+      ],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
     "id": "481dd204-1b5b-48db-9e2b-d439e69f2881",
     "at": "2026-07-11T22:00:32.074Z",
     "action": "cron_request",
