@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-11T16:59:54.735Z",
+  "updatedAt": "2026-07-11T21:33:51.376Z",
   "facts": [
     {
       "id": "language",
@@ -54,6 +54,54 @@
       "title": "Throttle",
       "body": "The 1-task/24hr throttle is automatic and applies with no exceptions until ~3 tasks are completed, at which point quality metrics are evaluated to decide whether to enable more volume. No individual task score or user request removes it early.",
       "source": "project operations"
+    },
+    {
+      "id": "manager-style-concise",
+      "title": "Manager answer style",
+      "body": "Mirror the manager style: direct, concise, supportive, and operational. Prefer 1-3 short sentences, say exactly what action the contributor should take, and avoid generic apologies or long explanations.",
+      "source": "history scan 2026-07-11"
+    },
+    {
+      "id": "manager-style-english",
+      "title": "Manager language pattern",
+      "body": "The manager answers contributors in English. Keep all automatic community and DM replies in English even when the incoming message is Spanish or Portuguese.",
+      "source": "history scan 2026-07-11"
+    },
+    {
+      "id": "manager-style-no-footer",
+      "title": "No assistant footer",
+      "body": "Do not add a signature, footer, attribution, or assistant name to automated replies.",
+      "source": "history scan 2026-07-11"
+    },
+    {
+      "id": "manager-style-war-room",
+      "title": "War Room support pattern",
+      "body": "When live support is relevant and it is a weekday after 11:15 AM ARG, tell contributors to join the War Room and then join the breakout room called Stargazer - Team. On weekends, say the War Room is closed and ask them to come back Monday between 11:15 AM and 7:00 PM ARG.",
+      "source": "history scan 2026-07-11"
+    },
+    {
+      "id": "manager-style-uncertain-human",
+      "title": "Escalate uncertain cases",
+      "body": "If the message asks about account policy, eligibility decisions, payment, deadlines, personal status, or anything not supported by guidelines or memory, route to a human instead of guessing.",
+      "source": "history scan 2026-07-11"
+    },
+    {
+      "id": "learned-cursor-access-flow",
+      "title": "Cursor access support flow",
+      "body": "For contributors who completed courses but are EQ, ineligible, locked, or missing Cursor access, the expected step is to enter the War Room and ask the team to check or unlock access. This is Step 0.",
+      "source": "history scan 2026-07-11"
+    },
+    {
+      "id": "learned-model-setup",
+      "title": "Current model setup",
+      "body": "The project moved away from Qwen. Contributors should use Claude Sonnet 4.6 for Stargazer tasks and make sure their Cursor configuration follows the current project guidelines.",
+      "source": "history scan 2026-07-11"
+    },
+    {
+      "id": "learned-task-throttle",
+      "title": "Initial task throttle",
+      "body": "The 1-task-per-24-hours throttle is automatic at the beginning and should not be promised as manually removable. The team evaluates quality after contributors complete enough tasks.",
+      "source": "history scan 2026-07-11"
     }
   ]
 }

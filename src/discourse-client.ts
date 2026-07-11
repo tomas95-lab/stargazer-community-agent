@@ -103,6 +103,13 @@ export interface DiscourseTopicDetails {
   post_stream?: { posts?: DiscourseTopicPost[] };
 }
 
+export interface DiscourseChatMessageQuery {
+  pageSize?: number;
+  targetMessageId?: number;
+  direction?: 'past' | 'future';
+  fetchFromLastRead?: boolean;
+}
+
 export class DiscourseClient {
   private baseUrl: string;
   private apiKey: string;
@@ -219,16 +226,27 @@ export class DiscourseClient {
     });
   }
 
-  async readChatMessages(channelId: string, count = 20): Promise<DiscourseChatMessage[]> {
+  private chatMessageQuery(params: DiscourseChatMessageQuery): string {
+    const query = new URLSearchParams();
+    query.set('page_size', String(Math.max(1, Math.floor(params.pageSize || 20))));
+    if (params.targetMessageId !== undefined) query.set('target_message_id', String(params.targetMessageId));
+    if (params.direction) query.set('direction', params.direction);
+    if (params.fetchFromLastRead) query.set('fetch_from_last_read', 'true');
+    return query.toString();
+  }
+
+  async readChatMessages(channelId: string, count = 20, options: Omit<DiscourseChatMessageQuery, 'pageSize'> = {}): Promise<DiscourseChatMessage[]> {
+    const query = this.chatMessageQuery({ ...options, pageSize: count });
     const data = await this.request<{ messages?: DiscourseChatMessage[] }>(
-      `/chat/api/channels/${channelId}/messages.json?page_size=${count}`
+      `/chat/api/channels/${channelId}/messages.json?${query}`
     );
     return data.messages || [];
   }
 
-  async readChatThreadMessages(channelId: string, threadId: number | string, count = 30): Promise<DiscourseChatMessage[]> {
+  async readChatThreadMessages(channelId: string, threadId: number | string, count = 30, options: Omit<DiscourseChatMessageQuery, 'pageSize'> = {}): Promise<DiscourseChatMessage[]> {
+    const query = this.chatMessageQuery({ ...options, pageSize: count });
     const data = await this.request<{ messages?: DiscourseChatMessage[] }>(
-      `/chat/api/channels/${channelId}/threads/${threadId}/messages.json?page_size=${count}`
+      `/chat/api/channels/${channelId}/threads/${threadId}/messages.json?${query}`
     );
     return data.messages || [];
   }

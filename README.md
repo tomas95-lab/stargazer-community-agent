@@ -183,6 +183,14 @@ npm run ai:respond -- --post
 
 Use `--post` only when you want it to send safe replies to chat.
 
+Refresh the bot's manager-style memory from recent Community and DM history:
+
+```bash
+npm run training:scan -- --days=14 --apply-memory
+```
+
+The scan reads Community chat plus active DM channels, extracts manager reply patterns, and updates `data/project-memory.json` with compact facts the bot can use later. Raw training transcripts are written under `output/training/`, which is gitignored because it can contain private DMs.
+
 The same agent is available through protected API routes:
 
 ```text

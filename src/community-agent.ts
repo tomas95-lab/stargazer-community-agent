@@ -708,7 +708,7 @@ export async function evaluateSupportMessage(
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
   const snippets = await findProjectGuidelineSnippets(message, 4);
-  const memory = await projectMemoryText(12);
+  const memory = await projectMemoryText(25);
   const anthropic = new Anthropic({ apiKey });
   const systemPrompt = [
     'You are a community management agent for Stargazer Axiom.',
@@ -765,8 +765,9 @@ export async function evaluateSupportMessage(
   const confidence = typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0;
   const rawReply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
   const nonEnglishReply = action === 'reply' && looksNonEnglish(rawReply);
+  const hasKnowledgeSupport = snippets.length > 0 || memory.trim().length > 0;
   const finalAction =
-    action === 'reply' && (!rawReply || confidence < MIN_CONFIDENCE || snippets.length === 0 || nonEnglishReply)
+    action === 'reply' && (!rawReply || confidence < MIN_CONFIDENCE || !hasKnowledgeSupport || nonEnglishReply)
       ? 'human'
       : action;
   const reply = finalAction === 'reply'

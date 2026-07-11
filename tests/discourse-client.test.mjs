@@ -106,3 +106,36 @@ test('DiscourseClient reads chat thread messages from a channel thread endpoint'
     global.fetch = previousFetch;
   }
 });
+
+test('DiscourseClient paginates chat messages toward the past', async () => {
+  const previousFetch = global.fetch;
+  const calls = [];
+  global.fetch = async (url, init) => {
+    calls.push({ url, init });
+    return {
+      ok: true,
+      json: async () => ({
+        messages: [{ id: 10, message: 'Older reply', user: { username: 'latam.coder' }, created_at: '2026-07-01T16:00:00Z' }],
+      }),
+    };
+  };
+
+  try {
+    const client = new DiscourseClient({
+      baseUrl: 'https://community.example/',
+      apiKey: 'key',
+      apiClientId: 'client',
+    });
+
+    const messages = await client.readChatMessages('42', 25, {
+      targetMessageId: 99,
+      direction: 'past',
+    });
+
+    assert.equal(calls[0].url, 'https://community.example/chat/api/channels/42/messages.json?page_size=25&target_message_id=99&direction=past');
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].id, 10);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});

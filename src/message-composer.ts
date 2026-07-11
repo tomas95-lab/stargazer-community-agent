@@ -163,7 +163,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
 
   const links = await loadProjectLinks();
   const snippets = await findProjectGuidelineSnippets(`${request.prompt}\n${request.extraContext}`, 5);
-  const memory = await projectMemoryText(12);
+  const memory = await projectMemoryText(25);
   const anthropic = new Anthropic({ apiKey });
   const maxTokens = request.variantCount === 1 ? 700 : 1200;
   const systemPrompt = [
