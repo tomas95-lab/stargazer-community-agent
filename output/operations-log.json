@@ -1,5 +1,24 @@
 [
   {
+    "id": "0e090365-61a1-4229-bc14-b86878fc8bfa",
+    "at": "2026-07-11T13:00:36.065Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Daily thread cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/daily-thread/1000",
+      "slot": "1000",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "daily_publish_job",
+      "resultStatus": "published",
+      "date": "2026-07-11",
+      "url": "https://community.outlier.ai/t/daily-thread-07-11/2903684"
+    }
+  },
+  {
     "id": "93603e83-f8b6-4722-ada6-699c5f47e7d4",
     "at": "2026-07-11T13:00:34.949Z",
     "action": "cron_request",
