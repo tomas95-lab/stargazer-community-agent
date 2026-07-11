@@ -1,0 +1,80 @@
+{
+  "entry": {
+    "id": "97f7c5d1-46bd-42eb-95d2-6306485fd72a",
+    "at": "2026-07-09T14:30:17.146Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 1,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": true,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": true,
+      "skipProcessed": true,
+      "markProcessed": true,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "post",
+      "checked": 1,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": true,
+      "window": {
+        "argentinaDate": "2026-07-09",
+        "startUtc": "2026-07-09T03:00:00.000Z",
+        "endUtc": "2026-07-10T03:00:00.000Z",
+        "operatingHours": "Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays"
+      },
+      "items": [
+        {
+          "id": "community:27718503",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-09/2903272) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Test Quality**, with a reminder about **Tests must pass for ANY valid solution, not just yours.**.\n\nQuick rule: If the method name isn't in the prompt, don't call it in a test.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-09T13:00:20Z",
+          "chatMessageId": 27718503,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+        }
+      ],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27718503",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-09/2903272) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Test Quality**, with a reminder about **Tests must pass for ANY valid solution, not just yours.**.\n\nQuick rule: If the method name isn't in the prompt, don't call it in a test.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-09T13:00:20Z",
+        "chatMessageId": 27718503,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+      }
+    ],
+    "candidates": [],
+    "decisions": []
+  }
+}

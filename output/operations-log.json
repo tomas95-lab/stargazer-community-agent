@@ -1,118 +1,23 @@
 [
   {
-    "id": "5407b929-3171-4db2-8e51-ff8277ef51f3",
-    "at": "2026-07-07T23:20:23.142Z",
-    "action": "sandbox_evaluation",
-    "status": "success",
-    "message": "Sandbox evaluated community message from sandbox.user.",
-    "metadata": {
-      "action": "reply",
-      "confidence": 1,
-      "deterministic": true
-    }
-  },
-  {
-    "id": "5182e975-78f5-4695-9ac6-3aef4e26a933",
-    "at": "2026-07-07T23:18:12.927Z",
-    "action": "sandbox_evaluation",
-    "status": "success",
-    "message": "Sandbox evaluated community message from sandbox.user.",
-    "metadata": {
-      "action": "reply",
-      "confidence": 1,
-      "deterministic": true
-    }
-  },
-  {
-    "id": "bccb3db3-7c4e-453b-b559-77573974bcf9",
-    "at": "2026-07-07T23:16:18.968Z",
-    "action": "sandbox_evaluation",
-    "status": "success",
-    "message": "Sandbox evaluated community message from sandbox.user.",
-    "metadata": {
-      "action": "reply",
-      "confidence": 0.85,
-      "deterministic": false
-    }
-  },
-  {
-    "id": "95f48b40-15d6-4173-bd00-74a26f321079",
-    "at": "2026-07-07T23:15:50.531Z",
-    "action": "sandbox_evaluation",
-    "status": "success",
-    "message": "Sandbox evaluated community message from sandbox.user.",
-    "metadata": {
-      "action": "reply",
-      "confidence": 0.85,
-      "deterministic": false
-    }
-  },
-  {
-    "id": "617f2a9a-6836-4b5f-b3bf-953dee8c104b",
-    "at": "2026-07-07T23:13:46.501Z",
-    "action": "sandbox_evaluation",
-    "status": "success",
-    "message": "Sandbox evaluated community message from sandbox.user.",
-    "metadata": {
-      "action": "reply",
-      "confidence": 0.85,
-      "deterministic": false
-    }
-  },
-  {
-    "id": "2e944e77-2a93-4bf3-8d53-a3d031d64590",
-    "at": "2026-07-07T23:13:35.411Z",
-    "action": "sandbox_evaluation",
-    "status": "success",
-    "message": "Sandbox evaluated community message from sandbox.user.",
-    "metadata": {
-      "action": "reply",
-      "confidence": 1,
-      "deterministic": true
-    }
-  },
-  {
-    "id": "7598e7ee-a29c-46d0-84c7-8d886d073d05",
-    "at": "2026-07-07T22:00:38.341Z",
-    "action": "cron_request",
-    "status": "success",
-    "message": "Community agent cron completed",
-    "metadata": {
-      "endpoint": "/api/cron/community-agent/1900",
-      "slot": "1900",
-      "source": "cron-job-org",
-      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
-      "authorized": true,
-      "httpStatus": 200,
-      "job": "community_agent",
-      "checked": 5,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0
-    }
-  },
-  {
-    "id": "fa733e4b-6342-43d4-8584-df311f1257be",
-    "at": "2026-07-07T22:00:30.867Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 5,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "candidateUsers": [],
-      "postedUsers": [],
-      "humanUsers": [],
-      "errors": []
-    }
-  },
-  {
-    "id": "5e78768c-ad77-444f-bbfa-adee1a4bd754",
-    "at": "2026-07-07T21:00:45.654Z",
-    "action": "cron_request",
+    "id": "8ed95608-2def-4a32-a8a1-85c8a5d6cca4",
+    "at": "2026-07-11T21:18:39.474Z",
+    "action": "dm_draft",
     "status": "skipped",
+    "message": "Claude DM draft evaluated channel 858834.",
+    "metadata": {
+      "channelId": 858834,
+      "action": "human",
+      "confidence": 0.95,
+      "pendingIncomingMessages": 6,
+      "lastIncomingMessageId": 27739433
+    }
+  },
+  {
+    "id": "3d55ee41-1281-4682-98c7-d2f9bd004650",
+    "at": "2026-07-11T21:00:40.822Z",
+    "action": "cron_request",
+    "status": "success",
     "message": "DM review cron completed",
     "metadata": {
       "endpoint": "/api/cron/dm-review/1800",
@@ -122,7 +27,7 @@
       "authorized": true,
       "httpStatus": 200,
       "job": "dm_review",
-      "incomingMessages": 0,
+      "incomingMessages": 7,
       "scannedChannels": 5,
       "autoReplied": 0,
       "autoNeedsHuman": 0,
@@ -130,22 +35,22 @@
     }
   },
   {
-    "id": "512c6f31-75b3-4ec9-9676-ac09da62fb2d",
-    "at": "2026-07-07T21:00:43.897Z",
+    "id": "d0db38f2-3921-4221-a960-3bde11d983dd",
+    "at": "2026-07-11T21:00:39.272Z",
     "action": "dm_review",
-    "status": "skipped",
-    "message": "No incoming DMs found for 2026-07-07.",
+    "status": "success",
+    "message": "Found 7 incoming DM(s) for 2026-07-11.",
     "metadata": {
-      "argentinaDate": "2026-07-07",
-      "totalDirectChannels": 56,
+      "argentinaDate": "2026-07-11",
+      "totalDirectChannels": 58,
       "scannedChannels": 5,
-      "incomingMessages": 0,
-      "pendingIncomingMessages": 0,
-      "unresolvedChannels": 0,
+      "incomingMessages": 7,
+      "pendingIncomingMessages": 6,
+      "unresolvedChannels": 1,
       "newIncomingMessages": 0,
       "newIncomingMessageIds": [],
       "newDmSenders": [],
-      "channelsWithTodayMessages": 0,
+      "channelsWithTodayMessages": 2,
       "autoReplyEnabled": true,
       "autoReplied": 0,
       "autoNeedsHuman": 0,
@@ -153,25 +58,25 @@
     }
   },
   {
-    "id": "e9aff19a-12e3-4abb-83d0-f5f67ef6f71a",
-    "at": "2026-07-07T21:00:41.086Z",
+    "id": "24210014-0d68-4cd6-a41d-c73f7250e8fa",
+    "at": "2026-07-11T21:00:34.533Z",
     "action": "dm_auto_reply",
     "status": "skipped",
     "message": "No safe DM auto-replies sent.",
     "metadata": {
-      "checked": 0,
+      "checked": 1,
       "replied": 0,
       "needsHuman": 0,
       "ignored": 0,
-      "skippedProcessed": 0,
+      "skippedProcessed": 1,
       "repliedUsers": [],
       "humanUsers": [],
       "errors": 0
     }
   },
   {
-    "id": "b065398e-43dc-4796-97f8-d1ae8edea6a4",
-    "at": "2026-07-07T20:30:37.449Z",
+    "id": "123bd2c5-9406-4289-9179-5b4932a5ff1b",
+    "at": "2026-07-11T20:30:30.904Z",
     "action": "cron_request",
     "status": "success",
     "message": "Community agent cron completed",
@@ -183,20 +88,20 @@
       "authorized": true,
       "httpStatus": 200,
       "job": "community_agent",
-      "checked": 5,
+      "checked": 12,
       "candidates": 0,
       "posted": 0,
       "needsHuman": 0
     }
   },
   {
-    "id": "38ceba7c-cf3d-491e-bdf0-957eb49cfafc",
-    "at": "2026-07-07T20:30:35.249Z",
+    "id": "d45f806a-a4bb-4d67-80f7-985fab0cf32c",
+    "at": "2026-07-11T20:30:27.277Z",
     "action": "community_agent",
     "status": "success",
     "message": "Community agent run with posting enabled",
     "metadata": {
-      "checked": 5,
+      "checked": 12,
       "candidates": 0,
       "posted": 0,
       "needsHuman": 0,
@@ -207,8 +112,242 @@
     }
   },
   {
-    "id": "4bd310a8-c362-4a43-a07c-5924c274e628",
-    "at": "2026-07-07T19:34:26.849Z",
+    "id": "f71ac96a-1e1d-496b-8a0c-7ca49c011de4",
+    "at": "2026-07-11T19:00:30.359Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1600",
+      "slot": "1600",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 12,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "646ec972-0ff1-44f5-935b-2740ec903ddd",
+    "at": "2026-07-11T19:00:27.460Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 12,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "482578b2-9d72-466a-8821-f1a576e1df67",
+    "at": "2026-07-11T18:30:43.004Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "DM review cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/dm-review/1530",
+      "slot": "1530",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "dm_review",
+      "incomingMessages": 7,
+      "scannedChannels": 5,
+      "autoReplied": 0,
+      "autoNeedsHuman": 2,
+      "errors": 0
+    }
+  },
+  {
+    "id": "c55166dc-fe0d-4da0-86be-17b02b788acf",
+    "at": "2026-07-11T18:30:41.518Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 7 incoming DM(s) for 2026-07-11.",
+    "metadata": {
+      "argentinaDate": "2026-07-11",
+      "totalDirectChannels": 58,
+      "scannedChannels": 5,
+      "incomingMessages": 7,
+      "pendingIncomingMessages": 7,
+      "unresolvedChannels": 2,
+      "newIncomingMessages": 7,
+      "newIncomingMessageIds": [
+        27739364,
+        27739367,
+        27739376,
+        27739378,
+        27739380,
+        27739433,
+        27741741
+      ],
+      "newDmSenders": [
+        "pilots-coder625",
+        "latam.coder1989"
+      ],
+      "channelsWithTodayMessages": 2,
+      "autoReplyEnabled": true,
+      "autoReplied": 0,
+      "autoNeedsHuman": 2,
+      "errors": 0
+    }
+  },
+  {
+    "id": "c5f316b0-23e3-41b9-b182-5d422d5ee300",
+    "at": "2026-07-11T18:30:38.260Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 2,
+      "replied": 0,
+      "needsHuman": 2,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [
+        "pilots-coder625",
+        "latam.coder1989"
+      ],
+      "errors": 0
+    }
+  },
+  {
+    "id": "3b2c86b8-559d-45df-8e04-1d60d5be4e00",
+    "at": "2026-07-11T17:30:36.348Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1430",
+      "slot": "1430",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 11,
+      "candidates": 1,
+      "posted": 1,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "cd231383-d229-4da3-822d-81f7d9e18224",
+    "at": "2026-07-11T17:30:34.856Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 11,
+      "candidates": 1,
+      "posted": 1,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "latam.coder1989"
+      ],
+      "postedUsers": [
+        "latam.coder1989"
+      ],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "e4612207-0dfa-425e-abeb-898bc9519e93",
+    "at": "2026-07-11T17:10:41.195Z",
+    "action": "sandbox_evaluation",
+    "status": "skipped",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "human",
+      "confidence": 0.15,
+      "deterministic": false
+    }
+  },
+  {
+    "id": "dd30657e-a8f5-415e-9ce8-ef782909f0c4",
+    "at": "2026-07-11T17:10:35.830Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 10,
+      "candidates": 2,
+      "posted": 0,
+      "needsHuman": 1,
+      "candidateUsers": [
+        "pilots-coder625",
+        "latam.coder1989"
+      ],
+      "postedUsers": [],
+      "humanUsers": [
+        "latam.coder1989"
+      ],
+      "errors": []
+    }
+  },
+  {
+    "id": "4ee02946-6da2-4948-bd6c-f5ad6db6c90c",
+    "at": "2026-07-11T17:02:11.936Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 6,
+      "candidates": 3,
+      "posted": 2,
+      "needsHuman": 1,
+      "candidateUsers": [
+        "amanburman039",
+        "pilots-coder625",
+        "latam.coder1989"
+      ],
+      "postedUsers": [
+        "amanburman039",
+        "pilots-coder625"
+      ],
+      "humanUsers": [
+        "latam.coder1989"
+      ],
+      "errors": []
+    }
+  },
+  {
+    "id": "5cf2c9e7-d8a3-4534-8ef0-1c6032397a81",
+    "at": "2026-07-11T17:01:19.813Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 6,
+      "candidates": 3,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "amanburman039",
+        "pilots-coder625",
+        "latam.coder1989"
+      ],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "163d9f39-b044-4af9-9ff5-580f7df77213",
+    "at": "2026-07-11T17:00:23.090Z",
     "action": "sandbox_evaluation",
     "status": "success",
     "message": "Sandbox evaluated community message from sandbox.user.",
@@ -219,32 +358,75 @@
     }
   },
   {
-    "id": "adb6381a-77cf-47c8-8236-4007ba145f2f",
-    "at": "2026-07-07T19:26:33.184Z",
+    "id": "bad48e2a-ef2d-4bab-96af-d5d7bc693ff9",
+    "at": "2026-07-11T16:56:52.779Z",
     "action": "sandbox_evaluation",
-    "status": "success",
+    "status": "skipped",
     "message": "Sandbox evaluated community message from sandbox.user.",
     "metadata": {
-      "action": "reply",
-      "confidence": 0.85,
+      "action": "human",
+      "confidence": 0.95,
       "deterministic": false
     }
   },
   {
-    "id": "48a10e6c-99a5-4fd1-8ef3-e8cc4679de24",
-    "at": "2026-07-07T19:01:34.291Z",
-    "action": "sandbox_evaluation",
-    "status": "success",
-    "message": "Sandbox evaluated community message from sandbox.user.",
+    "id": "d04dcfa7-3abb-4767-8c43-4d5547319ef3",
+    "at": "2026-07-11T16:54:25.787Z",
+    "action": "dm_draft",
+    "status": "skipped",
+    "message": "Claude DM draft evaluated channel 858834.",
     "metadata": {
-      "action": "reply",
-      "confidence": 1,
-      "deterministic": true
+      "channelId": 858834,
+      "action": "human",
+      "confidence": 0.15,
+      "pendingIncomingMessages": 6,
+      "lastIncomingMessageId": 27739433
     }
   },
   {
-    "id": "f1ac485e-963d-42f3-89d6-de01a9d9b400",
-    "at": "2026-07-07T19:00:32.989Z",
+    "id": "b8dc5d7d-c7ec-4725-a9ba-8335f24117be",
+    "at": "2026-07-11T16:53:13.634Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 6,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 1,
+      "candidateUsers": [
+        "latam.coder1989"
+      ],
+      "postedUsers": [],
+      "humanUsers": [
+        "latam.coder1989"
+      ],
+      "errors": []
+    }
+  },
+  {
+    "id": "b9111a9c-e98b-4265-a82f-b1746fd11086",
+    "at": "2026-07-11T16:00:27.025Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1300",
+      "slot": "1300",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 5,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "61775dbe-8190-4be3-95cc-efafcc73f8de",
+    "at": "2026-07-11T16:00:25.590Z",
     "action": "community_agent",
     "status": "success",
     "message": "Community agent run with posting enabled",
@@ -260,79 +442,148 @@
     }
   },
   {
-    "id": "5d857947-98ad-4aa2-a943-8dfb9601cf98",
-    "at": "2026-07-07T18:59:19.380Z",
-    "action": "sandbox_evaluation",
+    "id": "6861820e-0243-49ba-9954-f903c02a9d79",
+    "at": "2026-07-11T14:30:29.572Z",
+    "action": "cron_request",
     "status": "success",
-    "message": "Sandbox evaluated community message from sandbox.user.",
+    "message": "Community agent cron completed",
     "metadata": {
-      "action": "reply",
-      "confidence": 1,
-      "deterministic": true
+      "endpoint": "/api/cron/community-agent/1130",
+      "slot": "1130",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 3,
+      "candidates": 1,
+      "posted": 1,
+      "needsHuman": 0
     }
   },
   {
-    "id": "03addcc5-15df-4e33-8977-0483895d2281",
-    "at": "2026-07-07T18:30:37.896Z",
-    "action": "dm_review",
-    "status": "skipped",
-    "message": "No incoming DMs found for 2026-07-07.",
-    "metadata": {
-      "argentinaDate": "2026-07-07",
-      "totalDirectChannels": 56,
-      "scannedChannels": 5,
-      "incomingMessages": 0,
-      "newIncomingMessages": 0,
-      "newIncomingMessageIds": [],
-      "newDmSenders": [],
-      "channelsWithTodayMessages": 0,
-      "autoReplyEnabled": true,
-      "autoReplied": 0,
-      "autoNeedsHuman": 0,
-      "errors": 0
-    }
-  },
-  {
-    "id": "79ecba8a-1c2f-44b0-bf09-efa6187dcd9f",
-    "at": "2026-07-07T18:30:36.151Z",
-    "action": "dm_auto_reply",
-    "status": "skipped",
-    "message": "No safe DM auto-replies sent.",
-    "metadata": {
-      "checked": 0,
-      "replied": 0,
-      "needsHuman": 0,
-      "ignored": 0,
-      "skippedProcessed": 0,
-      "repliedUsers": [],
-      "humanUsers": [],
-      "errors": 0
-    }
-  },
-  {
-    "id": "d7bbbb1c-495d-408e-bac0-bcff9c2def88",
-    "at": "2026-07-07T17:30:29.168Z",
+    "id": "86e6c9c5-f1d0-449f-8d47-4d803cac8db2",
+    "at": "2026-07-11T14:30:27.937Z",
     "action": "community_agent",
     "status": "success",
     "message": "Community agent run with posting enabled",
     "metadata": {
-      "checked": 5,
+      "checked": 3,
       "candidates": 1,
       "posted": 1,
       "needsHuman": 0,
       "candidateUsers": [
-        "latam.coder2348"
+        "pilots-coder625"
       ],
       "postedUsers": [
-        "latam.coder2348"
+        "pilots-coder625"
       ],
       "humanUsers": [],
       "errors": []
     }
   },
   {
-    "id": "15dcc1f0-4c2f-4b51-a419-70adbad93233",
-    "at": "2026-07-07T16:00:28.748Z",
+    "id": "82633f83-362c-4d3a-8801-99bf24a5e68a",
+    "at": "2026-07-11T14:00:29.362Z",
+    "action": "cron_request",
+    "status": "skipped",
+    "message": "Daily thread cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/daily-thread/1100",
+      "slot": "1100",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "daily_publish_job",
+      "resultStatus": "skipped",
+      "date": "2026-07-11",
+      "reason": "already_published"
+    }
+  },
+  {
+    "id": "0e090365-61a1-4229-bc14-b86878fc8bfa",
+    "at": "2026-07-11T13:00:36.065Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Daily thread cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/daily-thread/1000",
+      "slot": "1000",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "daily_publish_job",
+      "resultStatus": "published",
+      "date": "2026-07-11",
+      "url": "https://community.outlier.ai/t/daily-thread-07-11/2903684"
+    }
+  },
+  {
+    "id": "93603e83-f8b6-4722-ada6-699c5f47e7d4",
+    "at": "2026-07-11T13:00:34.949Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1000",
+      "slot": "1000",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 1,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "8c47ef76-58d3-4aed-91ba-c986f7fda225",
+    "at": "2026-07-11T13:00:10.032Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1000",
+      "slot": "1000",
+      "source": "vercel-cron",
+      "schedule": "0 13 * * *",
+      "userAgent": "vercel-cron/1.0",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 1,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 1
+    }
+  },
+  {
+    "id": "a8c0dbb3-3633-4632-842d-bd39c8a39000",
+    "at": "2026-07-10T22:00:43.798Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1900",
+      "slot": "1900",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "5b4e80cc-0c52-415a-b6cc-139d63aeb806",
+    "at": "2026-07-10T22:00:34.521Z",
     "action": "community_agent",
     "status": "success",
     "message": "Community agent run with posting enabled",
@@ -348,104 +599,43 @@
     }
   },
   {
-    "id": "2a45d1f8-037c-4ae7-bf39-12499c1bb352",
-    "at": "2026-07-07T15:50:49.685Z",
-    "action": "message_composer",
+    "id": "9c15e5ce-8197-4d95-9d6a-eb56efc5a650",
+    "at": "2026-07-10T21:00:37.335Z",
+    "action": "cron_request",
     "status": "success",
-    "message": "Generated 2 message draft(s)",
+    "message": "DM review cron completed",
     "metadata": {
-      "channel": "announcement",
-      "tone": "friendly",
-      "objective": "inform",
-      "variantCount": 2,
-      "guidelineSnippets": 5
-    }
-  },
-  {
-    "id": "2aaca7ca-54db-4568-a538-513d3c09dde5",
-    "at": "2026-07-07T15:44:51.170Z",
-    "action": "send_chat_message",
-    "status": "success",
-    "message": "Sent chat message",
-    "metadata": {
-      "channelId": "828853",
-      "messageLength": 410
-    }
-  },
-  {
-    "id": "b18e1931-2887-4723-94dc-69d6f151f13d",
-    "at": "2026-07-07T15:44:38.532Z",
-    "action": "message_composer",
-    "status": "success",
-    "message": "Generated 2 message draft(s)",
-    "metadata": {
-      "channel": "announcement",
-      "tone": "friendly",
-      "objective": "inform",
-      "variantCount": 2,
-      "guidelineSnippets": 5
-    }
-  },
-  {
-    "id": "96c603aa-2c16-40b3-a52d-e4cc35884d61",
-    "at": "2026-07-07T15:44:13.277Z",
-    "action": "message_composer",
-    "status": "success",
-    "message": "Generated 2 message draft(s)",
-    "metadata": {
-      "channel": "announcement",
-      "tone": "friendly",
-      "objective": "inform",
-      "variantCount": 2,
-      "guidelineSnippets": 5
-    }
-  },
-  {
-    "id": "34a12790-687e-46ab-9817-5665409126b5",
-    "at": "2026-07-07T15:43:33.116Z",
-    "action": "message_composer",
-    "status": "success",
-    "message": "Generated 2 message draft(s)",
-    "metadata": {
-      "channel": "announcement",
-      "tone": "professional",
-      "objective": "inform",
-      "variantCount": 2,
-      "guidelineSnippets": 5
-    }
-  },
-  {
-    "id": "9407ac32-d554-4cae-a101-4bbafb84d18d",
-    "at": "2026-07-07T15:32:19.089Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 3,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "candidateUsers": [],
-      "postedUsers": [],
-      "humanUsers": [],
-      "errors": []
-    }
-  },
-  {
-    "id": "6192dd1c-3d75-4fe8-8d69-6afdcfe7c58c",
-    "at": "2026-07-07T15:13:48.430Z",
-    "action": "dm_review",
-    "status": "skipped",
-    "message": "No incoming DMs found for 2026-07-07.",
-    "metadata": {
-      "argentinaDate": "2026-07-07",
-      "totalDirectChannels": 56,
+      "endpoint": "/api/cron/dm-review/1800",
+      "slot": "1800",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "dm_review",
+      "incomingMessages": 2,
       "scannedChannels": 5,
-      "incomingMessages": 0,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  {
+    "id": "216a6387-95f1-4517-8aad-fe467e60cd69",
+    "at": "2026-07-10T21:00:35.393Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 2 incoming DM(s) for 2026-07-10.",
+    "metadata": {
+      "argentinaDate": "2026-07-10",
+      "totalDirectChannels": 57,
+      "scannedChannels": 5,
+      "incomingMessages": 2,
+      "pendingIncomingMessages": 0,
+      "unresolvedChannels": 0,
       "newIncomingMessages": 0,
       "newIncomingMessageIds": [],
       "newDmSenders": [],
-      "channelsWithTodayMessages": 0,
+      "channelsWithTodayMessages": 1,
       "autoReplyEnabled": true,
       "autoReplied": 0,
       "autoNeedsHuman": 0,
@@ -453,8 +643,8 @@
     }
   },
   {
-    "id": "41724489-0bff-4705-b9b5-c60c5c157119",
-    "at": "2026-07-07T15:13:46.487Z",
+    "id": "6179cf72-67f8-427e-9207-78f0f4721868",
+    "at": "2026-07-10T21:00:32.553Z",
     "action": "dm_auto_reply",
     "status": "skipped",
     "message": "No safe DM auto-replies sent.",
@@ -470,13 +660,33 @@
     }
   },
   {
-    "id": "8d852240-41fd-4a3b-8db1-58eb6640b972",
-    "at": "2026-07-07T15:10:12.226Z",
+    "id": "0e5d8a74-9b31-4651-ac65-6ad2267c58a4",
+    "at": "2026-07-10T20:30:26.409Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1730",
+      "slot": "1730",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "92ee3998-77b8-4fff-8e6d-a7982cf50416",
+    "at": "2026-07-10T20:30:24.923Z",
     "action": "community_agent",
     "status": "success",
     "message": "Community agent run with posting enabled",
     "metadata": {
-      "checked": 3,
+      "checked": 4,
       "candidates": 0,
       "posted": 0,
       "needsHuman": 0,
@@ -487,40 +697,250 @@
     }
   },
   {
-    "id": "3982fe15-53de-4e86-ac82-830d20145795",
-    "at": "2026-07-07T15:10:08.509Z",
+    "id": "ec9c307e-8134-48e7-970f-5652ec32aed4",
+    "at": "2026-07-10T19:00:25.781Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1600",
+      "slot": "1600",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "8d5d5370-1fce-4494-8771-ba5b36cef39d",
+    "at": "2026-07-10T19:00:23.613Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "905116ca-ca82-4183-bb97-27cfcd91ccf5",
+    "at": "2026-07-10T18:30:54.553Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "DM review cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/dm-review/1530",
+      "slot": "1530",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "dm_review",
+      "incomingMessages": 2,
+      "scannedChannels": 5,
+      "autoReplied": 1,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  {
+    "id": "ccef0b03-6c65-4e7d-b87c-78d79701703d",
+    "at": "2026-07-10T18:30:52.579Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 2 incoming DM(s) for 2026-07-10.",
+    "metadata": {
+      "argentinaDate": "2026-07-10",
+      "totalDirectChannels": 57,
+      "scannedChannels": 5,
+      "incomingMessages": 2,
+      "pendingIncomingMessages": 2,
+      "unresolvedChannels": 1,
+      "newIncomingMessages": 2,
+      "newIncomingMessageIds": [
+        27725353,
+        27725355
+      ],
+      "newDmSenders": [
+        "latam.coder2184"
+      ],
+      "channelsWithTodayMessages": 1,
+      "autoReplyEnabled": true,
+      "autoReplied": 1,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  {
+    "id": "d6fbce17-d62d-4861-b39e-3903e06ee5af",
+    "at": "2026-07-10T18:30:49.398Z",
+    "action": "dm_auto_reply",
+    "status": "success",
+    "message": "Auto-replied to 1 DM thread(s).",
+    "metadata": {
+      "checked": 1,
+      "replied": 1,
+      "needsHuman": 0,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [
+        "latam.coder2184"
+      ],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  {
+    "id": "2d3bf3a1-1cd6-47cc-98fe-965988a058cb",
+    "at": "2026-07-10T18:30:41.447Z",
+    "action": "dm_reply",
+    "status": "success",
+    "message": "Sent DM reply to channel 854960.",
+    "metadata": {
+      "channelId": 854960,
+      "messageId": 27733123
+    }
+  },
+  {
+    "id": "66388365-63eb-4899-95ee-d9ca2c8f54aa",
+    "at": "2026-07-10T17:30:24.418Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1430",
+      "slot": "1430",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "0525abec-0965-446a-838c-6d9639cb48ca",
+    "at": "2026-07-10T17:30:22.576Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "f70cb7df-ca3c-4540-a7e5-e282f655405a",
+    "at": "2026-07-10T16:00:32.714Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1300",
+      "slot": "1300",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "2eac7fdb-2196-4914-87cf-b86d770eabf1",
+    "at": "2026-07-10T16:00:29.009Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "56b6bb02-c2a1-4e88-a978-fa5dbe672f11",
+    "at": "2026-07-10T14:30:25.984Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1130",
+      "slot": "1130",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "5ae4695d-0f10-4bf8-b3ff-84db1ddb8703",
+    "at": "2026-07-10T14:30:24.162Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "836d2874-4357-4d44-b862-970c5504312a",
+    "at": "2026-07-10T14:00:23.519Z",
     "action": "daily_publish_job",
     "status": "skipped",
-    "message": "Daily thread for 2026-07-07 was already published",
+    "message": "Daily thread for 2026-07-10 was already published",
     "metadata": {
-      "date": "2026-07-07"
+      "date": "2026-07-10"
     }
   },
   {
-    "id": "b257e06a-5099-4fea-af7c-cf6897668dee",
-    "at": "2026-07-07T14:43:21.051Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "candidateUsers": [],
-      "postedUsers": [],
-      "humanUsers": [],
-      "errors": []
-    }
-  },
-  {
-    "id": "e6db9d7a-693f-48d8-96a5-44f0d9a54d08",
-    "at": "2026-07-07T14:42:08.403Z",
+    "id": "890aae02-8ba2-48d1-8db8-45550246c71b",
+    "at": "2026-07-10T13:59:20.361Z",
     "action": "community_agent",
     "status": "success",
     "message": "Community agent run with posting enabled",
     "metadata": {
-      "checked": 3,
+      "checked": 2,
       "candidates": 1,
       "posted": 1,
       "needsHuman": 0,
@@ -535,13 +955,52 @@
     }
   },
   {
-    "id": "d2411aeb-8df4-42b9-a43d-342ec59a719b",
-    "at": "2026-07-07T14:17:20.865Z",
+    "id": "c3592d8e-cadb-44cc-aee8-73341e80a452",
+    "at": "2026-07-10T13:59:13.622Z",
     "action": "community_agent",
     "status": "success",
     "message": "Community agent run in suggestion mode",
     "metadata": {
       "checked": 2,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "amanburman039"
+      ],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
+    "id": "2e84b5bb-b934-47ce-ba4e-556b8cb6a4d8",
+    "at": "2026-07-10T13:00:33.799Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1000",
+      "slot": "1000",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "checked": 0,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0
+    }
+  },
+  {
+    "id": "586aea5a-836b-4c25-8390-9d2d7efdee01",
+    "at": "2026-07-10T13:00:31.849Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 0,
       "candidates": 0,
       "posted": 0,
       "needsHuman": 0,
@@ -552,1863 +1011,15 @@
     }
   },
   {
-    "id": "3fcd1029-0a9d-4016-aab0-18a65b79401c",
-    "at": "2026-07-07T13:01:28.219Z",
-    "action": "publish_daily_thread",
+    "id": "9aff833d-ec10-419e-bb73-913641be7df2",
+    "at": "2026-07-10T13:00:28.827Z",
+    "action": "daily_publish_job",
     "status": "success",
-    "message": "Published daily thread for 2026-07-07",
+    "message": "Published daily thread for 2026-07-10",
     "metadata": {
-      "date": "2026-07-07",
-      "url": "https://community.outlier.ai/t/daily-thread-07-07/2902883",
+      "date": "2026-07-10",
+      "url": "https://community.outlier.ai/t/daily-thread-07-10/2903473",
       "postChat": true
-    }
-  },
-  {
-    "id": "993fe132-5397-4301-8883-a97b6c9939bd",
-    "at": "2026-07-07T13:01:02.478Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "candidateUsers": [],
-      "postedUsers": [],
-      "humanUsers": [],
-      "errors": []
-    }
-  },
-  {
-    "id": "616668be-b809-4bd6-848b-e607b63a5b62",
-    "at": "2026-07-07T01:08:08.777Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 9,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "candidateUsers": [
-        "latam.coder2184"
-      ],
-      "postedUsers": [],
-      "humanUsers": [],
-      "errors": []
-    }
-  },
-  {
-    "id": "033c88e2-461f-4557-8c94-3cdb6636aaad",
-    "at": "2026-07-06T23:13:29.448Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 9,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "candidateUsers": [
-        "latam.coder2184"
-      ],
-      "postedUsers": [],
-      "humanUsers": [],
-      "errors": []
-    }
-  },
-  {
-    "id": "a62630b2-7ce0-45c6-abd6-cf8d7f0c9e6f",
-    "at": "2026-07-06T23:13:06.461Z",
-    "action": "dm_draft",
-    "status": "success",
-    "message": "Claude DM draft evaluated channel 856180.",
-    "metadata": {
-      "channelId": 856180,
-      "action": "ignore",
-      "confidence": 0.95,
-      "pendingIncomingMessages": 2,
-      "lastIncomingMessageId": 27696296
-    }
-  },
-  {
-    "id": "299cbf0d-ace0-41d6-b84b-977292287ce0",
-    "at": "2026-07-06T22:13:03.817Z",
-    "action": "community_agent",
-    "status": "skipped",
-    "message": "Outside operating hours",
-    "metadata": {
-      "window": {
-        "argentinaDate": "2026-07-06",
-        "startUtc": "2026-07-06T03:00:00.000Z",
-        "endUtc": "2026-07-07T03:00:00.000Z",
-        "operatingHours": "Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays"
-      }
-    }
-  },
-  {
-    "id": "37b91188-1369-487c-ad80-7da662792f01",
-    "at": "2026-07-06T21:14:46.513Z",
-    "action": "dm_reply",
-    "status": "success",
-    "message": "Sent DM reply to channel 856180.",
-    "metadata": {
-      "channelId": 856180,
-      "messageId": 27696061
-    }
-  },
-  {
-    "id": "0e7275ca-511c-4ca8-8632-0cb145c471ea",
-    "at": "2026-07-06T21:14:03.885Z",
-    "action": "dm_draft",
-    "status": "success",
-    "message": "Claude DM draft evaluated channel 856180.",
-    "metadata": {
-      "channelId": 856180,
-      "action": "reply",
-      "confidence": 0.92,
-      "pendingIncomingMessages": 1,
-      "lastIncomingMessageId": 27696052
-    }
-  },
-  {
-    "id": "adfb3626-1724-468d-8824-b6ebadc2fc95",
-    "at": "2026-07-06T21:07:51.703Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 14 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 5,
-      "incomingMessages": 14,
-      "newIncomingMessages": 14,
-      "newIncomingMessageIds": [
-        27692973,
-        27695066,
-        27695069,
-        27695414,
-        27695416,
-        27695423,
-        27695438,
-        27695479,
-        27695496,
-        27695777,
-        27695860,
-        27695926,
-        27695940,
-        27695963
-      ],
-      "newDmSenders": [
-        "latam.coder2366",
-        "latam.coder1232",
-        "inqa-coder0146"
-      ],
-      "channelsWithTodayMessages": 3,
-      "autoReplyEnabled": true,
-      "autoReplied": 0,
-      "autoNeedsHuman": 0,
-      "errors": 0
-    }
-  },
-  {
-    "id": "d1e2d2bf-a742-4fc3-a68d-7163976b1394",
-    "at": "2026-07-06T21:07:48.630Z",
-    "action": "dm_auto_reply",
-    "status": "skipped",
-    "message": "No safe DM auto-replies sent.",
-    "metadata": {
-      "checked": 1,
-      "replied": 0,
-      "needsHuman": 0,
-      "ignored": 1,
-      "skippedProcessed": 0,
-      "repliedUsers": [],
-      "humanUsers": [],
-      "errors": 0
-    }
-  },
-  {
-    "id": "1872e418-2709-4d5c-8ac1-78a93771a1b3",
-    "at": "2026-07-06T20:43:15.471Z",
-    "action": "dm_draft",
-    "status": "skipped",
-    "message": "Claude DM draft evaluated channel 855952.",
-    "metadata": {
-      "channelId": 855952,
-      "action": "human",
-      "confidence": 0.15,
-      "pendingIncomingMessages": 1,
-      "lastIncomingMessageId": 27695940
-    }
-  },
-  {
-    "id": "58b59d9f-2918-4242-a55f-64c16b0041b5",
-    "at": "2026-07-06T20:34:57.624Z",
-    "action": "dm_draft",
-    "status": "success",
-    "message": "Claude DM draft evaluated channel 855952.",
-    "metadata": {
-      "channelId": 855952,
-      "action": "ignore",
-      "confidence": 0.95,
-      "pendingIncomingMessages": 1,
-      "lastIncomingMessageId": 27695860
-    }
-  },
-  {
-    "id": "3bec1819-955a-4540-b90e-f71521662b59",
-    "at": "2026-07-06T20:21:47.471Z",
-    "action": "dm_reply",
-    "status": "success",
-    "message": "Sent DM reply to channel 855952.",
-    "metadata": {
-      "channelId": 855952,
-      "messageId": 27695815
-    }
-  },
-  {
-    "id": "f302bc69-2e63-49ca-ab5e-4ded0292ead3",
-    "at": "2026-07-06T20:21:16.736Z",
-    "action": "dm_draft",
-    "status": "success",
-    "message": "Claude DM draft evaluated channel 855952.",
-    "metadata": {
-      "channelId": 855952,
-      "action": "reply",
-      "confidence": 0.95,
-      "pendingIncomingMessages": 1,
-      "lastIncomingMessageId": 27695777
-    }
-  },
-  {
-    "id": "76b0d7aa-ec47-48f7-aed8-afe39d79b8d7",
-    "at": "2026-07-06T19:47:57.793Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 8,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "74230e3d-7398-4064-ab29-045ea4385999",
-    "at": "2026-07-06T19:47:40.385Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 8,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "c303cc34-97ef-4b7c-8a69-b85fb25cfaf3",
-    "at": "2026-07-06T19:47:31.565Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 8,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "7d4b971a-f64d-4d32-9739-784342118613",
-    "at": "2026-07-06T19:46:43.828Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 8,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "7bcaf25c-8221-4155-b425-b2718fef898c",
-    "at": "2026-07-06T19:44:05.058Z",
-    "action": "send_chat_message",
-    "status": "success",
-    "message": "Sent chat message",
-    "metadata": {
-      "channelId": "828853",
-      "messageLength": 496
-    }
-  },
-  {
-    "id": "4ac79ea2-792a-48f5-bc76-6c5039eaebcb",
-    "at": "2026-07-06T19:41:28.964Z",
-    "action": "dm_reply",
-    "status": "success",
-    "message": "Sent DM reply to channel 846048.",
-    "metadata": {
-      "channelId": 846048,
-      "messageId": 27695434
-    }
-  },
-  {
-    "id": "1d1f9cb4-db01-43ca-b4b3-e2f6c6cbf88b",
-    "at": "2026-07-06T19:39:56.246Z",
-    "action": "dm_draft",
-    "status": "skipped",
-    "message": "Claude DM draft evaluated channel 846048.",
-    "metadata": {
-      "channelId": 846048,
-      "action": "human",
-      "confidence": 0.85,
-      "pendingIncomingMessages": 2,
-      "lastIncomingMessageId": 27695416
-    }
-  },
-  {
-    "id": "051ed998-94d4-4544-bd2f-efe4564529df",
-    "at": "2026-07-06T19:39:54.557Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 5 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 5,
-      "incomingMessages": 5,
-      "channelsWithTodayMessages": 3,
-      "errors": 0
-    }
-  },
-  {
-    "id": "9fd9c7df-99d0-424a-a752-99821f2d1b08",
-    "at": "2026-07-06T19:38:40.902Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 7,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "49c3bcfc-46f7-4eed-9ab9-4de1aa114953",
-    "at": "2026-07-06T19:36:11.071Z",
-    "action": "dm_reply",
-    "status": "success",
-    "message": "Sent DM reply to channel 836387.",
-    "metadata": {
-      "channelId": 836387,
-      "messageId": 27695392
-    }
-  },
-  {
-    "id": "a81ed651-af40-45a9-a520-f638b7e4b3c4",
-    "at": "2026-07-06T19:35:05.839Z",
-    "action": "dm_draft",
-    "status": "skipped",
-    "message": "Claude DM draft evaluated channel 836387.",
-    "metadata": {
-      "channelId": 836387,
-      "action": "human",
-      "confidence": 0.2,
-      "pendingIncomingMessages": 2,
-      "lastIncomingMessageId": 27695069
-    }
-  },
-  {
-    "id": "e050f1aa-db81-4971-b760-4329b39e09f6",
-    "at": "2026-07-06T19:32:04.313Z",
-    "action": "dm_draft",
-    "status": "skipped",
-    "message": "Claude DM draft evaluated channel 836387.",
-    "metadata": {
-      "channelId": 836387,
-      "action": "human",
-      "confidence": 0.15,
-      "pendingIncomingMessages": 2,
-      "lastIncomingMessageId": 27695069
-    }
-  },
-  {
-    "id": "e41d3390-44e0-46a5-a25d-cbbfc07b6867",
-    "at": "2026-07-06T19:30:03.847Z",
-    "action": "dm_draft",
-    "status": "skipped",
-    "message": "Claude DM draft evaluated channel 836387.",
-    "metadata": {
-      "channelId": 836387,
-      "action": "human",
-      "confidence": 0.2,
-      "pendingIncomingMessages": 2,
-      "lastIncomingMessageId": 27695069
-    }
-  },
-  {
-    "id": "1c505794-0eb6-42c4-8b55-339e64453c82",
-    "at": "2026-07-06T19:28:53.062Z",
-    "action": "dm_draft",
-    "status": "skipped",
-    "message": "Claude DM draft evaluated channel 836387.",
-    "metadata": {
-      "channelId": 836387,
-      "action": "human",
-      "confidence": 0.15,
-      "pendingIncomingMessages": 2,
-      "lastIncomingMessageId": 27695069
-    }
-  },
-  {
-    "id": "4ff122a6-1001-419c-baef-a4b9ae88d9aa",
-    "at": "2026-07-06T19:26:22.558Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 3 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 5,
-      "incomingMessages": 3,
-      "channelsWithTodayMessages": 2,
-      "errors": 0
-    }
-  },
-  {
-    "id": "bab63fc6-674d-452e-97de-f2f2d1cdb0b4",
-    "at": "2026-07-06T19:24:42.821Z",
-    "action": "dm_reply",
-    "status": "success",
-    "message": "Sent DM reply to channel 855952.",
-    "metadata": {
-      "channelId": 855952,
-      "messageId": 27695309
-    }
-  },
-  {
-    "id": "ffef97d3-11a1-454f-861f-a853ed3e5ab3",
-    "at": "2026-07-06T19:09:25.825Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 3 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 13,
-      "incomingMessages": 3,
-      "channelsWithTodayMessages": 2,
-      "errors": 0
-    }
-  },
-  {
-    "id": "d7540ef9-ae6e-4f64-83e9-7eabe9bdb820",
-    "at": "2026-07-06T19:05:33.716Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 6,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "9ed4046b-4506-47b1-bf3b-130c0590937a",
-    "at": "2026-07-06T19:05:30.275Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 3 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 13,
-      "incomingMessages": 3,
-      "channelsWithTodayMessages": 2,
-      "errors": 0
-    }
-  },
-  {
-    "id": "ffa78b18-b7d6-49d9-9a90-3ea8bac37daa",
-    "at": "2026-07-06T18:33:59.399Z",
-    "action": "community_agent",
-    "status": "error",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": [
-        "community: fetch failed"
-      ]
-    }
-  },
-  {
-    "id": "2f3e6832-8590-4f5f-be01-2562b93adae5",
-    "at": "2026-07-06T18:31:54.846Z",
-    "action": "dm_agent",
-    "status": "success",
-    "message": "DM agent run in suggestion mode",
-    "metadata": {
-      "scannedChannels": 12,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": [
-        "Channel 757780: fetch failed",
-        "Channel 792757: fetch failed",
-        "Channel 843041: fetch failed",
-        "Channel 786727: fetch failed"
-      ]
-    }
-  },
-  {
-    "id": "e488aa31-656b-43c9-b1cf-d1dd52e04f7c",
-    "at": "2026-07-06T18:20:26.054Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 0
-    }
-  },
-  {
-    "id": "5c114d1a-3e39-4905-b5ce-6e0fef93dad7",
-    "at": "2026-07-06T18:16:35.854Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 0
-    }
-  },
-  {
-    "id": "053168ed-28ee-4e12-bd8f-5af94a06b8a8",
-    "at": "2026-07-06T17:42:07.479Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 5,
-      "candidates": 1,
-      "posted": 1,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "9d0da6da-f3dd-4121-a1e0-8847b436422b",
-    "at": "2026-07-06T17:12:15.115Z",
-    "action": "dm_agent",
-    "status": "success",
-    "message": "DM agent run in suggestion mode",
-    "metadata": {
-      "scannedChannels": 12,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "245a8da7-9253-4130-b229-a6f37148d13a",
-    "at": "2026-07-06T16:45:42.588Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 5,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "b655f9f5-909e-4c2d-903f-81a3884420c2",
-    "at": "2026-07-06T16:45:16.824Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 0
-    }
-  },
-  {
-    "id": "a2b6b7ce-caad-463e-bfbd-06bf8bd75db3",
-    "at": "2026-07-06T16:35:26.163Z",
-    "action": "dm_agent",
-    "status": "success",
-    "message": "DM agent run in suggestion mode",
-    "metadata": {
-      "scannedChannels": 12,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "1618166e-8259-4ae2-935c-e3ed17fbadde",
-    "at": "2026-07-06T16:33:15.729Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 10,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "07d58848-c742-4208-a5dc-bce3e500c267",
-    "at": "2026-07-06T16:28:19.234Z",
-    "action": "dm_agent",
-    "status": "success",
-    "message": "DM agent run in suggestion mode",
-    "metadata": {
-      "scannedChannels": 12,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "79af206d-fc8d-42c0-87a9-09cef0bac0cc",
-    "at": "2026-07-06T16:20:12.100Z",
-    "action": "dm_review",
-    "status": "error",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 3
-    }
-  },
-  {
-    "id": "675241fa-8fc1-4518-af84-7425d4430a29",
-    "at": "2026-07-06T16:19:09.872Z",
-    "action": "dm_agent",
-    "status": "success",
-    "message": "DM agent run in suggestion mode",
-    "metadata": {
-      "scannedChannels": 12,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "bea59951-491d-4e70-850e-8ba192a2c16b",
-    "at": "2026-07-06T16:17:11.303Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "a1f35016-7180-4da4-b47c-576e55ac61da",
-    "at": "2026-07-06T16:09:31.529Z",
-    "action": "dm_agent",
-    "status": "success",
-    "message": "DM agent run in suggestion mode",
-    "metadata": {
-      "scannedChannels": 12,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": [
-        "Channel 846819: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}",
-        "Channel 757783: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}"
-      ]
-    }
-  },
-  {
-    "id": "f860a608-df2c-4fa9-b46e-76c780972e09",
-    "at": "2026-07-06T16:09:22.857Z",
-    "action": "dm_agent",
-    "status": "success",
-    "message": "DM agent run in suggestion mode",
-    "metadata": {
-      "scannedChannels": 12,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": [
-        "Channel 757780: fetch failed",
-        "Channel 792756: fetch failed",
-        "Channel 792757: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}",
-        "Channel 843040: Discourse API error 429: {\"errors\":[\"You’ve performed this action too many times. Please wait a few seconds before trying again.\"],\"error_type\":\"rate_limit\",\"extras\":{\"wait_seconds\":1,\"time_left\":\"a few seconds\"}}"
-      ]
-    }
-  },
-  {
-    "id": "9de1ee9e-4b77-468f-aa3f-2cf81d10fa17",
-    "at": "2026-07-06T16:09:18.656Z",
-    "action": "dm_review",
-    "status": "error",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 1
-    }
-  },
-  {
-    "id": "6ce2fd20-caf7-479e-b051-4a3189b57294",
-    "at": "2026-07-06T15:57:36.241Z",
-    "action": "dm_agent",
-    "status": "success",
-    "message": "DM agent run in suggestion mode",
-    "metadata": {
-      "scannedChannels": 12,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "53a4add3-9c09-4fb6-ae6a-a13187252fc5",
-    "at": "2026-07-06T15:56:15.578Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 0
-    }
-  },
-  {
-    "id": "7b017451-c3cd-4f69-a54a-cb871afe93f9",
-    "at": "2026-07-06T15:49:31.159Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 5,
-      "candidates": 2,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "8b7b00f7-df9b-426b-a12b-73d20c95092e",
-    "at": "2026-07-06T15:48:33.422Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 0
-    }
-  },
-  {
-    "id": "6340c52b-42a9-4fb0-98d1-ce6df4df06e1",
-    "at": "2026-07-06T15:46:53.780Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "1c6b1a74-efbf-433e-a2ae-544176b8f443",
-    "at": "2026-07-06T15:37:47.942Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 0
-    }
-  },
-  {
-    "id": "d3a0718c-8aac-4799-af37-a9cf2c6e0a39",
-    "at": "2026-07-06T15:29:12.314Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 0
-    }
-  },
-  {
-    "id": "883fe1b4-cc74-47fb-a54c-b4e50361a9d5",
-    "at": "2026-07-06T15:28:09.733Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "07cfd1db-6686-42b4-9c7b-4c8e116920ba",
-    "at": "2026-07-06T15:28:04.346Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "ccd3b1da-62b8-4cd9-879f-ff222c521670",
-    "at": "2026-07-06T15:28:01.065Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "b165f9ea-afa5-4b75-848d-c74cb088545f",
-    "at": "2026-07-06T15:27:53.660Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "72a425d4-d185-49e4-ae23-39d6ce2e2846",
-    "at": "2026-07-06T15:11:33.241Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 12,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 0
-    }
-  },
-  {
-    "id": "bb3da0fa-f6e5-4987-8169-2dc37d276437",
-    "at": "2026-07-06T15:10:58.875Z",
-    "action": "dm_review",
-    "status": "success",
-    "message": "Found 1 incoming DM(s) for 2026-07-06.",
-    "metadata": {
-      "argentinaDate": "2026-07-06",
-      "totalDirectChannels": 55,
-      "scannedChannels": 3,
-      "incomingMessages": 1,
-      "channelsWithTodayMessages": 1,
-      "errors": 0
-    }
-  },
-  {
-    "id": "0cfc2136-6954-4f43-9f17-42796262e74a",
-    "at": "2026-07-06T14:52:59.589Z",
-    "action": "update_links",
-    "status": "success",
-    "message": "Updated project links",
-    "metadata": {
-      "keys": [
-        "guidelines",
-        "templatesZip",
-        "warRoom",
-        "validationScript",
-        "stargazerEval",
-        "commonErrorsDocument"
-      ]
-    }
-  },
-  {
-    "id": "0f086ca8-cec2-4012-b28e-04e2870e78c7",
-    "at": "2026-07-06T14:52:57.650Z",
-    "action": "update_links",
-    "status": "success",
-    "message": "Updated project links",
-    "metadata": {
-      "keys": [
-        "guidelines",
-        "templatesZip",
-        "warRoom",
-        "validationScript",
-        "stargazerEval",
-        "commonErrorsDocument"
-      ]
-    }
-  },
-  {
-    "id": "dad9aa4c-b02b-4749-ae3d-bd43f3bc0a21",
-    "at": "2026-07-06T14:36:11.014Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "a54ea3e7-0cbe-44de-bb9f-1e06b766194d",
-    "at": "2026-07-06T14:35:00.003Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "eabf4ad2-0e21-425b-9c63-07857e3650ee",
-    "at": "2026-07-06T14:30:11.444Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "06aed2fb-9369-492a-80b6-4916df7d3c86",
-    "at": "2026-07-06T14:28:13.691Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "b1042fb4-bb06-44f9-a2b7-be1b850b5f17",
-    "at": "2026-07-06T14:26:16.735Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "d1c84f2b-46c0-446c-884e-b0c7a3356cea",
-    "at": "2026-07-06T14:25:55.724Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 3,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "5efcd6c0-4002-4c4a-87fe-d4d207029520",
-    "at": "2026-07-06T14:08:59.712Z",
-    "action": "send_chat_message",
-    "status": "success",
-    "message": "Sent chat message",
-    "metadata": {
-      "channelId": "828853",
-      "messageLength": 445
-    }
-  },
-  {
-    "id": "ac68dca8-911b-4846-95a8-692aa103e24a",
-    "at": "2026-07-06T13:21:22.079Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 2,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "f68ca695-d0e2-4ee1-be8a-71809dfa6aac",
-    "at": "2026-07-06T13:20:28.079Z",
-    "action": "publish_daily_thread",
-    "status": "success",
-    "message": "Published daily thread for 2026-07-06",
-    "metadata": {
-      "date": "2026-07-06",
-      "url": "https://community.outlier.ai/t/daily-thread-07-06/2902708",
-      "postChat": true
-    }
-  },
-  {
-    "id": "e3d03318-f36f-4ecc-8108-d32464876808",
-    "at": "2026-07-06T13:04:53.524Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 1,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "1cbeae7f-3909-4954-9582-5a0d87216b3f",
-    "at": "2026-07-05T22:55:34.626Z",
-    "action": "community_agent",
-    "status": "skipped",
-    "message": "Outside operating hours",
-    "metadata": {
-      "window": {
-        "argentinaDate": "2026-07-05",
-        "startUtc": "2026-07-05T03:00:00.000Z",
-        "endUtc": "2026-07-06T03:00:00.000Z",
-        "operatingHours": "10:00-19:00 America/Argentina/Buenos_Aires; War Room closed Saturdays and Sundays"
-      }
-    }
-  },
-  {
-    "id": "f1884d6c-ef9c-4891-816e-c0ce74c8a445",
-    "at": "2026-07-05T21:46:46.251Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "1701e9b0-7b25-405c-9f55-6d8fffba88bd",
-    "at": "2026-07-05T21:05:19.699Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "0166481d-ceee-4880-88c7-6fa89614e34d",
-    "at": "2026-07-05T19:24:12.788Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "00d86d58-2e05-49c8-bed0-e4dfa7244447",
-    "at": "2026-07-05T17:51:09.613Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "fb490a3c-3917-4e34-9a80-e4e4d9f86aa9",
-    "at": "2026-07-05T16:11:42.316Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "a5d24ec3-ecea-45f9-8224-0631d4b14f3d",
-    "at": "2026-07-05T16:03:13.591Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "4e88970c-8cdc-4f59-a67c-7b5f54171e5e",
-    "at": "2026-07-05T15:13:57.676Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "1285933d-1fde-4f56-98fa-613910146769",
-    "at": "2026-07-05T13:26:49.642Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "8bc2bb9c-8894-486c-8774-1daa24a06203",
-    "at": "2026-07-05T01:55:21.773Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 4,
-      "posted": 0,
-      "needsHuman": 3,
-      "errors": []
-    }
-  },
-  {
-    "id": "da6a5eed-466f-4ab5-8d10-71352227a0bc",
-    "at": "2026-07-05T01:54:15.590Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "e8fc031b-ed97-48cf-a696-2953faca448f",
-    "at": "2026-07-05T01:48:04.748Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 1,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "86070620-1e4a-4f9f-9bce-89e5f1c56646",
-    "at": "2026-07-05T01:45:49.705Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "857c6ecd-1661-4ca2-bdda-f2b2080b5c7f",
-    "at": "2026-07-05T01:40:23.124Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "d2ff65c4-777e-4d6d-a8f9-9a3f9a15ae19",
-    "at": "2026-07-05T01:39:29.793Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "94277cee-0f80-4077-bb4f-9da68a9398c4",
-    "at": "2026-07-05T01:38:00.541Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "30188313-c2a1-4c1b-82d8-a0fa767a9447",
-    "at": "2026-07-05T01:37:54.812Z",
-    "action": "update_links",
-    "status": "success",
-    "message": "Updated project links",
-    "metadata": {
-      "keys": [
-        "guidelines",
-        "templatesZip",
-        "warRoom",
-        "validationScript",
-        "stargazerEval",
-        "commonErrorsDocument"
-      ]
-    }
-  },
-  {
-    "id": "719ab7a8-ea97-4034-b9c0-683b25329ac0",
-    "at": "2026-07-05T01:37:53.153Z",
-    "action": "update_links",
-    "status": "success",
-    "message": "Updated project links",
-    "metadata": {
-      "keys": [
-        "guidelines",
-        "templatesZip",
-        "warRoom",
-        "validationScript",
-        "stargazerEval",
-        "commonErrorsDocument"
-      ]
-    }
-  },
-  {
-    "id": "aeb2fbc6-14b4-41f5-93c9-ccea340424d1",
-    "at": "2026-07-05T00:35:06.955Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "dd27e97f-f22f-4af3-930b-1bc2ac5026b9",
-    "at": "2026-07-05T00:26:01.793Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "8b7ee36e-0891-4e2f-987b-5a38ce6772f2",
-    "at": "2026-07-05T00:23:37.248Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 4,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "693f5b39-fa8c-4b89-bff9-cc7ab0e678a3",
-    "at": "2026-07-05T00:22:56.673Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "b2341b2a-a4ae-4f1c-ae75-374df828ca92",
-    "at": "2026-07-04T23:32:44.037Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 4,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "df2bfc23-3074-47c6-b99a-d68485d3f08d",
-    "at": "2026-07-04T23:28:44.729Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 4,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "61009114-cb0b-4bf8-bd33-5d7bde3c20ab",
-    "at": "2026-07-04T23:27:49.170Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 4,
-      "posted": 0,
-      "needsHuman": 2,
-      "errors": []
-    }
-  },
-  {
-    "id": "e6b4a9e0-01eb-4f97-82f3-dc9813ffc76d",
-    "at": "2026-07-04T23:27:30.301Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "eb4eaeed-a0e4-41e7-81db-e85427516583",
-    "at": "2026-07-04T23:26:55.018Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 4,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "52d972ce-4467-49d4-879d-d391ab303e6c",
-    "at": "2026-07-04T22:54:36.946Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "c92496be-12d4-436c-bffc-28d976872790",
-    "at": "2026-07-04T22:53:49.855Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 4,
-      "posted": 0,
-      "needsHuman": 2,
-      "errors": []
-    }
-  },
-  {
-    "id": "9af0c16a-3990-4e02-8d6b-1e6d97801ebb",
-    "at": "2026-07-04T22:53:10.733Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "03cc36a2-3014-4173-aae6-80fceb186b22",
-    "at": "2026-07-04T22:48:55.087Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "24de2939-9fad-45ea-8c98-68ff14f7ec36",
-    "at": "2026-07-04T22:47:17.555Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "4e476f7f-84b8-478b-9294-62d859f2a2af",
-    "at": "2026-07-04T22:45:25.509Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 4,
-      "posted": 0,
-      "needsHuman": 4,
-      "errors": []
-    }
-  },
-  {
-    "id": "a23ca111-d852-44e3-bf52-5c404ddc88a2",
-    "at": "2026-07-04T22:44:21.807Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "e479ca42-09ef-4609-8cda-eb273d238cb9",
-    "at": "2026-07-04T22:44:05.341Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "524fd5d9-476d-4962-838b-dad12fb678db",
-    "at": "2026-07-04T22:41:05.525Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 4,
-      "posted": 0,
-      "needsHuman": 1,
-      "errors": []
-    }
-  },
-  {
-    "id": "de31b48d-f1cb-4ecc-8094-5254949250e0",
-    "at": "2026-07-04T22:32:40.467Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 13,
-      "candidates": 1,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "4626e72c-3c8e-48ad-9c9c-ece9a28f553f",
-    "at": "2026-07-04T20:57:05.443Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 11,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "f25096f8-065f-40f0-a62f-5f184d508e9f",
-    "at": "2026-07-04T19:50:21.397Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 10,
-      "candidates": 1,
-      "posted": 1,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "9aee4e1c-cb19-49f5-9313-1f983b5c4061",
-    "at": "2026-07-04T17:30:11.599Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 7,
-      "candidates": 1,
-      "posted": 1,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "996afd99-f00d-4e24-b9fb-fc70b02e0be5",
-    "at": "2026-07-04T16:13:16.946Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 3,
-      "candidates": 2,
-      "posted": 2,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "85105cf0-d338-494d-9a5f-5ba1f3f698ca",
-    "at": "2026-07-04T14:33:38.673Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "4d6f2240-d30a-498a-863f-4e1fcc4d4a23",
-    "at": "2026-07-04T14:32:44.270Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "1ba13ab0-ec77-4f4d-89de-7eddc3444554",
-    "at": "2026-07-04T13:50:06.479Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "e14fb5a2-6fc4-4803-ae89-dec112ca0b33",
-    "at": "2026-07-04T03:13:46.745Z",
-    "action": "delete_session",
-    "status": "success",
-    "message": "Deleted session 1783022906990",
-    "metadata": {
-      "id": "1783022906990"
-    }
-  },
-  {
-    "id": "61a38171-2fff-4b42-8fb5-af597767320b",
-    "at": "2026-07-04T03:13:12.130Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 0,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "544861bf-ee4a-486c-a81a-de0b5c193923",
-    "at": "2026-07-03T22:42:07.725Z",
-    "action": "community_agent",
-    "status": "skipped",
-    "message": "Outside operating hours",
-    "metadata": {
-      "window": {
-        "argentinaDate": "2026-07-03",
-        "startUtc": "2026-07-03T03:00:00.000Z",
-        "endUtc": "2026-07-04T03:00:00.000Z",
-        "operatingHours": "10:00-19:00 America/Argentina/Buenos_Aires"
-      }
-    }
-  },
-  {
-    "id": "82a2817a-5224-4069-a97d-1fe9e565af2f",
-    "at": "2026-07-03T20:59:09.272Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 5,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "dca46c33-123f-4848-bfcf-8df5c56f6253",
-    "at": "2026-07-03T20:57:09.657Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 5,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "2855bf85-7508-4d52-9d6a-4812e9b2ee3c",
-    "at": "2026-07-03T20:55:29.506Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run with posting enabled",
-    "metadata": {
-      "checked": 5,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "9cfb22f4-8605-4c20-9112-423d52591ed1",
-    "at": "2026-07-03T20:54:00.899Z",
-    "action": "update_topic",
-    "status": "success",
-    "message": "Updated topic for 2026-07-03",
-    "metadata": {
-      "date": "2026-07-03"
-    }
-  },
-  {
-    "id": "09477fc0-a639-4800-9a8b-0d9be184b0db",
-    "at": "2026-07-03T20:53:34.834Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 5,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "808952dd-5320-43d3-aa34-49b3d636f49c",
-    "at": "2026-07-03T20:53:24.900Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 5,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
-    }
-  },
-  {
-    "id": "c692bdf2-f678-4c3d-8bc0-c39944170746",
-    "at": "2026-07-03T20:46:20.204Z",
-    "action": "community_agent",
-    "status": "success",
-    "message": "Community agent run in suggestion mode",
-    "metadata": {
-      "checked": 5,
-      "candidates": 0,
-      "posted": 0,
-      "needsHuman": 0,
-      "errors": []
     }
   }
 ]

@@ -1,0 +1,170 @@
+{
+  "entry": {
+    "id": "ccef0b03-6c65-4e7d-b87c-78d79701703d",
+    "at": "2026-07-10T18:30:52.579Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 2 incoming DM(s) for 2026-07-10.",
+    "metadata": {
+      "argentinaDate": "2026-07-10",
+      "totalDirectChannels": 57,
+      "scannedChannels": 5,
+      "incomingMessages": 2,
+      "pendingIncomingMessages": 2,
+      "unresolvedChannels": 1,
+      "newIncomingMessages": 2,
+      "newIncomingMessageIds": [
+        27725353,
+        27725355
+      ],
+      "newDmSenders": [
+        "latam.coder2184"
+      ],
+      "channelsWithTodayMessages": 1,
+      "autoReplyEnabled": true,
+      "autoReplied": 1,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  "detail": {
+    "type": "dm_review",
+    "options": {
+      "messageCount": 50,
+      "maxChannels": 5,
+      "fullScan": true,
+      "autoReply": true,
+      "maxAutoReplies": 3
+    },
+    "result": {
+      "mode": "dm-review",
+      "scanMode": "full",
+      "generatedAt": "2026-07-10T18:30:27.943Z",
+      "window": {
+        "argentinaDate": "2026-07-10",
+        "startUtc": "2026-07-10T03:00:00.000Z",
+        "endUtc": "2026-07-11T03:00:00.000Z"
+      },
+      "totalDirectChannels": 57,
+      "scannedChannels": 5,
+      "skippedInactiveChannels": 52,
+      "incomingMessages": 2,
+      "pendingIncomingMessages": 2,
+      "unresolvedChannels": 1,
+      "channelsWithTodayMessages": 1,
+      "threads": [
+        {
+          "channelId": 854960,
+          "channelTitle": "latam.coder2184",
+          "peers": [
+            {
+              "username": "latam.coder2184",
+              "id": 2554436,
+              "name": "Sebastian Legarreta Latam Coder2184"
+            }
+          ],
+          "totalMessages": 2,
+          "incomingMessages": 2,
+          "outgoingMessages": 0,
+          "pendingIncomingMessages": 2,
+          "needsReply": true,
+          "lastIncomingMessageId": 27725355,
+          "lastMessageAt": "2026-07-10T03:28:00Z"
+        }
+      ],
+      "messages": [
+        {
+          "channelId": 854960,
+          "channelTitle": "latam.coder2184",
+          "messageId": 27725353,
+          "username": "latam.coder2184",
+          "name": "Sebastian Legarreta Latam Coder2184",
+          "createdAt": "2026-07-10T03:27:26Z",
+          "text": "es normal esto? ya estaba por el final, mañana intento otra, ya son las 9:26 pm y no creo que sea bueno empezar una de 0 JAJAJAJJA, igual hare ticket por el tiempo invertido",
+          "peers": [
+            {
+              "username": "latam.coder2184",
+              "id": 2554436,
+              "name": "Sebastian Legarreta Latam Coder2184"
+            }
+          ],
+          "incoming": true
+        },
+        {
+          "channelId": 854960,
+          "channelTitle": "latam.coder2184",
+          "messageId": 27725355,
+          "username": "latam.coder2184",
+          "name": "Sebastian Legarreta Latam Coder2184",
+          "createdAt": "2026-07-10T03:28:00Z",
+          "text": "se cerro, me quedaba 1 hr 30 min aprox",
+          "peers": [
+            {
+              "username": "latam.coder2184",
+              "id": 2554436,
+              "name": "Sebastian Legarreta Latam Coder2184"
+            }
+          ],
+          "incoming": true
+        }
+      ],
+      "errors": [],
+      "autoReply": {
+        "enabled": true,
+        "checked": 1,
+        "replied": 1,
+        "needsHuman": 0,
+        "ignored": 0,
+        "skippedProcessed": 0,
+        "decisions": [
+          {
+            "channelId": 854960,
+            "action": "reply",
+            "posted": true,
+            "confidence": 0.75,
+            "reason": "User is reporting that a task closed/timed out with 1.5 hours remaining. This relates to task timing and technical issues. I can recommend the War Room for live support during business hours, which is appropriate for technical troubleshooting. The user mentioned they'll create a ticket, which is also valid.",
+            "username": "latam.coder2184",
+            "lastIncomingMessageId": 27725355,
+            "messageId": 27733123
+          }
+        ]
+      }
+    },
+    "newIncomingMessages": [
+      {
+        "channelId": 854960,
+        "channelTitle": "latam.coder2184",
+        "messageId": 27725353,
+        "username": "latam.coder2184",
+        "name": "Sebastian Legarreta Latam Coder2184",
+        "createdAt": "2026-07-10T03:27:26Z",
+        "text": "es normal esto? ya estaba por el final, mañana intento otra, ya son las 9:26 pm y no creo que sea bueno empezar una de 0 JAJAJAJJA, igual hare ticket por el tiempo invertido",
+        "peers": [
+          {
+            "username": "latam.coder2184",
+            "id": 2554436,
+            "name": "Sebastian Legarreta Latam Coder2184"
+          }
+        ],
+        "incoming": true
+      },
+      {
+        "channelId": 854960,
+        "channelTitle": "latam.coder2184",
+        "messageId": 27725355,
+        "username": "latam.coder2184",
+        "name": "Sebastian Legarreta Latam Coder2184",
+        "createdAt": "2026-07-10T03:28:00Z",
+        "text": "se cerro, me quedaba 1 hr 30 min aprox",
+        "peers": [
+          {
+            "username": "latam.coder2184",
+            "id": 2554436,
+            "name": "Sebastian Legarreta Latam Coder2184"
+          }
+        ],
+        "incoming": true
+      }
+    ]
+  }
+}

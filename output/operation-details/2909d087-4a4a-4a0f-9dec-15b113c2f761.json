@@ -1,0 +1,36 @@
+{
+  "entry": {
+    "id": "2909d087-4a4a-4a0f-9dec-15b113c2f761",
+    "at": "2026-07-09T18:55:22.412Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 1,
+      "deterministic": true
+    }
+  },
+  "detail": {
+    "type": "sandbox_evaluation",
+    "result": {
+      "mode": "sandbox",
+      "generatedAt": "2026-07-09T18:55:22.261Z",
+      "deterministic": true,
+      "input": {
+        "username": "sandbox.user",
+        "channel": "community",
+        "message": "Is the War Room open today?",
+        "nowIso": "2026-07-11T18:54:00.000Z",
+        "context": ""
+      },
+      "decision": {
+        "action": "reply",
+        "confidence": 1,
+        "reason": "Deterministic War Room weekend availability rule",
+        "reply": "Today is a weekend day in Argentina, so the War Room is closed. Please come back on Monday between 11:15 AM and 7:00 PM ARG for live support.",
+        "guidelineSnippets": []
+      }
+    }
+  }
+}

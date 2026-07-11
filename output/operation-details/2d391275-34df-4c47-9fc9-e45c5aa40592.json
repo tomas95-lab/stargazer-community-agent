@@ -1,0 +1,38 @@
+{
+  "entry": {
+    "id": "2d391275-34df-4c47-9fc9-e45c5aa40592",
+    "at": "2026-07-09T17:01:54.621Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.95,
+      "deterministic": false
+    }
+  },
+  "detail": {
+    "type": "sandbox_evaluation",
+    "result": {
+      "mode": "sandbox",
+      "generatedAt": "2026-07-09T17:01:51.256Z",
+      "deterministic": false,
+      "input": {
+        "username": "sandbox.user",
+        "channel": "community",
+        "message": "Hello i am at the waroom already",
+        "nowIso": "2026-07-09T17:01:00.000Z",
+        "context": ""
+      },
+      "decision": {
+        "action": "reply",
+        "confidence": 0.95,
+        "reason": "User states they are already in the War Room. Per instructions, I should not resend the Zoom link but instead direct them to join the breakout room.",
+        "reply": "Great! Please join the breakout room called Stargazer - Team inside the War Room and a team member will assist you shortly.",
+        "guidelineSnippets": [
+          "As part of the onboarding process, you will submit a quality assessment.\nPlease reach out to the project team in the Zoom War Room after completing the quality\nassessment. This step is mandatory for you to begin tasking. The project team will need\nto perform a manual review to ensure that you passed the quality assessment and to\nprovide access to Cursor.\nEnvironment Setup (return to TOC\nBefore getting started with the project, both Cursor and Docker must be properly set up\nand running. Here is a quick guide to make sure your environment is properly set up.\nCursor\n● Follow this link and download the 2.6 cursor version. If you already have Cursor\ninstalled, uninstall it and install this specific version, without this version, the models\nwonʼt work.\n● Even if you already have access to the Cursor Team Plan, reach out to the Zoom\nWar Room and ask any of the QMs for a new plan, as it must be renewed for this\nproject.\n● Go to the Key Manager: https://cursor-intelligence-service.outlier.ai/key-manager\n● Click on View API Key\n● Open Cursor Settings → Models\n● Disable all models, and add:\n○ claude-qwen3527b-scale\n○ claude-4.6-sonnet-scale\n● Enable OpenAI API Key; paste in your API Key and Override Base URL with\nhttps://cursor-intelligence-api.outlier.ai/api/v1\n● Click \"Verify\".\n● Test these models in Cursor now.\nDocker\n● Make sure Docker is installed and up to date. If you don't have it yet, follow this\nguide.\n● Ensure Docker has enough RAM and disk space to run containers smoothly.\n● Clean up unused images and containers regularly to free up space and avoid build\nerrors.\nProject Structure (return to TOC\n4\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO"
+        ]
+      }
+    }
+  }
+}
