@@ -1,23 +1,23 @@
 [
   {
-    "id": "40457a8b-a712-42a0-838c-4eb24f04c320",
-    "at": "2026-07-11T13:00:07.425Z",
-    "action": "community_agent",
+    "id": "8c47ef76-58d3-4aed-91ba-c986f7fda225",
+    "at": "2026-07-11T13:00:10.032Z",
+    "action": "cron_request",
     "status": "success",
-    "message": "Community agent run with posting enabled",
+    "message": "Community agent cron completed",
     "metadata": {
+      "endpoint": "/api/cron/community-agent/1000",
+      "slot": "1000",
+      "source": "vercel-cron",
+      "schedule": "0 13 * * *",
+      "userAgent": "vercel-cron/1.0",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
       "checked": 1,
       "candidates": 1,
       "posted": 0,
-      "needsHuman": 1,
-      "candidateUsers": [
-        "amanburman039"
-      ],
-      "postedUsers": [],
-      "humanUsers": [
-        "amanburman039"
-      ],
-      "errors": []
+      "needsHuman": 1
     }
   },
   {
