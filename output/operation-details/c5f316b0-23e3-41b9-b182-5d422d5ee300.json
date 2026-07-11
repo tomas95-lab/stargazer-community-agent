@@ -1,0 +1,73 @@
+{
+  "entry": {
+    "id": "c5f316b0-23e3-41b9-b182-5d422d5ee300",
+    "at": "2026-07-11T18:30:38.260Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 2,
+      "replied": 0,
+      "needsHuman": 2,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [
+        "pilots-coder625",
+        "latam.coder1989"
+      ],
+      "errors": 0
+    }
+  },
+  "detail": {
+    "type": "dm_auto_reply",
+    "result": {
+      "enabled": true,
+      "checked": 2,
+      "replied": 0,
+      "needsHuman": 2,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "decisions": [
+        {
+          "channelId": 858834,
+          "action": "human",
+          "posted": false,
+          "confidence": 0.85,
+          "reason": "User is reporting a Cursor access and team plan issue that requires manual intervention from the War Room team. This involves account policy, access restoration, and plan assignment - all sensitive matters requiring human support. Additionally, today is a weekend in Argentina, so War Room is closed.",
+          "username": "pilots-coder625",
+          "lastIncomingMessageId": 27739433
+        },
+        {
+          "channelId": 857787,
+          "action": "human",
+          "posted": false,
+          "confidence": 0.05,
+          "reason": "This involves project fit eligibility and appeal of a manager decision. The user is asking about whether they can attempt another task after being told the project is not a good fit. This is a sensitive eligibility/policy decision that requires a manager or human judgment, not an automated response. Additionally, the user mentions 'waroom' (likely War Room), but today is a weekend and the War Room is closed.",
+          "username": "latam.coder1989",
+          "lastIncomingMessageId": 27741741
+        }
+      ]
+    },
+    "decisions": [
+      {
+        "channelId": 858834,
+        "action": "human",
+        "posted": false,
+        "confidence": 0.85,
+        "reason": "User is reporting a Cursor access and team plan issue that requires manual intervention from the War Room team. This involves account policy, access restoration, and plan assignment - all sensitive matters requiring human support. Additionally, today is a weekend in Argentina, so War Room is closed.",
+        "username": "pilots-coder625",
+        "lastIncomingMessageId": 27739433
+      },
+      {
+        "channelId": 857787,
+        "action": "human",
+        "posted": false,
+        "confidence": 0.05,
+        "reason": "This involves project fit eligibility and appeal of a manager decision. The user is asking about whether they can attempt another task after being told the project is not a good fit. This is a sensitive eligibility/policy decision that requires a manager or human judgment, not an automated response. Additionally, the user mentions 'waroom' (likely War Room), but today is a weekend and the War Room is closed.",
+        "username": "latam.coder1989",
+        "lastIncomingMessageId": 27741741
+      }
+    ]
+  }
+}
