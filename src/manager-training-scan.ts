@@ -70,9 +70,33 @@ interface TrainingAnalysis {
   errors: string[];
 }
 
+interface FineTuneExample {
+  messages: Array<{
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+  }>;
+}
+
+interface FineTunePackResult {
+  trainPath: string;
+  validationPath: string;
+  manifestPath: string;
+  trainExamples: number;
+  validationExamples: number;
+  estimatedTokens: number;
+}
+
 const OUTPUT_DIR = path.resolve(__dirname, '../output/training');
 const PROJECT_MEMORY_FILE = path.resolve(__dirname, '../data/project-memory.json');
 const WAR_ROOM_MEETING_ID = '91510346485';
+const FINE_TUNE_SYSTEM_PROMPT = [
+  'You are a support assistant for the Stargazer community manager.',
+  'Answer in the manager style: concise, direct, operational, and supportive.',
+  'Always write the user-facing reply in English.',
+  'Never use the em dash character.',
+  'Do not add a footer, signature, attribution, or assistant name.',
+  'If the answer is not supported by the provided context, route to a human instead of guessing.',
+].join(' ');
 const DEFAULT_PAGE_SIZE = Number(process.env.TRAINING_SCAN_PAGE_SIZE || 100);
 const DEFAULT_MAX_PAGES = Number(process.env.TRAINING_SCAN_MAX_PAGES || 20);
 const DEFAULT_MAX_DM_CHANNELS = Number(process.env.TRAINING_SCAN_MAX_DM_CHANNELS || 80);
@@ -87,6 +111,11 @@ function numericArg(name: string, fallback: number): number {
   const raw = process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function stringArg(name: string): string {
+  const prefix = `${name}=`;
+  return process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length).trim() || '';
 }
 
 function daysAgo(days: number): Date {
@@ -121,7 +150,19 @@ function cleanText(value: string): string {
   return value
     .replace(/\s+/g, ' ')
     .replace(new RegExp(`https://\\S*${WAR_ROOM_MEETING_ID}\\S*`, 'gi'), '[war-room-link]')
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
+    .replace(/https?:\/\/\S+/gi, '[link]')
     .trim();
+}
+
+function redactForTraining(value: string): string {
+  return cleanText(value)
+    .replace(/@[a-z0-9_.-]+/gi, '@contributor')
+    .replace(/\blatam\.coder\d+\b/gi, 'contributor')
+    .replace(/\bpilots-coder\d+\b/gi, 'contributor')
+    .replace(/\bamanburman\d*\b/gi, 'contributor')
+    .replace(/\btomas\.ruiz_OBIC\b/gi, 'manager')
+    .slice(0, 1800);
 }
 
 function normalizeText(value: string): string {
@@ -132,7 +173,7 @@ function normalizeText(value: string): string {
 }
 
 function isSpanishLike(value: string): boolean {
-  return /[ñáéíóúü¿¡]|\b(hola|gracias|por favor|necesito|puedo|puedes|ayuda|acceso|curso|equipo)\b/i.test(value);
+  return /[ñáéíóúü¿¡]|\b(hola|gracias|por favor|necesito|puedo|puedes|ayuda|acceso|curso|equipo|estamos|minutos|nuevo|requiere|para|pero|esta|bien)\b/i.test(value);
 }
 
 function isBroadcast(value: string): boolean {
@@ -140,6 +181,9 @@ function isBroadcast(value: string): boolean {
   return trimmed.startsWith('🚨') ||
     trimmed.startsWith('Hey everyone') ||
     trimmed.startsWith('Hey team') ||
+    trimmed.startsWith('Hi team') ||
+    trimmed.startsWith('Hello team') ||
+    trimmed.startsWith('Team') ||
     trimmed.startsWith('Team,');
 }
 
@@ -452,6 +496,107 @@ function commonOpeners(replies: TrainingMessage[]): string[] {
     .map(([opener]) => opener);
 }
 
+function fineTuneUserPrompt(sample: ManagerReplySample): string {
+  const context = sample.context
+    .map((line) => redactForTraining(line))
+    .filter(Boolean)
+    .join('\n');
+
+  return [
+    `Channel: ${sample.source === 'dm' ? 'private DM' : 'community chat'}`,
+    `Support category: ${sample.category}`,
+    'Recent contributor context:',
+    context || 'No prior context.',
+    '',
+    'Write the manager reply.',
+  ].join('\n');
+}
+
+function buildFineTuneExamples(samples: ManagerReplySample[]): FineTuneExample[] {
+  const seen = new Set<string>();
+  const examples: FineTuneExample[] = [];
+
+  for (const sample of samples) {
+    const reply = redactForTraining(sample.reply);
+    const prompt = fineTuneUserPrompt(sample);
+    if (!reply || reply.length < 8) continue;
+    if (isBroadcast(reply) || isSpanishLike(reply)) continue;
+    if (reply.includes('[war-room-link]') && reply.trim() === '[war-room-link]') continue;
+    const key = `${sample.category}:${prompt}:${reply}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    examples.push({
+      messages: [
+        { role: 'system', content: FINE_TUNE_SYSTEM_PROMPT },
+        { role: 'user', content: prompt },
+        { role: 'assistant', content: reply },
+      ],
+    });
+  }
+
+  return examples;
+}
+
+function estimateTokensForExamples(examples: FineTuneExample[]): number {
+  const chars = examples.reduce((sum, example) => {
+    return sum + example.messages.reduce((messageSum, message) => messageSum + message.content.length, 0);
+  }, 0);
+  return Math.ceil(chars / 4);
+}
+
+async function writeJsonl(filePath: string, rows: unknown[]): Promise<void> {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, rows.map((row) => JSON.stringify(row)).join('\n') + '\n', 'utf-8');
+}
+
+async function writeFineTunePack(params: {
+  generatedAt: string;
+  since: string;
+  samples: ManagerReplySample[];
+  analysis: TrainingAnalysis;
+}): Promise<FineTunePackResult> {
+  const examples = buildFineTuneExamples(params.samples);
+  const validationCount = examples.length >= 20 ? Math.max(2, Math.round(examples.length * 0.1)) : Math.min(1, Math.max(0, examples.length - 10));
+  const train = examples.slice(0, Math.max(0, examples.length - validationCount));
+  const validation = examples.slice(Math.max(0, examples.length - validationCount));
+  const stamp = params.generatedAt.slice(0, 10);
+  const trainPath = path.join(OUTPUT_DIR, `manager-finetune-train-${stamp}.jsonl`);
+  const validationPath = path.join(OUTPUT_DIR, `manager-finetune-validation-${stamp}.jsonl`);
+  const manifestPath = path.join(OUTPUT_DIR, `manager-finetune-manifest-${stamp}.json`);
+  const estimatedTokens = estimateTokensForExamples(examples);
+
+  await writeJsonl(trainPath, train);
+  await writeJsonl(validationPath, validation);
+  await writeJson(manifestPath, {
+    generatedAt: params.generatedAt,
+    since: params.since,
+    until: params.generatedAt,
+    format: 'openai-chat-jsonl',
+    privacy: 'Redacted emails, usernames, and links. Raw transcripts remain in output/training and are gitignored.',
+    caveats: [
+      'Claude/Anthropic API does not currently offer public fine-tuning, so this pack is for providers that accept chat JSONL fine-tuning.',
+      'Do not upload this pack to a paid provider without reviewing examples and approving cost.',
+    ],
+    trainPath,
+    validationPath,
+    trainExamples: train.length,
+    validationExamples: validation.length,
+    totalExamples: examples.length,
+    estimatedTokens,
+    categories: params.analysis.categories,
+    style: params.analysis.style,
+  });
+
+  return {
+    trainPath,
+    validationPath,
+    manifestPath,
+    trainExamples: train.length,
+    validationExamples: validation.length,
+    estimatedTokens,
+  };
+}
+
 function rate(count: number, total: number): number {
   if (total <= 0) return 0;
   return Math.round((count / total) * 100) / 100;
@@ -555,45 +700,67 @@ async function applyMemoryFacts(facts: ProjectMemoryFact[]): Promise<void> {
 
 async function main(): Promise<void> {
   const days = numericArg('--days', 14);
+  const fromRaw = stringArg('--from-raw');
   const pageSize = numericArg('--page-size', DEFAULT_PAGE_SIZE);
   const maxPages = numericArg('--max-pages', DEFAULT_MAX_PAGES);
   const maxDmChannels = numericArg('--max-dm-channels', DEFAULT_MAX_DM_CHANNELS);
   const requestDelayMs = numericArg('--delay-ms', DEFAULT_REQUEST_DELAY_MS);
   const applyMemory = boolArg('--apply-memory');
+  const writeFineTune = !boolArg('--no-finetune-pack');
   const since = daysAgo(days);
   const errors: string[] = [];
 
-  const config = loadBotConfig();
-  const client = new DiscourseClient({
-    baseUrl: config.communityBaseUrl,
-    apiKey: config.discourseApiKey,
-    apiClientId: config.discourseApiClientId,
-  });
+  let communityMessages: TrainingMessage[] = [];
+  let dmMessages: TrainingMessage[] = [];
+  let scannedDmChannels = 0;
+  let messages: TrainingMessage[] = [];
+  let sinceLabel = since.toISOString();
 
-  const communityMessages = await fetchCommunityMessages({
-    client,
-    channelId: config.communityChatChannelId,
-    ownUsername: config.discourseUsername,
-    since,
-    pageSize,
-    maxPages,
-    requestDelayMs,
-    errors,
-  });
+  if (fromRaw) {
+    const rawRecord = JSON.parse(await fs.readFile(path.resolve(fromRaw), 'utf-8')) as { messages?: TrainingMessage[]; since?: string };
+    if (rawRecord.since) sinceLabel = rawRecord.since;
+    messages = (rawRecord.messages || [])
+      .filter((message) => message && typeof message.text === 'string' && typeof message.createdAt === 'string')
+      .sort((left, right) => messageTime(left.createdAt) - messageTime(right.createdAt));
+    if (messages[0]?.createdAt) sinceLabel = messages[0].createdAt;
+    communityMessages = messages.filter((message) => message.source === 'community');
+    dmMessages = messages.filter((message) => message.source === 'dm');
+    scannedDmChannels = new Set(dmMessages.map((message) => message.channelId)).size;
+  } else {
+    const config = loadBotConfig();
+    const client = new DiscourseClient({
+      baseUrl: config.communityBaseUrl,
+      apiKey: config.discourseApiKey,
+      apiClientId: config.discourseApiClientId,
+    });
 
-  const dmResult = await fetchDmMessages({
-    client,
-    ownUsername: config.discourseUsername,
-    since,
-    pageSize,
-    maxPages,
-    maxChannels: maxDmChannels,
-    requestDelayMs,
-    errors,
-  });
+    communityMessages = await fetchCommunityMessages({
+      client,
+      channelId: config.communityChatChannelId,
+      ownUsername: config.discourseUsername,
+      since,
+      pageSize,
+      maxPages,
+      requestDelayMs,
+      errors,
+    });
 
-  const messages = [...communityMessages, ...dmResult.messages]
-    .sort((left, right) => messageTime(left.createdAt) - messageTime(right.createdAt));
+    const dmResult = await fetchDmMessages({
+      client,
+      ownUsername: config.discourseUsername,
+      since,
+      pageSize,
+      maxPages,
+      maxChannels: maxDmChannels,
+      requestDelayMs,
+      errors,
+    });
+
+    dmMessages = dmResult.messages;
+    scannedDmChannels = dmResult.scannedChannels;
+    messages = [...communityMessages, ...dmMessages]
+      .sort((left, right) => messageTime(left.createdAt) - messageTime(right.createdAt));
+  }
   const managerReplies = messages.filter((message) => message.own && !isBroadcast(message.text) && !isTrainingNoise(message.text));
   const managerBroadcasts = messages.filter((message) => message.own && isBroadcast(message.text) && !isTrainingNoise(message.text));
   const samples = buildSamples(messages);
@@ -602,12 +769,12 @@ async function main(): Promise<void> {
   const generatedAt = new Date().toISOString();
   const analysisWithoutFacts = {
     generatedAt,
-    since: since.toISOString(),
+    since: sinceLabel,
     until: generatedAt,
     scanned: {
       communityMessages: communityMessages.length,
-      dmMessages: dmResult.messages.length,
-      dmChannels: dmResult.scannedChannels,
+      dmMessages: dmMessages.length,
+      dmChannels: scannedDmChannels,
       managerReplies: managerReplies.length,
       managerBroadcasts: managerBroadcasts.length,
     },
@@ -634,8 +801,16 @@ async function main(): Promise<void> {
   const stamp = generatedAt.slice(0, 10);
   const rawPath = path.join(OUTPUT_DIR, `manager-training-raw-${stamp}.json`);
   const analysisPath = path.join(OUTPUT_DIR, `manager-training-analysis-${stamp}.json`);
-  await writeJson(rawPath, { generatedAt, since: since.toISOString(), messages });
+  await writeJson(rawPath, { generatedAt, since: sinceLabel, messages });
   await writeJson(analysisPath, analysis);
+  const fineTunePack = writeFineTune
+    ? await writeFineTunePack({
+      generatedAt,
+      since: sinceLabel,
+      samples,
+      analysis,
+    })
+    : undefined;
 
   if (applyMemory) {
     await applyMemoryFacts(memoryFacts);
@@ -643,10 +818,10 @@ async function main(): Promise<void> {
 
   console.log(JSON.stringify({
     generatedAt,
-    since: since.toISOString(),
+    since: sinceLabel,
     communityMessages: communityMessages.length,
-    dmMessages: dmResult.messages.length,
-    dmChannels: dmResult.scannedChannels,
+    dmMessages: dmMessages.length,
+    dmChannels: scannedDmChannels,
     managerReplies: managerReplies.length,
     managerBroadcasts: managerBroadcasts.length,
     categories: categories.slice(0, 10).map((category) => ({
@@ -657,6 +832,7 @@ async function main(): Promise<void> {
     memoryFacts: memoryFacts.map((fact) => fact.id),
     rawPath,
     analysisPath,
+    fineTunePack,
     appliedMemory: applyMemory,
     errors,
   }, null, 2));

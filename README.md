@@ -189,7 +189,15 @@ Refresh the bot's manager-style memory from recent Community and DM history:
 npm run training:scan -- --days=14 --apply-memory
 ```
 
-The scan reads Community chat plus active DM channels, extracts manager reply patterns, and updates `data/project-memory.json` with compact facts the bot can use later. Raw training transcripts are written under `output/training/`, which is gitignored because it can contain private DMs.
+The scan reads Community chat plus active DM channels, extracts manager reply patterns, and updates `data/project-memory.json` with compact facts the bot can use later. It also writes a redacted fine-tuning pack in chat JSONL format under `output/training/`. Raw training transcripts are written under `output/training/` too, which is gitignored because it can contain private DMs.
+
+Two-month training pack:
+
+```bash
+npm run training:scan -- --days=60 --apply-memory
+```
+
+Use `--no-finetune-pack` when you only want the memory refresh.
 
 The same agent is available through protected API routes:
 
