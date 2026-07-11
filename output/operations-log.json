@@ -1,5 +1,31 @@
 [
   {
+    "id": "4ee02946-6da2-4948-bd6c-f5ad6db6c90c",
+    "at": "2026-07-11T17:02:11.936Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 6,
+      "candidates": 3,
+      "posted": 2,
+      "needsHuman": 1,
+      "candidateUsers": [
+        "amanburman039",
+        "pilots-coder625",
+        "latam.coder1989"
+      ],
+      "postedUsers": [
+        "amanburman039",
+        "pilots-coder625"
+      ],
+      "humanUsers": [
+        "latam.coder1989"
+      ],
+      "errors": []
+    }
+  },
+  {
     "id": "5cf2c9e7-d8a3-4534-8ef0-1c6032397a81",
     "at": "2026-07-11T17:01:19.813Z",
     "action": "community_agent",
