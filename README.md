@@ -156,7 +156,7 @@ npm test
 Local job commands:
 
 ```bash
-npm run job:daily       # publish today's thread once unless FORCE_DAILY_PUBLISH=true
+npm run job:daily       # publish today's weekday thread once unless FORCE_DAILY_PUBLISH=true
 npm run job:dms         # review today's incoming direct messages
 npm run job:webinars    # send webinar/onboarding reminders in the reminder window
 npm run jobs:all        # reminders + daily publish only when DAILY_PUBLISH_ENABLED=true
@@ -203,7 +203,9 @@ GET  /api/cron/dm-review
 
 The cron routes are protected by `CRON_SECRET`.
 
-Vercel calls `/api/cron/daily-thread` at 10:00 and 11:00 Argentina time. The second run is a retry window: `runDailyPublishJob` checks `output/published-url-YYYY-MM-DD.txt` first and skips when today's thread was already published. On Hobby plans, Vercel may invoke cron jobs at any point within the configured hour, so the retry intentionally lives in the next hour.
+Vercel calls `/api/cron/daily-thread` Monday-Friday at 10:00 and 11:00 Argentina time. The second run is a retry window: `runDailyPublishJob` checks `output/published-url-YYYY-MM-DD.txt` first and skips when today's thread was already published. On Hobby plans, Vercel may invoke cron jobs at any point within the configured hour, so the retry intentionally lives in the next hour.
+
+`runDailyPublishJob` also has a backend weekend guard. If a scheduler calls the endpoint on Saturday or Sunday in Argentina, the job skips with `reason: "weekend_argentina"`. Set `FORCE_DAILY_PUBLISH=true` only for a manual emergency publish.
 
 For production cron, use `DATA_STORE=github` with `GITHUB_TOKEN` so the publish marker persists between serverless runs. The job also checks the Community category for an existing daily-thread title before publishing, which prevents duplicate posts if the marker file is missing.
 
@@ -215,8 +217,8 @@ Production cron schedule:
 
 | Job | Endpoint | UTC | ARG |
 |---|---|---:|---:|
-| Daily Thread | `/api/cron/daily-thread/1000` | 13:00 | 10:00 |
-| Daily Thread retry | `/api/cron/daily-thread/1100` | 14:00 | 11:00 |
+| Daily Thread | `/api/cron/daily-thread/1000` | 13:00 Mon-Fri | 10:00 Mon-Fri |
+| Daily Thread retry | `/api/cron/daily-thread/1100` | 14:00 Mon-Fri | 11:00 Mon-Fri |
 | Community Agent | `/api/cron/community-agent/1000` | 13:00 | 10:00 |
 | Community Agent | `/api/cron/community-agent/1130` | 14:30 | 11:30 |
 | Community Agent | `/api/cron/community-agent/1300` | 16:00 | 13:00 |

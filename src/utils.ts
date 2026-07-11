@@ -3,12 +3,45 @@ import * as path from 'path';
 import { PATHS, DailyThreadConfig } from './config';
 import { readDataJSON } from './data-store';
 
-export function todayDate(): string {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
+
+export function argentinaDateParts(date = new Date()): { year: number; month: number; day: number; label: string } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ARG_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const year = Number(parts.find((part) => part.type === 'year')?.value);
+  const month = Number(parts.find((part) => part.type === 'month')?.value);
+  const day = Number(parts.find((part) => part.type === 'day')?.value);
+  const yyyy = String(year);
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return { year, month, day, label: `${yyyy}-${mm}-${dd}` };
+}
+
+export function todayDate(now = new Date()): string {
+  return argentinaDateParts(now).label;
+}
+
+export function argentinaDayOfWeek(now = new Date()): number {
+  const shortDay = new Intl.DateTimeFormat('en-US', {
+    timeZone: ARG_TIMEZONE,
+    weekday: 'short',
+  }).format(now);
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(shortDay);
+}
+
+export function isArgentinaWeekend(now = new Date()): boolean {
+  const day = argentinaDayOfWeek(now);
+  return day === 0 || day === 6;
+}
+
+export function isArgentinaBusinessDay(now = new Date()): boolean {
+  const day = argentinaDayOfWeek(now);
+  return day >= 1 && day <= 5;
 }
 
 export function formatPostTitle(date: string): string {

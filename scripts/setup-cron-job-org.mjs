@@ -9,9 +9,11 @@ const DEFAULT_BASE_URL = 'https://stargazer-community-agent.vercel.app';
 const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const CREATE_JOB_DELAY_MS = 13_000;
 
+const WEEKDAYS = [1, 2, 3, 4, 5];
+
 const jobs = [
-  { title: 'Stargazer - Daily Thread 10:00 ARG', path: '/api/cron/daily-thread/1000', hour: 10, minute: 0 },
-  { title: 'Stargazer - Daily Thread retry 11:00 ARG', path: '/api/cron/daily-thread/1100', hour: 11, minute: 0 },
+  { title: 'Stargazer - Daily Thread 10:00 ARG', path: '/api/cron/daily-thread/1000', hour: 10, minute: 0, weekdaysOnly: true },
+  { title: 'Stargazer - Daily Thread retry 11:00 ARG', path: '/api/cron/daily-thread/1100', hour: 11, minute: 0, weekdaysOnly: true },
   { title: 'Stargazer - Community Agent 10:00 ARG', path: '/api/cron/community-agent/1000', hour: 10, minute: 0 },
   { title: 'Stargazer - Community Agent 11:30 ARG', path: '/api/cron/community-agent/1130', hour: 11, minute: 30 },
   { title: 'Stargazer - Community Agent 13:00 ARG', path: '/api/cron/community-agent/1300', hour: 13, minute: 0 },
@@ -89,7 +91,7 @@ function buildJob(job, folderId) {
       mdays: [-1],
       minutes: [job.minute],
       months: [-1],
-      wdays: [-1],
+      wdays: job.weekdaysOnly ? WEEKDAYS : [-1],
     },
     notification: {
       onFailure: true,
@@ -162,7 +164,8 @@ function printPlan() {
   for (const job of jobs) {
     const hh = String(job.hour).padStart(2, '0');
     const mm = String(job.minute).padStart(2, '0');
-    console.log(`${hh}:${mm} ARG  ${job.title}`);
+    const days = job.weekdaysOnly ? 'Mon-Fri' : 'Every day';
+    console.log(`${hh}:${mm} ARG  ${days}  ${job.title}`);
     console.log(`           ${baseUrl}${job.path}`);
   }
 }

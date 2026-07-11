@@ -8,7 +8,7 @@ import { renderAnnouncement, renderDailyThread } from './templates';
 import { readDataText, writeDataJSON } from './data-store';
 import { loadProjectLinks } from './links';
 import { appendOperationLog } from './operations-log';
-import { formatPostTitle, getTodayTopic, todayDate } from './utils';
+import { formatPostTitle, getTodayTopic, isArgentinaBusinessDay, todayDate } from './utils';
 
 export interface DailyPublishJobResult {
   status: 'published' | 'skipped';
@@ -18,8 +18,22 @@ export interface DailyPublishJobResult {
   reason?: string;
 }
 
+export interface DailyPublishJobOptions {
+  now?: Date;
+}
+
 function truthy(value: string | undefined): boolean {
   return ['1', 'true', 'yes', 'y'].includes((value || '').toLowerCase());
+}
+
+export function dailyPublishSkipReason(now = new Date(), force = false): { date: string; reason: 'weekend_argentina'; message: string } | null {
+  const date = todayDate(now);
+  if (force || isArgentinaBusinessDay(now)) return null;
+  return {
+    date,
+    reason: 'weekend_argentina',
+    message: `Daily thread for ${date} skipped because it is Saturday or Sunday in Argentina.`,
+  };
 }
 
 function publishedMarkerPath(date: string): string {
@@ -59,10 +73,23 @@ async function findExistingPublishedThread(title: string): Promise<string | null
   return match ? client.topicUrl(match.slug, match.id) : null;
 }
 
-export async function runDailyPublishJob(): Promise<DailyPublishJobResult> {
-  const date = todayDate();
+export async function runDailyPublishJob(options: DailyPublishJobOptions = {}): Promise<DailyPublishJobResult> {
+  const now = options.now || new Date();
+  const date = todayDate(now);
   const force = truthy(process.env.FORCE_DAILY_PUBLISH);
   const postChat = process.env.DAILY_PUBLISH_POST_CHAT !== 'false';
+
+  const scheduleSkip = dailyPublishSkipReason(now, force);
+  if (scheduleSkip) {
+    console.log(scheduleSkip.message);
+    await appendOperationLog({
+      action: 'daily_publish_job',
+      status: 'skipped',
+      message: scheduleSkip.message,
+      metadata: { date: scheduleSkip.date, reason: scheduleSkip.reason },
+    });
+    return { status: 'skipped', date: scheduleSkip.date, reason: scheduleSkip.reason };
+  }
 
   if (!force && await wasAlreadyPublished(date)) {
     console.log(`Daily thread for ${date} already has a published URL. Skipping.`);

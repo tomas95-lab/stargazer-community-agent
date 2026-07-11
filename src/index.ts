@@ -2,12 +2,23 @@ import { loadBotConfig, DailyThreadConfig } from './config';
 import { renderDailyThread, renderAnnouncement } from './templates';
 import { generateAndSaveAnnouncement } from './announcement';
 import { CommunityBot } from './communityBot';
-import { todayDate, getTodayTopic, saveFile, parseArgs, askConfirmation, formatPostTitle } from './utils';
+import { todayDate, getTodayTopic, saveFile, parseArgs, askConfirmation, formatPostTitle, isArgentinaBusinessDay } from './utils';
 import { loadProjectLinks } from './links';
+
+function truthy(value: string | undefined): boolean {
+  return ['1', 'true', 'yes', 'y'].includes((value || '').toLowerCase());
+}
 
 async function main(): Promise<void> {
   const { mode, yes } = parseArgs();
-  const date = todayDate();
+  const now = new Date();
+  const date = todayDate(now);
+  if (mode === 'publish' && !truthy(process.env.FORCE_DAILY_PUBLISH) && !isArgentinaBusinessDay(now)) {
+    console.log(`Daily thread for ${date} skipped because it is Saturday or Sunday in Argentina.`);
+    console.log('Set FORCE_DAILY_PUBLISH=true only if you intentionally need an emergency weekend publish.');
+    return;
+  }
+
   const topic = await getTodayTopic(date);
 
   const postTitle = formatPostTitle(topic.date);
