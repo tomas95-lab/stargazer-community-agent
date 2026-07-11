@@ -1,5 +1,25 @@
 [
   {
+    "id": "c5f316b0-23e3-41b9-b182-5d422d5ee300",
+    "at": "2026-07-11T18:30:38.260Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 2,
+      "replied": 0,
+      "needsHuman": 2,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [
+        "pilots-coder625",
+        "latam.coder1989"
+      ],
+      "errors": 0
+    }
+  },
+  {
     "id": "3b2c86b8-559d-45df-8e04-1d60d5be4e00",
     "at": "2026-07-11T17:30:36.348Z",
     "action": "cron_request",
