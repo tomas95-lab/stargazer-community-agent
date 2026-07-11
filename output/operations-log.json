@@ -1,5 +1,26 @@
 [
   {
+    "id": "86e6c9c5-f1d0-449f-8d47-4d803cac8db2",
+    "at": "2026-07-11T14:30:27.937Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 3,
+      "candidates": 1,
+      "posted": 1,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "pilots-coder625"
+      ],
+      "postedUsers": [
+        "pilots-coder625"
+      ],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
     "id": "82633f83-362c-4d3a-8801-99bf24a5e68a",
     "at": "2026-07-11T14:00:29.362Z",
     "action": "cron_request",
