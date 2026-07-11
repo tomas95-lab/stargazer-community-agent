@@ -1,5 +1,39 @@
 [
   {
+    "id": "c55166dc-fe0d-4da0-86be-17b02b788acf",
+    "at": "2026-07-11T18:30:41.518Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 7 incoming DM(s) for 2026-07-11.",
+    "metadata": {
+      "argentinaDate": "2026-07-11",
+      "totalDirectChannels": 58,
+      "scannedChannels": 5,
+      "incomingMessages": 7,
+      "pendingIncomingMessages": 7,
+      "unresolvedChannels": 2,
+      "newIncomingMessages": 7,
+      "newIncomingMessageIds": [
+        27739364,
+        27739367,
+        27739376,
+        27739378,
+        27739380,
+        27739433,
+        27741741
+      ],
+      "newDmSenders": [
+        "pilots-coder625",
+        "latam.coder1989"
+      ],
+      "channelsWithTodayMessages": 2,
+      "autoReplyEnabled": true,
+      "autoReplied": 0,
+      "autoNeedsHuman": 2,
+      "errors": 0
+    }
+  },
+  {
     "id": "c5f316b0-23e3-41b9-b182-5d422d5ee300",
     "at": "2026-07-11T18:30:38.260Z",
     "action": "dm_auto_reply",
