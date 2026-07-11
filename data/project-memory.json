@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-07T23:15:25.383Z",
+  "updatedAt": "2026-07-11T16:59:54.735Z",
   "facts": [
     {
       "id": "language",
@@ -47,6 +47,12 @@
       "id": "fact-1783466110188",
       "title": "Recommend work in war room",
       "body": "Always RECOMMEND entering the war room while working, in order to achieve better results",
+      "source": "project operations"
+    },
+    {
+      "id": "fact-1783789036638",
+      "title": "Throttle",
+      "body": "The 1-task/24hr throttle is automatic and applies with no exceptions until ~3 tasks are completed, at which point quality metrics are evaluated to decide whether to enable more volume. No individual task score or user request removes it early.",
       "source": "project operations"
     }
   ]
