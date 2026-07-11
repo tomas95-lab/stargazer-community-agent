@@ -1,0 +1,178 @@
+{
+  "entry": {
+    "id": "61775dbe-8190-4be3-95cc-efafcc73f8de",
+    "at": "2026-07-11T16:00:25.590Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 5,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": true,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": true,
+      "skipProcessed": true,
+      "markProcessed": true,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "post",
+      "checked": 5,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": true,
+      "window": {
+        "argentinaDate": "2026-07-11",
+        "startUtc": "2026-07-11T03:00:00.000Z",
+        "endUtc": "2026-07-12T03:00:00.000Z",
+        "operatingHours": "Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays"
+      },
+      "items": [
+        {
+          "id": "community:27737344",
+          "source": "community",
+          "username": "amanburman039",
+          "message": "I have completed 1 task and got a rating of 4, but its says task limit reached, can i get unthrottled now?",
+          "createdAt": "2026-07-11T05:56:56Z",
+          "chatMessageId": 27737344,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": []
+        },
+        {
+          "id": "community:27739248",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-11/2903684) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Rubric Quality**, with a reminder about **One criterion = one thing. AND = split.**.\n\nQuick rule: If your criterion has AND, split it into two.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-11T13:00:34Z",
+          "chatMessageId": 27739248,
+          "threadId": 1503424,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+        },
+        {
+          "id": "community:27739382",
+          "source": "community",
+          "username": "pilots-coder625",
+          "message": "Hey Tomas! I'm facing issues with cursor, could you help me? I sent you a dm",
+          "createdAt": "2026-07-11T13:26:47Z",
+          "chatMessageId": 27739382,
+          "threadId": 1503424,
+          "replyToChatMessageId": 27739248,
+          "isStaff": false,
+          "probableReplies": []
+        },
+        {
+          "id": "community:27739791",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "To get help with Cursor access, please come back on Monday between 11:15 AM and 7:00 PM ARG. The support team will be able to assist you then.",
+          "createdAt": "2026-07-11T14:30:27Z",
+          "chatMessageId": 27739791,
+          "threadId": 1503424,
+          "replyToChatMessageId": 27739248,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Authored by the configured manager/bot user."
+        },
+        {
+          "id": "community:27739803",
+          "source": "community",
+          "username": "pilots-coder625",
+          "message": "ok got you, thanks",
+          "createdAt": "2026-07-11T14:31:34Z",
+          "chatMessageId": 27739803,
+          "threadId": 1503424,
+          "replyToChatMessageId": 27739248,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "No question or support signal detected."
+        }
+      ],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27737344",
+        "source": "community",
+        "username": "amanburman039",
+        "message": "I have completed 1 task and got a rating of 4, but its says task limit reached, can i get unthrottled now?",
+        "createdAt": "2026-07-11T05:56:56Z",
+        "chatMessageId": 27737344,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      },
+      {
+        "id": "community:27739248",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-11/2903684) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Rubric Quality**, with a reminder about **One criterion = one thing. AND = split.**.\n\nQuick rule: If your criterion has AND, split it into two.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-11T13:00:34Z",
+        "chatMessageId": 27739248,
+        "threadId": 1503424,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+      },
+      {
+        "id": "community:27739382",
+        "source": "community",
+        "username": "pilots-coder625",
+        "message": "Hey Tomas! I'm facing issues with cursor, could you help me? I sent you a dm",
+        "createdAt": "2026-07-11T13:26:47Z",
+        "chatMessageId": 27739382,
+        "threadId": 1503424,
+        "replyToChatMessageId": 27739248,
+        "isStaff": false,
+        "probableReplies": []
+      },
+      {
+        "id": "community:27739791",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "To get help with Cursor access, please come back on Monday between 11:15 AM and 7:00 PM ARG. The support team will be able to assist you then.",
+        "createdAt": "2026-07-11T14:30:27Z",
+        "chatMessageId": 27739791,
+        "threadId": 1503424,
+        "replyToChatMessageId": 27739248,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Authored by the configured manager/bot user."
+      },
+      {
+        "id": "community:27739803",
+        "source": "community",
+        "username": "pilots-coder625",
+        "message": "ok got you, thanks",
+        "createdAt": "2026-07-11T14:31:34Z",
+        "chatMessageId": 27739803,
+        "threadId": 1503424,
+        "replyToChatMessageId": 27739248,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "No question or support signal detected."
+      }
+    ],
+    "candidates": [],
+    "decisions": []
+  }
+}
