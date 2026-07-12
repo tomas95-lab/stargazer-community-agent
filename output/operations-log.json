@@ -1,5 +1,16 @@
 [
   {
+    "id": "29aebfbd-75a8-4949-af47-086b913e4294",
+    "at": "2026-07-12T14:00:23.878Z",
+    "action": "daily_publish_job",
+    "status": "skipped",
+    "message": "Daily thread for 2026-07-12 skipped because it is Saturday or Sunday in Argentina.",
+    "metadata": {
+      "date": "2026-07-12",
+      "reason": "weekend_argentina"
+    }
+  },
+  {
     "id": "31333c41-2a54-4591-aaaa-6e4cb7f742db",
     "at": "2026-07-12T13:00:42.068Z",
     "action": "cron_request",
