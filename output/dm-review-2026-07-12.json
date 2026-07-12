@@ -1,0 +1,29 @@
+{
+  "mode": "dm-review",
+  "scanMode": "full",
+  "generatedAt": "2026-07-12T18:30:29.405Z",
+  "window": {
+    "argentinaDate": "2026-07-12",
+    "startUtc": "2026-07-12T03:00:00.000Z",
+    "endUtc": "2026-07-13T03:00:00.000Z"
+  },
+  "totalDirectChannels": 58,
+  "scannedChannels": 5,
+  "skippedInactiveChannels": 53,
+  "incomingMessages": 0,
+  "pendingIncomingMessages": 0,
+  "unresolvedChannels": 0,
+  "channelsWithTodayMessages": 0,
+  "threads": [],
+  "messages": [],
+  "errors": [],
+  "autoReply": {
+    "enabled": true,
+    "checked": 0,
+    "replied": 0,
+    "needsHuman": 0,
+    "ignored": 0,
+    "skippedProcessed": 0,
+    "decisions": []
+  }
+}
