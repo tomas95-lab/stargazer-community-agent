@@ -1,5 +1,24 @@
 [
   {
+    "id": "f22199bb-8408-464e-99a6-7311b5e66739",
+    "at": "2026-07-12T14:00:27.009Z",
+    "action": "cron_request",
+    "status": "skipped",
+    "message": "Daily thread cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/daily-thread/1100",
+      "slot": "1100",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "daily_publish_job",
+      "resultStatus": "skipped",
+      "date": "2026-07-12",
+      "reason": "weekend_argentina"
+    }
+  },
+  {
     "id": "29aebfbd-75a8-4949-af47-086b913e4294",
     "at": "2026-07-12T14:00:23.878Z",
     "action": "daily_publish_job",
