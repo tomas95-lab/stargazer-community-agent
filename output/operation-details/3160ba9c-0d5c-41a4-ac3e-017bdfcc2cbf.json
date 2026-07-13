@@ -1,0 +1,325 @@
+{
+  "entry": {
+    "id": "3160ba9c-0d5c-41a4-ac3e-017bdfcc2cbf",
+    "at": "2026-07-13T21:00:37.426Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 7 incoming DM(s) for 2026-07-13.",
+    "metadata": {
+      "argentinaDate": "2026-07-13",
+      "totalDirectChannels": 59,
+      "scannedChannels": 5,
+      "incomingMessages": 7,
+      "pendingIncomingMessages": 1,
+      "unresolvedChannels": 1,
+      "newIncomingMessages": 0,
+      "newIncomingMessageIds": [],
+      "newDmSenders": [],
+      "channelsWithTodayMessages": 3,
+      "autoReplyEnabled": true,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  "detail": {
+    "type": "dm_review",
+    "options": {
+      "messageCount": 50,
+      "maxChannels": 5,
+      "fullScan": true,
+      "autoReply": true,
+      "maxAutoReplies": 3
+    },
+    "result": {
+      "mode": "dm-review",
+      "scanMode": "full",
+      "generatedAt": "2026-07-13T21:00:34.696Z",
+      "window": {
+        "argentinaDate": "2026-07-13",
+        "startUtc": "2026-07-13T03:00:00.000Z",
+        "endUtc": "2026-07-14T03:00:00.000Z"
+      },
+      "totalDirectChannels": 59,
+      "scannedChannels": 5,
+      "skippedInactiveChannels": 54,
+      "incomingMessages": 7,
+      "pendingIncomingMessages": 1,
+      "unresolvedChannels": 1,
+      "channelsWithTodayMessages": 3,
+      "threads": [
+        {
+          "channelId": 855444,
+          "channelTitle": "latam.coder2306",
+          "peers": [
+            {
+              "username": "latam.coder2306",
+              "id": 2585727,
+              "name": "Pedro Sofiati Latam Coder 2306"
+            }
+          ],
+          "totalMessages": 3,
+          "incomingMessages": 2,
+          "outgoingMessages": 1,
+          "pendingIncomingMessages": 1,
+          "needsReply": true,
+          "lastIncomingMessageId": 27758496,
+          "lastMessageAt": "2026-07-13T18:23:46Z"
+        },
+        {
+          "channelId": 858834,
+          "channelTitle": "pilots-coder625",
+          "peers": [
+            {
+              "username": "pilots-coder625",
+              "id": 1802655,
+              "name": "Jonas Sarmento"
+            }
+          ],
+          "totalMessages": 6,
+          "incomingMessages": 3,
+          "outgoingMessages": 3,
+          "pendingIncomingMessages": 0,
+          "needsReply": false,
+          "lastIncomingMessageId": 27758265,
+          "lastMessageAt": "2026-07-13T18:17:12Z"
+        },
+        {
+          "channelId": 859858,
+          "channelTitle": "latam.coder1818",
+          "peers": [
+            {
+              "username": "latam.coder1818",
+              "id": 2348071,
+              "name": "Julian Veloza Latam Coder 1818"
+            }
+          ],
+          "totalMessages": 3,
+          "incomingMessages": 2,
+          "outgoingMessages": 1,
+          "pendingIncomingMessages": 0,
+          "needsReply": false,
+          "lastIncomingMessageId": 27755106,
+          "lastMessageAt": "2026-07-13T14:21:51Z"
+        }
+      ],
+      "messages": [
+        {
+          "channelId": 859858,
+          "channelTitle": "latam.coder1818",
+          "messageId": 27755101,
+          "username": "latam.coder1818",
+          "name": "Julian Veloza Latam Coder 1818",
+          "createdAt": "2026-07-13T14:11:37Z",
+          "text": "Hola tomas, como vas?",
+          "peers": [
+            {
+              "username": "latam.coder1818",
+              "id": 2348071,
+              "name": "Julian Veloza Latam Coder 1818"
+            }
+          ],
+          "incoming": true
+        },
+        {
+          "channelId": 859858,
+          "channelTitle": "latam.coder1818",
+          "messageId": 27755106,
+          "username": "latam.coder1818",
+          "name": "Julian Veloza Latam Coder 1818",
+          "createdAt": "2026-07-13T14:11:56Z",
+          "text": "Tomas porfa podrias aceptarme para entrar al war room",
+          "peers": [
+            {
+              "username": "latam.coder1818",
+              "id": 2348071,
+              "name": "Julian Veloza Latam Coder 1818"
+            }
+          ],
+          "incoming": true
+        },
+        {
+          "channelId": 859858,
+          "channelTitle": "latam.coder1818",
+          "messageId": 27755231,
+          "username": "tomas.ruiz_OBIC",
+          "name": "Tomas Ruiz QM",
+          "createdAt": "2026-07-13T14:21:51Z",
+          "text": "Hola juli, estabamos en meeting, ahora lo abrimos",
+          "peers": [
+            {
+              "username": "latam.coder1818",
+              "id": 2348071,
+              "name": "Julian Veloza Latam Coder 1818"
+            }
+          ],
+          "incoming": false
+        },
+        {
+          "channelId": 858834,
+          "channelTitle": "pilots-coder625",
+          "messageId": 27756074,
+          "username": "tomas.ruiz_OBIC",
+          "name": "Tomas Ruiz QM",
+          "createdAt": "2026-07-13T15:07:38Z",
+          "text": "Hey jonas how are you? Could you join the war room?",
+          "peers": [
+            {
+              "username": "pilots-coder625",
+              "id": 1802655,
+              "name": "Jonas Sarmento"
+            }
+          ],
+          "incoming": false
+        },
+        {
+          "channelId": 858834,
+          "channelTitle": "pilots-coder625",
+          "messageId": 27756430,
+          "username": "pilots-coder625",
+          "name": "Jonas Sarmento",
+          "createdAt": "2026-07-13T15:34:24Z",
+          "text": "yes tomas!",
+          "peers": [
+            {
+              "username": "pilots-coder625",
+              "id": 1802655,
+              "name": "Jonas Sarmento"
+            }
+          ],
+          "incoming": true
+        },
+        {
+          "channelId": 858834,
+          "channelTitle": "pilots-coder625",
+          "messageId": 27757983,
+          "username": "tomas.ruiz_OBIC",
+          "name": "Tomas Ruiz QM",
+          "createdAt": "2026-07-13T17:43:53Z",
+          "text": "jonasss, did you receive the invitation again?",
+          "peers": [
+            {
+              "username": "pilots-coder625",
+              "id": 1802655,
+              "name": "Jonas Sarmento"
+            }
+          ],
+          "incoming": false
+        },
+        {
+          "channelId": 858834,
+          "channelTitle": "pilots-coder625",
+          "messageId": 27758252,
+          "username": "pilots-coder625",
+          "name": "Jonas Sarmento",
+          "createdAt": "2026-07-13T18:02:03Z",
+          "text": "hey tomas, yeahh I received that",
+          "peers": [
+            {
+              "username": "pilots-coder625",
+              "id": 1802655,
+              "name": "Jonas Sarmento"
+            }
+          ],
+          "incoming": true
+        },
+        {
+          "channelId": 858834,
+          "channelTitle": "pilots-coder625",
+          "messageId": 27758265,
+          "username": "pilots-coder625",
+          "name": "Jonas Sarmento",
+          "createdAt": "2026-07-13T18:03:05Z",
+          "text": "thanks bro",
+          "peers": [
+            {
+              "username": "pilots-coder625",
+              "id": 1802655,
+              "name": "Jonas Sarmento"
+            }
+          ],
+          "incoming": true
+        },
+        {
+          "channelId": 858834,
+          "channelTitle": "pilots-coder625",
+          "messageId": 27758421,
+          "username": "tomas.ruiz_OBIC",
+          "name": "Tomas Ruiz QM",
+          "createdAt": "2026-07-13T18:17:12Z",
+          "text": "No problemmm",
+          "peers": [
+            {
+              "username": "pilots-coder625",
+              "id": 1802655,
+              "name": "Jonas Sarmento"
+            }
+          ],
+          "incoming": false
+        },
+        {
+          "channelId": 855444,
+          "channelTitle": "latam.coder2306",
+          "messageId": 27758424,
+          "username": "latam.coder2306",
+          "name": "Pedro Sofiati Latam Coder 2306",
+          "createdAt": "2026-07-13T18:17:16Z",
+          "text": "Hey! Any news on my cursos access?",
+          "peers": [
+            {
+              "username": "latam.coder2306",
+              "id": 2585727,
+              "name": "Pedro Sofiati Latam Coder 2306"
+            }
+          ],
+          "incoming": true
+        },
+        {
+          "channelId": 855444,
+          "channelTitle": "latam.coder2306",
+          "messageId": 27758489,
+          "username": "tomas.ruiz_OBIC",
+          "name": "Tomas Ruiz QM",
+          "createdAt": "2026-07-13T18:23:12Z",
+          "text": "Hey! We already sent the access request. Please keep an eye on your email inbox, as the invitation should arrive shortly.",
+          "peers": [
+            {
+              "username": "latam.coder2306",
+              "id": 2585727,
+              "name": "Pedro Sofiati Latam Coder 2306"
+            }
+          ],
+          "incoming": false
+        },
+        {
+          "channelId": 855444,
+          "channelTitle": "latam.coder2306",
+          "messageId": 27758496,
+          "username": "latam.coder2306",
+          "name": "Pedro Sofiati Latam Coder 2306",
+          "createdAt": "2026-07-13T18:23:46Z",
+          "text": "Alright!",
+          "peers": [
+            {
+              "username": "latam.coder2306",
+              "id": 2585727,
+              "name": "Pedro Sofiati Latam Coder 2306"
+            }
+          ],
+          "incoming": true
+        }
+      ],
+      "errors": [],
+      "autoReply": {
+        "enabled": true,
+        "checked": 1,
+        "replied": 0,
+        "needsHuman": 0,
+        "ignored": 0,
+        "skippedProcessed": 1,
+        "decisions": []
+      }
+    },
+    "newIncomingMessages": []
+  }
+}
