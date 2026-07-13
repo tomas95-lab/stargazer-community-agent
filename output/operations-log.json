@@ -1,5 +1,28 @@
 [
   {
+    "id": "3160ba9c-0d5c-41a4-ac3e-017bdfcc2cbf",
+    "at": "2026-07-13T21:00:37.426Z",
+    "action": "dm_review",
+    "status": "success",
+    "message": "Found 7 incoming DM(s) for 2026-07-13.",
+    "metadata": {
+      "argentinaDate": "2026-07-13",
+      "totalDirectChannels": 59,
+      "scannedChannels": 5,
+      "incomingMessages": 7,
+      "pendingIncomingMessages": 1,
+      "unresolvedChannels": 1,
+      "newIncomingMessages": 0,
+      "newIncomingMessageIds": [],
+      "newDmSenders": [],
+      "channelsWithTodayMessages": 3,
+      "autoReplyEnabled": true,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  {
     "id": "e6c4b9f5-598f-467c-933a-0f5a64f74b63",
     "at": "2026-07-13T21:00:34.951Z",
     "action": "dm_auto_reply",
