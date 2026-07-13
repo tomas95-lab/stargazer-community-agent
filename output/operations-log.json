@@ -1,5 +1,24 @@
 [
   {
+    "id": "ef460689-22be-4ba4-a763-47b8c43a6c80",
+    "at": "2026-07-13T14:41:41.263Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 5,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "latam.coder2306"
+      ],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
     "id": "0f8acd99-b779-4f57-801d-00d740f805dd",
     "at": "2026-07-13T14:41:00.126Z",
     "action": "community_agent",
