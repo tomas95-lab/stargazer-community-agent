@@ -1,5 +1,12 @@
 {
   "processed": {
+    "855444:27758496": {
+      "at": "2026-07-13T18:30:36.384Z",
+      "action": "ignore",
+      "posted": false,
+      "channelId": 855444,
+      "lastIncomingMessageId": 27758496
+    },
     "857787:27741741": {
       "at": "2026-07-11T18:30:37.541Z",
       "action": "human",
