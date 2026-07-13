@@ -1,0 +1,52 @@
+{
+  "entry": {
+    "id": "930534af-2c8c-4332-850f-b1b2485b6271",
+    "at": "2026-07-13T18:30:37.326Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 1,
+      "replied": 0,
+      "needsHuman": 0,
+      "ignored": 1,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  "detail": {
+    "type": "dm_auto_reply",
+    "result": {
+      "enabled": true,
+      "checked": 1,
+      "replied": 0,
+      "needsHuman": 0,
+      "ignored": 1,
+      "skippedProcessed": 0,
+      "decisions": [
+        {
+          "channelId": 855444,
+          "action": "ignore",
+          "posted": false,
+          "confidence": 0.95,
+          "reason": "User sent a brief acknowledgment ('Alright!') in response to the manager's update about course access. This is a conversational closing, not a question or request requiring a response.",
+          "username": "latam.coder2306",
+          "lastIncomingMessageId": 27758496
+        }
+      ]
+    },
+    "decisions": [
+      {
+        "channelId": 855444,
+        "action": "ignore",
+        "posted": false,
+        "confidence": 0.95,
+        "reason": "User sent a brief acknowledgment ('Alright!') in response to the manager's update about course access. This is a conversational closing, not a question or request requiring a response.",
+        "username": "latam.coder2306",
+        "lastIncomingMessageId": 27758496
+      }
+    ]
+  }
+}
