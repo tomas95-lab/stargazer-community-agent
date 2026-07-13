@@ -1,7 +1,7 @@
 {
   "mode": "dm-review",
   "scanMode": "full",
-  "generatedAt": "2026-07-13T18:30:33.346Z",
+  "generatedAt": "2026-07-13T21:00:34.696Z",
   "window": {
     "argentinaDate": "2026-07-13",
     "startUtc": "2026-07-13T03:00:00.000Z",
@@ -282,18 +282,8 @@
     "checked": 1,
     "replied": 0,
     "needsHuman": 0,
-    "ignored": 1,
-    "skippedProcessed": 0,
-    "decisions": [
-      {
-        "channelId": 855444,
-        "action": "ignore",
-        "posted": false,
-        "confidence": 0.95,
-        "reason": "User sent a brief acknowledgment ('Alright!') in response to the manager's update about course access. This is a conversational closing, not a question or request requiring a response.",
-        "username": "latam.coder2306",
-        "lastIncomingMessageId": 27758496
-      }
-    ]
+    "ignored": 0,
+    "skippedProcessed": 1,
+    "decisions": []
   }
 }
