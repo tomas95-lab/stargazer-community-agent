@@ -1,5 +1,22 @@
 [
   {
+    "id": "8054a24e-0700-43d1-bb3f-fa2f3462d45e",
+    "at": "2026-07-13T14:30:33.271Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run with posting enabled",
+    "metadata": {
+      "checked": 4,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
     "id": "e90df8ce-23c5-4455-ad93-f9e8efff7c5a",
     "at": "2026-07-13T14:26:27.874Z",
     "action": "community_agent",
