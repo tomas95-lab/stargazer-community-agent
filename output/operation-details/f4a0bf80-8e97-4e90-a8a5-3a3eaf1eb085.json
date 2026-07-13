@@ -1,0 +1,148 @@
+{
+  "entry": {
+    "id": "f4a0bf80-8e97-4e90-a8a5-3a3eaf1eb085",
+    "at": "2026-07-13T14:25:44.694Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 2,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "amanburman039"
+      ],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": false,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": false,
+      "skipProcessed": false,
+      "markProcessed": false,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "suggestion",
+      "checked": 2,
+      "candidates": 1,
+      "handled": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": true,
+      "window": {
+        "argentinaDate": "2026-07-13",
+        "startUtc": "2026-07-13T03:00:00.000Z",
+        "endUtc": "2026-07-14T03:00:00.000Z",
+        "operatingHours": "Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays"
+      },
+      "items": [
+        {
+          "id": "community:27754301",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-13/2904019) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Test Quality**, with a reminder about **grep-style tests that inspect source code are always rejected.**.\n\nQuick rule: Tests must run the code, not read it. No grep, no readFileSync, no regex on source files.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-13T13:00:38Z",
+          "chatMessageId": 27754301,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+        },
+        {
+          "id": "community:27754857",
+          "source": "community",
+          "username": "amanburman039",
+          "message": "Can we get the warroom link for today?",
+          "createdAt": "2026-07-13T13:53:58Z",
+          "chatMessageId": 27754857,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": []
+        }
+      ],
+      "decisions": [
+        {
+          "itemId": "community:27754857",
+          "source": "community",
+          "username": "amanburman039",
+          "message": "Can we get the warroom link for today?",
+          "posted": false,
+          "needsHuman": false,
+          "action": "reply",
+          "confidence": 0.95,
+          "reason": "User is asking for the War Room link, which is a direct request I can fulfill from project memory. The link and breakout room instructions are clearly documented.",
+          "reply": "Here's the War Room link: https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success. Once inside, join the breakout room called Stargazer - Team. The War Room is open Monday through Friday, 11:15 AM to 7:00 PM ARG.",
+          "guidelineSnippets": [
+            "As part of the onboarding process, you will submit a quality assessment.\nPlease reach out to the project team in the Zoom War Room after completing the quality\nassessment. This step is mandatory for you to begin tasking. The project team will need\nto perform a manual review to ensure that you passed the quality assessment and to\nprovide access to Cursor.\nEnvironment Setup (return to TOC\nBefore getting started with the project, both Cursor and Docker must be properly set up\nand running. Here is a quick guide to make sure your environment is properly set up.\nCursor\n● Follow this link and download the 2.6 cursor version. If you already have Cursor\ninstalled, uninstall it and install this specific version, without this version, the models\nwonʼt work.\n● Even if you already have access to the Cursor Team Plan, reach out to the Zoom\nWar Room and ask any of the QMs for a new plan, as it must be renewed for this\nproject.\n● Go to the Key Manager: https://cursor-intelligence-service.outlier.ai/key-manager\n● Click on View API Key\n● Open Cursor Settings → Models\n● Disable all models, and add:\n○ claude-qwen3527b-scale\n○ claude-4.6-sonnet-scale\n● Enable OpenAI API Key; paste in your API Key and Override Base URL with\nhttps://cursor-intelligence-api.outlier.ai/api/v1\n● Click \"Verify\".\n● Test these models in Cursor now.\nDocker\n● Make sure Docker is installed and up to date. If you don't have it yet, follow this\nguide.\n● Ensure Docker has enough RAM and disk space to run containers smoothly.\n● Clean up unused images and containers regularly to free up space and avoid build\nerrors.\nProject Structure (return to TOC\n4\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO"
+          ]
+        }
+      ],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27754301",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**](https://community.outlier.ai/t/daily-thread-07-13/2904019) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Test Quality**, with a reminder about **grep-style tests that inspect source code are always rejected.**.\n\nQuick rule: Tests must run the code, not read it. No grep, no readFileSync, no regex on source files.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-13T13:00:38Z",
+        "chatMessageId": 27754301,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+      },
+      {
+        "id": "community:27754857",
+        "source": "community",
+        "username": "amanburman039",
+        "message": "Can we get the warroom link for today?",
+        "createdAt": "2026-07-13T13:53:58Z",
+        "chatMessageId": 27754857,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      }
+    ],
+    "candidates": [
+      {
+        "id": "community:27754857",
+        "source": "community",
+        "username": "amanburman039",
+        "message": "Can we get the warroom link for today?",
+        "createdAt": "2026-07-13T13:53:58Z",
+        "chatMessageId": 27754857,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      }
+    ],
+    "decisions": [
+      {
+        "itemId": "community:27754857",
+        "source": "community",
+        "username": "amanburman039",
+        "message": "Can we get the warroom link for today?",
+        "posted": false,
+        "needsHuman": false,
+        "action": "reply",
+        "confidence": 0.95,
+        "reason": "User is asking for the War Room link, which is a direct request I can fulfill from project memory. The link and breakout room instructions are clearly documented.",
+        "reply": "Here's the War Room link: https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success. Once inside, join the breakout room called Stargazer - Team. The War Room is open Monday through Friday, 11:15 AM to 7:00 PM ARG.",
+        "guidelineSnippets": [
+          "As part of the onboarding process, you will submit a quality assessment.\nPlease reach out to the project team in the Zoom War Room after completing the quality\nassessment. This step is mandatory for you to begin tasking. The project team will need\nto perform a manual review to ensure that you passed the quality assessment and to\nprovide access to Cursor.\nEnvironment Setup (return to TOC\nBefore getting started with the project, both Cursor and Docker must be properly set up\nand running. Here is a quick guide to make sure your environment is properly set up.\nCursor\n● Follow this link and download the 2.6 cursor version. If you already have Cursor\ninstalled, uninstall it and install this specific version, without this version, the models\nwonʼt work.\n● Even if you already have access to the Cursor Team Plan, reach out to the Zoom\nWar Room and ask any of the QMs for a new plan, as it must be renewed for this\nproject.\n● Go to the Key Manager: https://cursor-intelligence-service.outlier.ai/key-manager\n● Click on View API Key\n● Open Cursor Settings → Models\n● Disable all models, and add:\n○ claude-qwen3527b-scale\n○ claude-4.6-sonnet-scale\n● Enable OpenAI API Key; paste in your API Key and Override Base URL with\nhttps://cursor-intelligence-api.outlier.ai/api/v1\n● Click \"Verify\".\n● Test these models in Cursor now.\nDocker\n● Make sure Docker is installed and up to date. If you don't have it yet, follow this\nguide.\n● Ensure Docker has enough RAM and disk space to run containers smoothly.\n● Clean up unused images and containers regularly to free up space and avoid build\nerrors.\nProject Structure (return to TOC\n4\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO"
+        ]
+      }
+    ]
+  }
+}
