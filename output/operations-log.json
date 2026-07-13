@@ -1,5 +1,22 @@
 [
   {
+    "id": "930534af-2c8c-4332-850f-b1b2485b6271",
+    "at": "2026-07-13T18:30:37.326Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 1,
+      "replied": 0,
+      "needsHuman": 0,
+      "ignored": 1,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  {
     "id": "3d49c260-3619-4dc2-a2ff-4e75d10376d5",
     "at": "2026-07-13T17:30:28.769Z",
     "action": "cron_request",
