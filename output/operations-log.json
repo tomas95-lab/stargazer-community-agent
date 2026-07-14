@@ -1,5 +1,17 @@
 [
   {
+    "id": "35b88c07-2c74-4876-a827-bbed64bf2a49",
+    "at": "2026-07-14T18:31:10.260Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from Manager Developer.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 1,
+      "deterministic": true
+    }
+  },
+  {
     "id": "65a79137-ebfb-4206-9c33-c6a9c9957c40",
     "at": "2026-07-14T18:30:39.366Z",
     "action": "cron_request",
