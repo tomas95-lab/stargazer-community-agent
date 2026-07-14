@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { getProjectContext } from './project-context';
 
 dotenv.config();
 
@@ -33,6 +34,11 @@ export interface BotConfig {
 }
 
 export function loadBotConfig(): BotConfig {
+  const runtimeConfig = getProjectContext().botConfig;
+  if (runtimeConfig?.discourseApiKey) {
+    return runtimeConfig;
+  }
+
   const key = process.env.DISCOURSE_API_KEY;
   if (!key) throw new Error('DISCOURSE_API_KEY not set in .env');
 

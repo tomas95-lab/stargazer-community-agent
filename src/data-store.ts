@@ -1,12 +1,14 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { PATHS } from './config';
+import { PATHS } from './paths';
 import {
   listDirectory as listGitHubDirectory,
   readFile as readGitHubFile,
   readJSON as readGitHubJSON,
+  writeFile as writeGitHubFile,
   writeJSON as writeGitHubJSON,
 } from './github-storage';
+import { projectScopedDataPath } from './project-context';
 
 export type DataStoreMode = 'github' | 'local';
 
@@ -31,9 +33,13 @@ export function dataStoreSummary(): { requested: string; active: DataStoreMode }
   return { requested: requestedMode(), active: activeDataStore() };
 }
 
+function scopedPath(filePath: string): string {
+  return projectScopedDataPath(filePath);
+}
+
 function resolveLocalPath(filePath: string): string {
   const root = path.resolve(PATHS.root);
-  const target = path.resolve(PATHS.root, filePath);
+  const target = path.resolve(PATHS.root, scopedPath(filePath));
   const normalizedRoot = root.toLowerCase();
   const normalizedTarget = target.toLowerCase();
 
@@ -45,8 +51,9 @@ function resolveLocalPath(filePath: string): string {
 }
 
 export async function readDataJSON<T>(filePath: string): Promise<T> {
+  const pathInStore = scopedPath(filePath);
   if (activeDataStore() === 'github') {
-    const { data } = await readGitHubJSON<T>(filePath);
+    const { data } = await readGitHubJSON<T>(pathInStore);
     return data;
   }
 
@@ -55,8 +62,9 @@ export async function readDataJSON<T>(filePath: string): Promise<T> {
 }
 
 export async function writeDataJSON<T>(filePath: string, data: T, message: string): Promise<void> {
+  const pathInStore = scopedPath(filePath);
   if (activeDataStore() === 'github') {
-    await writeGitHubJSON(filePath, data, message);
+    await writeGitHubJSON(pathInStore, data, message);
     return;
   }
 
@@ -66,16 +74,30 @@ export async function writeDataJSON<T>(filePath: string, data: T, message: strin
 }
 
 export async function readDataText(filePath: string): Promise<string> {
+  const pathInStore = scopedPath(filePath);
   if (activeDataStore() === 'github') {
-    return readGitHubFile(filePath);
+    return readGitHubFile(pathInStore);
   }
 
   return fs.readFile(resolveLocalPath(filePath), 'utf-8');
 }
 
-export async function listDataDirectory(dirPath: string): Promise<DataFileInfo[]> {
+export async function writeDataText(filePath: string, text: string, message: string): Promise<void> {
+  const pathInStore = scopedPath(filePath);
   if (activeDataStore() === 'github') {
-    const files = await listGitHubDirectory(dirPath);
+    await writeGitHubFile(pathInStore, text.endsWith('\n') ? text : `${text}\n`, message);
+    return;
+  }
+
+  const target = resolveLocalPath(filePath);
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  await fs.writeFile(target, text.endsWith('\n') ? text : `${text}\n`, 'utf-8');
+}
+
+export async function listDataDirectory(dirPath: string): Promise<DataFileInfo[]> {
+  const pathInStore = scopedPath(dirPath);
+  if (activeDataStore() === 'github') {
+    const files = await listGitHubDirectory(pathInStore);
     return files.map((file) => ({ ...file, modified: '' }));
   }
 

@@ -1,0 +1,107 @@
+import { useState } from "react"
+import type { FormEvent } from "react"
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom"
+import { IconLoader2, IconLock } from "@tabler/icons-react"
+
+import { useAuth } from "@/auth"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { supabase } from "@/lib/supabase"
+
+export default function Login() {
+  const { configured, session } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [pending, setPending] = useState(false)
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/"
+
+  if (session) return <Navigate to={from} replace />
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!supabase) return
+
+    setPending(true)
+    setError("")
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    setPending(false)
+
+    if (signInError) {
+      setError(signInError.message)
+      return
+    }
+
+    navigate(from, { replace: true })
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <Card className="w-full max-w-md rounded-lg">
+        <CardHeader>
+          <div className="mb-2 flex size-10 items-center justify-center rounded-md border bg-muted">
+            <IconLock className="size-5" />
+          </div>
+          <CardTitle>Sign in</CardTitle>
+          <CardDescription>Access your community agent workspace.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!configured ? (
+            <p className="text-sm text-muted-foreground">
+              Supabase is not configured for this UI environment.
+            </p>
+          ) : (
+            <form className="grid gap-4" onSubmit={submit}>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </div>
+              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              <Button type="submit" disabled={pending}>
+                {pending ? <IconLoader2 className="size-4 animate-spin" /> : null}
+                Sign in
+              </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                New QM?{" "}
+                <Link className="font-medium text-foreground underline underline-offset-4" to="/signup">
+                  Create an account
+                </Link>
+              </p>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </main>
+  )
+}

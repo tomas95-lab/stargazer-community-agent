@@ -25,6 +25,8 @@ const LABELS: Record<string, string> = {
   AI_DAILY_TOKEN_LIMIT: 'AI Daily Token Limit',
   AI_DAILY_CALL_LIMIT: 'AI Daily Call Limit',
   AI_GUARDRAILS_ENFORCE: 'AI Guardrails Enforced',
+  PLATFORM_CONFIGURED: 'Platform Configured',
+  PLATFORM_ENCRYPTION_CONFIGURED: 'Platform Encryption Configured',
 };
 
 function formatArgDate(value?: string): string {

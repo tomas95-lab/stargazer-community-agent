@@ -19,12 +19,18 @@ import reviewQueueRouter from './routes/review-queue';
 import sandboxRouter from './routes/sandbox';
 import memoryRouter from './routes/memory';
 import usageRouter from './routes/usage';
+import platformRouter from './routes/platform';
+import discourseAuthRouter from './routes/discourse-auth';
+import { attachProjectContext } from './auth';
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(attachProjectContext);
 
+app.use('/api/platform', platformRouter);
+app.use('/api/discourse-auth', discourseAuthRouter);
 app.use('/api/topics', topicsRouter);
 app.use('/api/preview', previewRouter);
 app.use('/api/publish', publishRouter);

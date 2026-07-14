@@ -1,4 +1,5 @@
 import { readDataJSON, writeDataJSON } from './data-store';
+import { getProjectContext, LEGACY_PROJECT_ID } from './project-context';
 
 const FILE = 'data/project-memory.json';
 
@@ -50,6 +51,35 @@ const DEFAULT_MEMORY: ProjectMemory = {
   ],
 };
 
+function defaultMemoryForCurrentProject(): ProjectMemory {
+  const context = getProjectContext();
+  if (context.projectId === LEGACY_PROJECT_ID) return DEFAULT_MEMORY;
+
+  return {
+    updatedAt: new Date().toISOString(),
+    facts: [
+      {
+        id: 'language',
+        title: 'Support language',
+        body: 'All user-facing community and DM replies must be written in English.',
+        source: 'platform default',
+      },
+      {
+        id: 'style',
+        title: 'Writing style',
+        body: 'Do not use the em dash character. Use commas, parentheses, or a regular hyphen instead.',
+        source: 'platform default',
+      },
+      {
+        id: 'war-room-hours',
+        title: 'War Room hours',
+        body: 'The War Room is open Monday through Friday from 11:15 AM to 7:00 PM ARG. It is closed Saturdays and Sundays.',
+        source: 'platform default',
+      },
+    ],
+  };
+}
+
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -86,15 +116,23 @@ export function normalizeProjectMemory(input: unknown): ProjectMemory {
 
   return {
     updatedAt: text(record.updatedAt) || new Date().toISOString(),
-    facts: facts.length > 0 ? facts : DEFAULT_MEMORY.facts,
+    facts: facts.length > 0 ? facts : defaultMemoryForCurrentProject().facts,
   };
 }
 
 export async function loadProjectMemory(): Promise<ProjectMemory> {
+  const runtimeFacts = getProjectContext().projectMemoryFacts;
+  if (runtimeFacts) {
+    return normalizeProjectMemory({
+      updatedAt: new Date().toISOString(),
+      facts: runtimeFacts,
+    });
+  }
+
   try {
     return normalizeProjectMemory(await readDataJSON<ProjectMemory>(FILE));
   } catch {
-    return DEFAULT_MEMORY;
+    return defaultMemoryForCurrentProject();
   }
 }
 

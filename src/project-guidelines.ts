@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { PATHS } from './config';
 import { readDataText } from './data-store';
+import { getProjectContext } from './project-context';
 
 const GUIDELINES_FILE = 'data/project-guidelines.txt';
 const STOP_WORDS = new Set([
@@ -33,6 +34,9 @@ const STOP_WORDS = new Set([
 let cachedGuidelines: string | null = null;
 
 export async function loadProjectGuidelines(): Promise<string> {
+  const runtimeGuidelines = getProjectContext().projectGuidelines;
+  if (runtimeGuidelines !== undefined) return runtimeGuidelines;
+
   if (cachedGuidelines !== null) return cachedGuidelines;
 
   try {

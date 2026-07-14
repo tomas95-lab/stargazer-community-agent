@@ -22,6 +22,7 @@ import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+import { usePlatform } from "@/platform"
 import {
   Sidebar,
   SidebarContent,
@@ -33,11 +34,6 @@ import {
 } from "@/components/ui/sidebar"
 
 const data = {
-  user: {
-    name: "Stargazer",
-    email: "Community Ops",
-    avatar: "",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -113,10 +109,19 @@ const data = {
       url: "/memory",
       icon: IconDatabase,
     },
+    {
+      name: "Project Settings",
+      url: "/project",
+      icon: IconSettings,
+    },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { currentProject } = usePlatform()
+  const projectName = currentProject?.projectName || "Stargazer"
+  const ownerEmail = currentProject?.ownerEmail || "Community Ops"
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -128,7 +133,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <Link to="/">
                 <IconInnerShadowTop className="size-5!" />
-                <span className="text-base font-semibold">Stargazer</span>
+                <span className="truncate text-base font-semibold">{projectName}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -140,7 +145,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser
+          user={{
+            name: projectName,
+            email: ownerEmail,
+            avatar: "",
+          }}
+        />
       </SidebarFooter>
     </Sidebar>
   )
