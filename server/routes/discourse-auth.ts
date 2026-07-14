@@ -78,6 +78,37 @@ function redirectWithStatus(req: Request, res: Response, returnTo: string, statu
   res.redirect(302, target.toString());
 }
 
+function encodeAuthParam(value: string): string {
+  return encodeURIComponent(value);
+}
+
+export function buildDiscourseAuthorizationUrl(params: {
+  baseUrl: string;
+  applicationName: string;
+  clientId: string;
+  scopes: string;
+  publicKey: string;
+  nonce: string;
+  authRedirect: string;
+  padding: string;
+}): string {
+  const authUrl = new URL('/user-api-key/new', `${params.baseUrl.replace(/\/+$/, '')}/`);
+  const query = [
+    ['application_name', params.applicationName],
+    ['client_id', params.clientId],
+    ['scopes', params.scopes],
+    ['public_key', params.publicKey],
+    ['nonce', params.nonce],
+    ['auth_redirect', params.authRedirect],
+    ['padding', params.padding],
+  ]
+    .map(([key, value]) => `${key}=${encodeAuthParam(value)}`)
+    .join('&')
+    .replace(/scopes=([^&]+)/, (match) => match.replace(/%2C/gi, ','));
+
+  return `${authUrl.toString()}?${query}`;
+}
+
 function encryptedPayloadBuffer(payload: string): Buffer {
   return Buffer.from(payload.replace(/ /g, '+'), 'base64');
 }
@@ -174,17 +205,19 @@ router.post('/start', requirePlatformUser, async (req: Request, res: Response) =
     const callbackUrl = new URL('/api/discourse-auth/callback', `${publicBaseUrl(req)}/`);
     callbackUrl.searchParams.set('attempt_id', attempt.id);
 
-    const authUrl = new URL('/user-api-key/new', `${DISCOURSE_AUTH_BASE_URL}/`);
-    authUrl.searchParams.set('application_name', APPLICATION_NAME);
-    authUrl.searchParams.set('client_id', CLIENT_ID);
-    authUrl.searchParams.set('scopes', SCOPES);
-    authUrl.searchParams.set('public_key', publicKey);
-    authUrl.searchParams.set('nonce', nonce);
-    authUrl.searchParams.set('auth_redirect', callbackUrl.toString());
-    authUrl.searchParams.set('padding', 'oaep');
+    const authorizationUrl = buildDiscourseAuthorizationUrl({
+      baseUrl: DISCOURSE_AUTH_BASE_URL,
+      applicationName: APPLICATION_NAME,
+      clientId: CLIENT_ID,
+      scopes: SCOPES,
+      publicKey,
+      nonce,
+      authRedirect: callbackUrl.toString(),
+      padding: 'oaep',
+    });
 
     res.json({
-      authorizationUrl: authUrl.toString(),
+      authorizationUrl,
       nonce,
       expiresAt,
     });
