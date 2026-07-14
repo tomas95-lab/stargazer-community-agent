@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { NotificationBell } from "@/components/notification-bell"
+import { usePlatform } from "@/platform"
 
 const TITLES: Record<string, string> = {
   "/": "Stargazer Dashboard",
@@ -19,10 +20,12 @@ const TITLES: Record<string, string> = {
   "/sandbox": "Testing Sandbox",
   "/memory": "Project Memory",
   "/settings": "Settings",
+  "/project": "Project Settings",
 }
 
 export function SiteHeader() {
   const { pathname } = useLocation()
+  const { currentProject, projects, selectProject } = usePlatform()
   const title = TITLES[pathname] ?? "Stargazer"
 
   return (
@@ -34,7 +37,28 @@ export function SiteHeader() {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <h1 className="text-base font-medium">{title}</h1>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {projects.length > 1 ? (
+            <select
+              className="h-8 max-w-52 rounded-md border border-input bg-background px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              value={currentProject?.id || ""}
+              onChange={(event) => {
+                selectProject(event.target.value)
+                window.location.reload()
+              }}
+              aria-label="Active project"
+            >
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.projectName}
+                </option>
+              ))}
+            </select>
+          ) : currentProject ? (
+            <span className="hidden max-w-52 truncate text-sm text-muted-foreground sm:inline">
+              {currentProject.projectName}
+            </span>
+          ) : null}
           <NotificationBell />
         </div>
       </div>

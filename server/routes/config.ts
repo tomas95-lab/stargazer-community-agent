@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { requireAdminToken } from '../auth';
 import { dataStoreSummary } from '../../src/data-store';
+import { isPlatformConfigured } from '../platform-store';
 
 const router = Router();
 
@@ -34,6 +35,8 @@ router.get('/', (_req: Request, res: Response) => {
     AI_DAILY_TOKEN_LIMIT: process.env.AI_DAILY_TOKEN_LIMIT || '',
     AI_DAILY_CALL_LIMIT: process.env.AI_DAILY_CALL_LIMIT || '',
     AI_GUARDRAILS_ENFORCE: String(process.env.AI_GUARDRAILS_ENFORCE === 'true'),
+    PLATFORM_CONFIGURED: String(isPlatformConfigured()),
+    PLATFORM_ENCRYPTION_CONFIGURED: String(Boolean(process.env.PLATFORM_ENCRYPTION_KEY || process.env.SUPABASE_JWT_SECRET)),
   });
 });
 

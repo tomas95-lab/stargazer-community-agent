@@ -1,5 +1,8 @@
+import { getSupabaseAccessToken } from "@/lib/supabase";
+
 const BASE = '/api';
 const ADMIN_TOKEN_KEY = 'stargazer_admin_token';
+const PROJECT_ID_KEY = 'qm_active_project_id';
 
 function getStoredAdminToken(): string {
   if (typeof window === 'undefined') return '';
@@ -16,10 +19,29 @@ function setStoredAdminToken(token: string): void {
   }
 }
 
+function getStoredProjectId(): string {
+  if (typeof window === 'undefined') return '';
+  return window.localStorage.getItem(PROJECT_ID_KEY) || '';
+}
+
+function setStoredProjectId(projectId: string): void {
+  if (typeof window === 'undefined') return;
+  const trimmed = projectId.trim();
+  if (trimmed) {
+    window.localStorage.setItem(PROJECT_ID_KEY, trimmed);
+  } else {
+    window.localStorage.removeItem(PROJECT_ID_KEY);
+  }
+}
+
 async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   const token = getStoredAdminToken();
+  const accessToken = await getSupabaseAccessToken();
+  const projectId = getStoredProjectId();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['X-Admin-Token'] = token;
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  if (projectId) headers['X-Project-Id'] = projectId;
 
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
@@ -40,6 +62,12 @@ export const adminAuth = {
   setToken: setStoredAdminToken,
   clearToken: () => setStoredAdminToken(''),
   hasToken: () => Boolean(getStoredAdminToken()),
+};
+
+export const projectSelection = {
+  getProjectId: getStoredProjectId,
+  setProjectId: setStoredProjectId,
+  clearProjectId: () => setStoredProjectId(''),
 };
 
 export interface Topic {
@@ -447,6 +475,64 @@ export interface AiUsageSummary {
   recentEvents: AiUsageEvent[];
 }
 
+export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
+
+export interface QmProject {
+  id: string;
+  ownerId: string;
+  ownerEmail: string;
+  ownerName: string;
+  projectName: string;
+  communityBaseUrl: string;
+  categoryId: string;
+  categorySlug: string;
+  channelId: string;
+  discourseUsername: string;
+  discourseApiClientId: string;
+  discourseApiKeyConfigured: boolean;
+  projectGuidelines: string;
+  projectGuidelinesCharacters: number;
+  warRoomLink: string;
+  agentMode: ProjectAgentMode;
+  autoReplyEnabled: boolean;
+  minConfidence: number;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QmProjectInput {
+  ownerName?: string;
+  projectName?: string;
+  communityBaseUrl?: string;
+  categoryId?: string;
+  categorySlug?: string;
+  channelId?: string;
+  discourseUsername?: string;
+  discourseApiClientId?: string;
+  discourseApiKey?: string;
+  projectGuidelines?: string;
+  warRoomLink?: string;
+  agentMode?: ProjectAgentMode;
+  autoReplyEnabled?: boolean;
+  minConfidence?: number;
+}
+
+export interface PlatformStatus {
+  configured: boolean;
+  supabaseUrlConfigured: boolean;
+  secretConfigured: boolean;
+  encryptionConfigured: boolean;
+}
+
+export interface DiscourseAuthStatus {
+  connected: boolean;
+  username: string;
+  apiVersion: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const api = {
   getTopics: () => request<Topic[]>('/topics'),
   getToday: () => request<{ date: string; topic: Topic | null }>('/topics/today'),
@@ -560,4 +646,24 @@ export const api = {
       body: JSON.stringify(memory),
     }),
   getAiUsage: () => request<AiUsageSummary>('/usage'),
+  getPlatformStatus: () => request<PlatformStatus>('/platform/status'),
+  getPlatformMe: () => request<{ user: { id: string; email: string; name: string } }>('/platform/me'),
+  getProjects: () => request<{ projects: QmProject[] }>('/platform/projects'),
+  getCurrentProject: () => request<{ project: QmProject | null }>('/platform/projects/current'),
+  createProject: (project: QmProjectInput) =>
+    request<{ project: QmProject }>('/platform/projects', {
+      method: 'POST',
+      body: JSON.stringify(project),
+    }),
+  updateProject: (id: string, project: QmProjectInput) =>
+    request<{ project: QmProject }>(`/platform/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(project),
+    }),
+  startDiscourseAuth: (opts: { projectId?: string; returnTo?: string } = {}) =>
+    request<{ authorizationUrl: string; nonce: string; expiresAt: string }>('/discourse-auth/start', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
+  getDiscourseAuthStatus: () => request<DiscourseAuthStatus>('/discourse-auth/status'),
 };

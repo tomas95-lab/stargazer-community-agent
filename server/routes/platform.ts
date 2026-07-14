@@ -1,0 +1,94 @@
+import { Router, Request, Response } from 'express';
+import { AuthenticatedRequest, requirePlatformUser } from '../auth';
+import {
+  createUserProject,
+  getActiveUserProject,
+  isPlatformConfigured,
+  listUserProjects,
+  QmProjectInput,
+  toPublicProject,
+  updateUserProject,
+} from '../platform-store';
+
+const router = Router();
+
+function projectInput(body: unknown): QmProjectInput {
+  const raw = body && typeof body === 'object' ? body as Record<string, unknown> : {};
+  return {
+    ownerName: typeof raw.ownerName === 'string' ? raw.ownerName : undefined,
+    projectName: typeof raw.projectName === 'string' ? raw.projectName : undefined,
+    communityBaseUrl: typeof raw.communityBaseUrl === 'string' ? raw.communityBaseUrl : undefined,
+    categoryId: typeof raw.categoryId === 'string' ? raw.categoryId : undefined,
+    categorySlug: typeof raw.categorySlug === 'string' ? raw.categorySlug : undefined,
+    channelId: typeof raw.channelId === 'string' ? raw.channelId : undefined,
+    discourseUsername: typeof raw.discourseUsername === 'string' ? raw.discourseUsername : undefined,
+    discourseApiClientId: typeof raw.discourseApiClientId === 'string' ? raw.discourseApiClientId : undefined,
+    discourseApiKey: typeof raw.discourseApiKey === 'string' ? raw.discourseApiKey : undefined,
+    projectGuidelines: typeof raw.projectGuidelines === 'string' ? raw.projectGuidelines : undefined,
+    warRoomLink: typeof raw.warRoomLink === 'string' ? raw.warRoomLink : undefined,
+    agentMode: raw.agentMode === 'auto' || raw.agentMode === 'supervised' || raw.agentMode === 'draft'
+      ? raw.agentMode
+      : undefined,
+    autoReplyEnabled: typeof raw.autoReplyEnabled === 'boolean' ? raw.autoReplyEnabled : undefined,
+    minConfidence: typeof raw.minConfidence === 'number' || typeof raw.minConfidence === 'string'
+      ? Number(raw.minConfidence)
+      : undefined,
+  };
+}
+
+router.get('/status', (_req: Request, res: Response) => {
+  res.json({
+    configured: isPlatformConfigured(),
+    supabaseUrlConfigured: Boolean(process.env.SUPABASE_URL),
+    secretConfigured: Boolean(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
+    encryptionConfigured: Boolean(process.env.PLATFORM_ENCRYPTION_KEY || process.env.SUPABASE_JWT_SECRET),
+  });
+});
+
+router.get('/me', requirePlatformUser, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  res.json({ user: authReq.authUser });
+});
+
+router.get('/projects', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const projects = await listUserProjects(authReq.authUser!.id);
+    res.json({ projects: projects.map(toPublicProject) });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/projects/current', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const requestedId = typeof req.query.project === 'string' ? req.query.project : undefined;
+    const project = await getActiveUserProject(authReq.authUser!.id, requestedId);
+    res.json({ project: project ? toPublicProject(project) : null });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/projects', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const project = await createUserProject(authReq.authUser!, projectInput(req.body));
+    res.status(201).json({ project: toPublicProject(project) });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.put('/projects/:id', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const project = await updateUserProject(authReq.authUser!, req.params.id, projectInput(req.body));
+    res.json({ project: toPublicProject(project) });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+export default router;

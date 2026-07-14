@@ -13,7 +13,6 @@ import { loadProjectLinks } from './links';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 
-const BOT_USERNAME = process.env.DISCOURSE_USERNAME || 'tomas.ruiz_OBIC';
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
 const MAX_ANSWERS = parseInt(process.env.RESPONDER_MAX_ANSWERS || process.env.AGENT_MAX_ANSWERS || '4', 10);
 const MESSAGE_COUNT = parseInt(process.env.AGENT_MESSAGE_COUNT || '50', 10);
@@ -419,7 +418,8 @@ export function annotateProbableReplies(items: CommunityAgentItem[]): CommunityA
 }
 
 function shouldIgnoreAuthor(username: string): boolean {
-  return username.toLowerCase() === BOT_USERNAME.toLowerCase();
+  const configuredUsername = loadBotConfig().discourseUsername || process.env.DISCOURSE_USERNAME || 'tomas.ruiz_OBIC';
+  return username.toLowerCase() === configuredUsername.toLowerCase();
 }
 
 function shouldIgnoreMessage(text: string): boolean {

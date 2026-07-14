@@ -82,6 +82,27 @@ export async function writeJSON<T>(filePath: string, data: T, message: string): 
   });
 }
 
+export async function writeFile(filePath: string, text: string, message: string): Promise<void> {
+  let sha: string | undefined;
+  try {
+    const existing = await githubRequest<GitHubContentFile>(contentPath(filePath));
+    sha = existing.sha;
+  } catch {
+    sha = undefined;
+  }
+
+  const content = Buffer.from(text).toString('base64');
+
+  await githubRequest(contentPath(filePath), {
+    method: 'PUT',
+    body: JSON.stringify({
+      message,
+      content,
+      sha,
+    }),
+  });
+}
+
 export async function listDirectory(dirPath: string): Promise<Array<{ name: string; sha: string; size: number }>> {
   try {
     const items = await githubRequest<GitHubContentDirectoryItem[]>(contentPath(dirPath));

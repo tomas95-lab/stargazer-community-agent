@@ -2,11 +2,13 @@ import {
   IconDotsVertical,
   IconHistory,
   IconLink,
+  IconLogout,
   IconSettings,
   IconUserCircle,
 } from "@tabler/icons-react"
 import { Link } from "react-router-dom"
 
+import { useAuth } from "@/auth"
 import {
   Avatar,
   AvatarFallback,
@@ -38,6 +40,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { signOut } = useAuth()
 
   return (
     <SidebarMenu>
@@ -101,6 +104,12 @@ export function NavUser({
                   History
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/project">
+                  <IconSettings />
+                  Project Settings
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
@@ -108,6 +117,10 @@ export function NavUser({
                 <IconSettings />
                 Settings
               </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => void signOut()}>
+              <IconLogout />
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
