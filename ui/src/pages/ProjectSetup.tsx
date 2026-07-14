@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ChangeEvent, FormEvent } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { IconExternalLink, IconFileText, IconLoader2, IconRefresh, IconShieldCheck } from "@tabler/icons-react"
+import { IconCheck, IconExternalLink, IconFileText, IconLoader2, IconRefresh, IconShieldCheck } from "@tabler/icons-react"
 
 import { api, projectSelection, type DiscourseAuthStatus, type QmProjectInput } from "@/api"
 import { useAuth } from "@/auth"
@@ -61,7 +61,14 @@ export default function ProjectSetup() {
   const [form, setForm] = useState<ProjectFormState>(DEFAULT_FORM)
   const [pending, setPending] = useState(false)
   const [connectingDiscourse, setConnectingDiscourse] = useState(false)
+  const [savingDiscoursePayload, setSavingDiscoursePayload] = useState(false)
   const [discourseStatus, setDiscourseStatus] = useState<DiscourseAuthStatus | null>(null)
+  const [discourseAuth, setDiscourseAuth] = useState<{
+    authorizationUrl: string
+    nonce: string
+    expiresAt: string
+  } | null>(null)
+  const [discoursePayload, setDiscoursePayload] = useState("")
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
 
@@ -144,10 +151,47 @@ export default function ProjectSetup() {
         projectId: currentProject?.id,
         returnTo: location.pathname,
       })
-      window.location.assign(result.authorizationUrl)
+      setDiscourseAuth({
+        authorizationUrl: result.authorizationUrl,
+        nonce: result.nonce,
+        expiresAt: result.expiresAt,
+      })
+      setDiscoursePayload("")
+      setMessage("Authorize DailyThreadBot in Outlier Community, then paste the encrypted payload here.")
+      window.open(result.authorizationUrl, "_blank", "noopener,noreferrer")
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
+    } finally {
       setConnectingDiscourse(false)
+    }
+  }
+
+  async function completeDiscourseConnection() {
+    if (!discourseAuth) return
+    setSavingDiscoursePayload(true)
+    setError("")
+    setMessage("")
+
+    try {
+      const result = await api.completeDiscourseAuth({
+        nonce: discourseAuth.nonce,
+        payload: discoursePayload,
+      })
+      const status = await api.getDiscourseAuthStatus()
+      setDiscourseStatus(status)
+      if (result.username || status.username) {
+        setForm((current) => ({
+          ...current,
+          discourseUsername: current.discourseUsername || result.username || status.username,
+        }))
+      }
+      setDiscourseAuth(null)
+      setDiscoursePayload("")
+      setMessage("Discourse connected. You can save the project now.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSavingDiscoursePayload(false)
     }
   }
 
@@ -234,6 +278,42 @@ export default function ProjectSetup() {
                   Connect Discourse
                 </Button>
               </div>
+
+              {discourseAuth ? (
+                <div className="grid gap-3 rounded-md border bg-background p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="grid gap-1">
+                      <Label htmlFor="discoursePayload">Authorization payload</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Nonce: {discourseAuth.nonce}
+                      </p>
+                    </div>
+                    <Button type="button" variant="outline" asChild>
+                      <a href={discourseAuth.authorizationUrl} target="_blank" rel="noreferrer">
+                        <IconExternalLink className="size-4" />
+                        Open authorization
+                      </a>
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="discoursePayload"
+                    className="min-h-28 font-mono text-sm"
+                    value={discoursePayload}
+                    onChange={(event) => setDiscoursePayload(event.target.value)}
+                    placeholder="Paste the encrypted payload from Outlier Community"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      onClick={completeDiscourseConnection}
+                      disabled={savingDiscoursePayload || !discoursePayload.trim()}
+                    >
+                      {savingDiscoursePayload ? <IconLoader2 className="size-4 animate-spin" /> : <IconCheck className="size-4" />}
+                      Complete connection
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">

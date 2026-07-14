@@ -533,6 +533,20 @@ export interface DiscourseAuthStatus {
   updatedAt: string;
 }
 
+export interface DiscourseAuthStartResult {
+  authorizationUrl: string;
+  attemptId: string;
+  nonce: string;
+  expiresAt: string;
+}
+
+export interface DiscourseAuthCompleteResult {
+  connected: boolean;
+  username: string;
+  apiVersion: string;
+  expiresAt: string;
+}
+
 export const api = {
   getTopics: () => request<Topic[]>('/topics'),
   getToday: () => request<{ date: string; topic: Topic | null }>('/topics/today'),
@@ -661,7 +675,12 @@ export const api = {
       body: JSON.stringify(project),
     }),
   startDiscourseAuth: (opts: { projectId?: string; returnTo?: string } = {}) =>
-    request<{ authorizationUrl: string; nonce: string; expiresAt: string }>('/discourse-auth/start', {
+    request<DiscourseAuthStartResult>('/discourse-auth/start', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
+  completeDiscourseAuth: (opts: { nonce: string; payload: string }) =>
+    request<DiscourseAuthCompleteResult>('/discourse-auth/complete', {
       method: 'POST',
       body: JSON.stringify(opts),
     }),

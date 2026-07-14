@@ -24,7 +24,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
 
 `PLATFORM_ENCRYPTION_KEY` is used to encrypt each QM's Discourse API key before it is stored. If it is missing, the server falls back to `SUPABASE_JWT_SECRET`, but a dedicated encryption key is preferred.
 
-`PUBLIC_BASE_URL` must be the public backend/app URL used in the Discourse callback, for example `https://your-app.vercel.app`. `FRONTEND_BASE_URL` is optional locally, and defaults to `http://localhost:5173` when the backend is running on `localhost:3001`.
+`PUBLIC_BASE_URL` should be the public backend/app URL, for example `https://your-app.vercel.app`. `FRONTEND_BASE_URL` is optional locally, and defaults to `http://localhost:5173` when the backend is running on `localhost:3001`.
 
 ## Database
 
@@ -39,9 +39,9 @@ It also creates:
 
 1. A QM signs up or logs in with Supabase Auth.
 2. The QM clicks "Connect Discourse".
-3. The backend creates a temporary RSA key pair and nonce, stores the encrypted private key with an expiration, and returns an Outlier Community authorization URL.
+3. The backend creates a temporary RSA key pair and nonce, stores the encrypted private key with an expiration, and returns an Outlier Community authorization URL without `auth_redirect`.
 4. The QM authorizes the app at `https://community.outlier.ai/user-api-key/new`.
-5. Discourse redirects to `/api/discourse-auth/callback` with an encrypted payload.
+5. The QM pastes the encrypted payload from Outlier Community into the app.
 6. The backend decrypts the payload, verifies the nonce and expiration, stores the User API Key encrypted at rest, and deletes the temporary attempt.
 7. The QM creates or updates a project from `/onboarding` or `/project`.
 8. The UI sends `Authorization: Bearer <supabase-session>` and `X-Project-Id`.

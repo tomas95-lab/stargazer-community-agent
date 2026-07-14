@@ -42,6 +42,7 @@ interface DiscoursePayload {
   nonce?: string;
   push?: boolean;
   api?: number | string;
+  expires_at?: string;
 }
 
 function publicBaseUrl(req: Request): string {
@@ -89,8 +90,8 @@ export function buildDiscourseAuthorizationUrl(params: {
   scopes: string;
   publicKey: string;
   nonce: string;
-  authRedirect: string;
-  padding: string;
+  authRedirect?: string;
+  padding?: string;
 }): string {
   const authUrl = new URL('/user-api-key/new', `${params.baseUrl.replace(/\/+$/, '')}/`);
   const query = [
@@ -99,9 +100,10 @@ export function buildDiscourseAuthorizationUrl(params: {
     ['scopes', params.scopes],
     ['public_key', params.publicKey],
     ['nonce', params.nonce],
-    ['auth_redirect', params.authRedirect],
-    ['padding', params.padding],
+    params.authRedirect ? ['auth_redirect', params.authRedirect] : null,
+    params.padding ? ['padding', params.padding] : null,
   ]
+    .filter((item): item is string[] => Boolean(item))
     .map(([key, value]) => `${key}=${encodeAuthParam(value)}`)
     .join('&')
     .replace(/scopes=([^&]+)/, (match) => match.replace(/%2C/gi, ','));
@@ -110,18 +112,24 @@ export function buildDiscourseAuthorizationUrl(params: {
 }
 
 function encryptedPayloadBuffer(payload: string): Buffer {
-  return Buffer.from(payload.replace(/ /g, '+'), 'base64');
+  return Buffer.from(payload.trim().replace(/ /g, '+').replace(/[\r\n\t]/g, ''), 'base64');
 }
 
 function decryptPayload(payload: string, privateKeyPem: string): DiscoursePayload {
-  const decrypted = privateDecrypt(
-    {
-      key: privateKeyPem,
-      padding: constants.RSA_PKCS1_OAEP_PADDING,
-    },
-    encryptedPayloadBuffer(payload),
-  );
-  return JSON.parse(decrypted.toString('utf8')) as DiscoursePayload;
+  const encrypted = encryptedPayloadBuffer(payload);
+  const paddings = [constants.RSA_PKCS1_OAEP_PADDING, constants.RSA_PKCS1_PADDING];
+  const errors: string[] = [];
+
+  for (const padding of paddings) {
+    try {
+      const decrypted = privateDecrypt({ key: privateKeyPem, padding }, encrypted);
+      return JSON.parse(decrypted.toString('utf8')) as DiscoursePayload;
+    } catch (err) {
+      errors.push(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  throw new Error(`Authorization payload could not be decrypted. ${errors[0] || ''}`.trim());
 }
 
 async function deleteExpiredAttempts(): Promise<void> {
@@ -136,6 +144,18 @@ async function fetchAttempt(id: string): Promise<DiscourseAuthAttempt | null> {
     .from(ATTEMPTS_TABLE)
     .select('*')
     .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data as DiscourseAuthAttempt | null;
+}
+
+async function fetchAttemptByNonce(ownerId: string, nonce: string): Promise<DiscourseAuthAttempt | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from(ATTEMPTS_TABLE)
+    .select('*')
+    .eq('owner_id', ownerId)
+    .eq('nonce', nonce)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -161,6 +181,46 @@ async function fetchDiscourseUsername(userApiKey: string): Promise<string> {
   } catch {
     return '';
   }
+}
+
+async function storeAuthorizedDiscourseKey(attempt: DiscourseAuthAttempt, payload: DiscoursePayload): Promise<string> {
+  if (!payload.key || !payload.nonce || payload.nonce !== attempt.nonce) {
+    throw new Error('Authorization could not be verified. Please try again.');
+  }
+
+  const username = await fetchDiscourseUsername(payload.key);
+  const encryptedKey = encryptSecret(payload.key);
+  const now = new Date().toISOString();
+
+  const { error: upsertError } = await getSupabaseAdmin()
+    .from(USER_KEYS_TABLE)
+    .upsert({
+      owner_id: attempt.owner_id,
+      discourse_api_key_ciphertext: encryptedKey,
+      discourse_username: username,
+      api_version: payload.api ? String(payload.api) : '',
+      nonce: payload.nonce,
+      updated_at: now,
+    }, { onConflict: 'owner_id' });
+
+  if (upsertError) throw new Error(upsertError.message);
+
+  if (attempt.project_id) {
+    const patch: Record<string, string> = {
+      discourse_api_key_ciphertext: encryptedKey,
+      updated_at: now,
+    };
+    if (username) patch.discourse_username = username;
+
+    const { error: projectError } = await getSupabaseAdmin()
+      .from(PROJECTS_TABLE)
+      .update(patch)
+      .eq('id', attempt.project_id)
+      .eq('owner_id', attempt.owner_id);
+    if (projectError) throw new Error(projectError.message);
+  }
+
+  return username;
 }
 
 router.post('/start', requirePlatformUser, async (req: Request, res: Response) => {
@@ -202,9 +262,6 @@ router.post('/start', requirePlatformUser, async (req: Request, res: Response) =
     if (error) throw new Error(error.message);
 
     const attempt = data as DiscourseAuthAttempt;
-    const callbackUrl = new URL('/api/discourse-auth/callback', `${publicBaseUrl(req)}/`);
-    callbackUrl.searchParams.set('attempt_id', attempt.id);
-
     const authorizationUrl = buildDiscourseAuthorizationUrl({
       baseUrl: DISCOURSE_AUTH_BASE_URL,
       applicationName: APPLICATION_NAME,
@@ -212,12 +269,11 @@ router.post('/start', requirePlatformUser, async (req: Request, res: Response) =
       scopes: SCOPES,
       publicKey,
       nonce,
-      authRedirect: callbackUrl.toString(),
-      padding: 'oaep',
     });
 
     res.json({
       authorizationUrl,
+      attemptId: attempt.id,
       nonce,
       expiresAt,
     });
@@ -245,6 +301,57 @@ router.get('/status', requirePlatformUser, async (req: Request, res: Response) =
     });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/complete', requirePlatformUser, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  const nonce = text(req.body?.nonce);
+  const payloadParam = text(req.body?.payload);
+  let attempt: DiscourseAuthAttempt | null = null;
+
+  try {
+    await deleteExpiredAttempts().catch(() => undefined);
+
+    if (!nonce) {
+      res.status(400).json({ error: 'Missing authorization nonce.' });
+      return;
+    }
+    if (!payloadParam) {
+      res.status(400).json({ error: 'Paste the encrypted authorization payload from Outlier Community.' });
+      return;
+    }
+
+    attempt = await fetchAttemptByNonce(authReq.authUser!.id, nonce);
+    if (!attempt) {
+      res.status(410).json({ error: 'Authorization expired or was already used. Please start again.' });
+      return;
+    }
+
+    if (attempt.consumed_at) {
+      await deleteAttempt(attempt.id);
+      res.status(409).json({ error: 'Authorization was already used. Please start again.' });
+      return;
+    }
+
+    if (new Date(attempt.expires_at).getTime() <= Date.now()) {
+      await deleteAttempt(attempt.id);
+      res.status(410).json({ error: 'Authorization expired. Please start again.' });
+      return;
+    }
+
+    const payload = decryptPayload(payloadParam, decryptSecret(attempt.private_key_ciphertext));
+    const username = await storeAuthorizedDiscourseKey(attempt, payload);
+    await deleteAttempt(attempt.id);
+
+    res.json({
+      connected: true,
+      username,
+      apiVersion: payload.api ? String(payload.api) : '',
+      expiresAt: payload.expires_at || '',
+    });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
 
@@ -286,42 +393,12 @@ router.get('/callback', async (req: Request, res: Response) => {
     }
 
     const payload = decryptPayload(payloadParam, decryptSecret(attempt.private_key_ciphertext));
-    if (!payload.key || !payload.nonce || payload.nonce !== attempt.nonce) {
+    try {
+      await storeAuthorizedDiscourseKey(attempt, payload);
+    } catch (err) {
       await deleteAttempt(attempt.id);
-      redirectWithStatus(req, res, returnTo, 'error', 'Authorization could not be verified. Please try again.');
+      redirectWithStatus(req, res, returnTo, 'error', err instanceof Error ? err.message : 'Authorization could not be verified. Please try again.');
       return;
-    }
-
-    const username = await fetchDiscourseUsername(payload.key);
-    const encryptedKey = encryptSecret(payload.key);
-    const now = new Date().toISOString();
-
-    const { error: upsertError } = await getSupabaseAdmin()
-      .from(USER_KEYS_TABLE)
-      .upsert({
-        owner_id: attempt.owner_id,
-        discourse_api_key_ciphertext: encryptedKey,
-        discourse_username: username,
-        api_version: payload.api ? String(payload.api) : '',
-        nonce: payload.nonce,
-        updated_at: now,
-      }, { onConflict: 'owner_id' });
-
-    if (upsertError) throw new Error(upsertError.message);
-
-    if (attempt.project_id) {
-      const patch: Record<string, string> = {
-        discourse_api_key_ciphertext: encryptedKey,
-        updated_at: now,
-      };
-      if (username) patch.discourse_username = username;
-
-      const { error: projectError } = await getSupabaseAdmin()
-        .from(PROJECTS_TABLE)
-        .update(patch)
-        .eq('id', attempt.project_id)
-        .eq('owner_id', attempt.owner_id);
-      if (projectError) throw new Error(projectError.message);
     }
 
     await deleteAttempt(attempt.id);
