@@ -12,6 +12,10 @@ import {
 
 const router = Router();
 
+function routeParam(value: unknown): string {
+  return Array.isArray(value) ? String(value[0] || '') : String(value || '');
+}
+
 function projectInput(body: unknown): QmProjectInput {
   const raw = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   return {
@@ -84,7 +88,7 @@ router.post('/projects', requirePlatformUser, async (req: Request, res: Response
 router.put('/projects/:id', requirePlatformUser, async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const project = await updateUserProject(authReq.authUser!, req.params.id, projectInput(req.body));
+    const project = await updateUserProject(authReq.authUser!, routeParam(req.params.id), projectInput(req.body));
     res.json({ project: toPublicProject(project) });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });

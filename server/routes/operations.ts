@@ -10,6 +10,10 @@ function clampNumber(value: unknown, fallback: number, min: number, max: number)
   return Math.min(max, Math.max(min, Math.floor(parsed)));
 }
 
+function routeParam(value: unknown): string {
+  return Array.isArray(value) ? String(value[0] || '') : String(value || '');
+}
+
 router.get('/', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const limit = clampNumber(req.query.limit, 50, 1, 100);
@@ -22,7 +26,7 @@ router.get('/', requireAdminToken, async (req: Request, res: Response) => {
 
 router.get('/:id', requireAdminToken, async (req: Request, res: Response) => {
   try {
-    const record = await readOperationDetail(req.params.id);
+    const record = await readOperationDetail(routeParam(req.params.id));
     if (!record) {
       res.status(404).json({ error: 'Operation not found' });
       return;
