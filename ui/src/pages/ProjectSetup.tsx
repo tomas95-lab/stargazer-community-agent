@@ -36,6 +36,21 @@ interface ProjectFormState {
   minConfidence: string
 }
 
+type PersistedProjectFormState = Omit<ProjectFormState, "discourseApiKey">
+
+interface DiscourseAuthDraft {
+  authorizationUrl: string
+  nonce: string
+  expiresAt: string
+}
+
+interface ProjectSetupDraft {
+  version: 1
+  form: PersistedProjectFormState
+  discourseAuth: DiscourseAuthDraft | null
+  savedAt: string
+}
+
 const DEFAULT_FORM: ProjectFormState = {
   ownerName: "",
   projectName: "",
@@ -51,6 +66,74 @@ const DEFAULT_FORM: ProjectFormState = {
   agentMode: "supervised",
   autoReplyEnabled: false,
   minConfidence: "0.50",
+}
+
+function projectToForm(project: NonNullable<ReturnType<typeof usePlatform>["currentProject"]>): ProjectFormState {
+  return {
+    ownerName: project.ownerName,
+    projectName: project.projectName,
+    communityBaseUrl: project.communityBaseUrl,
+    categoryId: project.categoryId,
+    categorySlug: project.categorySlug,
+    channelId: project.channelId,
+    discourseUsername: project.discourseUsername,
+    discourseApiClientId: project.discourseApiClientId,
+    discourseApiKey: "",
+    projectGuidelines: project.projectGuidelines,
+    warRoomLink: project.warRoomLink,
+    agentMode: project.agentMode,
+    autoReplyEnabled: project.autoReplyEnabled,
+    minConfidence: String(project.minConfidence),
+  }
+}
+
+function draftKey(userId: string, projectId?: string): string {
+  return `qm_project_setup_draft:${userId}:${projectId || "new"}`
+}
+
+function persistedForm(form: ProjectFormState): PersistedProjectFormState {
+  const { discourseApiKey: _discourseApiKey, ...rest } = form
+  return rest
+}
+
+function readDraft(key: string, fallback: ProjectFormState): { form: ProjectFormState; discourseAuth: DiscourseAuthDraft | null } {
+  if (typeof window === "undefined") return { form: fallback, discourseAuth: null }
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return { form: fallback, discourseAuth: null }
+    const parsed = JSON.parse(raw) as Partial<ProjectSetupDraft>
+    if (parsed.version !== 1 || !parsed.form) return { form: fallback, discourseAuth: null }
+    return {
+      form: {
+        ...fallback,
+        ...parsed.form,
+        discourseApiKey: "",
+      },
+      discourseAuth: parsed.discourseAuth || null,
+    }
+  } catch {
+    return { form: fallback, discourseAuth: null }
+  }
+}
+
+function writeDraft(key: string, form: ProjectFormState, discourseAuth: DiscourseAuthDraft | null): void {
+  if (typeof window === "undefined") return
+  try {
+    const draft: ProjectSetupDraft = {
+      version: 1,
+      form: persistedForm(form),
+      discourseAuth,
+      savedAt: new Date().toISOString(),
+    }
+    window.localStorage.setItem(key, JSON.stringify(draft))
+  } catch {
+    // Ignore quota/private-mode failures; the form still works in memory.
+  }
+}
+
+function clearDraft(key: string): void {
+  if (typeof window === "undefined") return
+  window.localStorage.removeItem(key)
 }
 
 export default function ProjectSetup() {
@@ -69,37 +152,33 @@ export default function ProjectSetup() {
     expiresAt: string
   } | null>(null)
   const [discoursePayload, setDiscoursePayload] = useState("")
+  const [activeDraftKey, setActiveDraftKey] = useState("")
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
 
   const editing = Boolean(currentProject)
 
   useEffect(() => {
-    if (!currentProject) {
-      setForm((value) => ({
-        ...DEFAULT_FORM,
-        ownerName: user?.user_metadata?.name || user?.email?.split("@")[0] || value.ownerName,
-      }))
-      return
-    }
+    if (!user) return
 
-    setForm({
-      ownerName: currentProject.ownerName,
-      projectName: currentProject.projectName,
-      communityBaseUrl: currentProject.communityBaseUrl,
-      categoryId: currentProject.categoryId,
-      categorySlug: currentProject.categorySlug,
-      channelId: currentProject.channelId,
-      discourseUsername: currentProject.discourseUsername,
-      discourseApiClientId: currentProject.discourseApiClientId,
-      discourseApiKey: "",
-      projectGuidelines: currentProject.projectGuidelines,
-      warRoomLink: currentProject.warRoomLink,
-      agentMode: currentProject.agentMode,
-      autoReplyEnabled: currentProject.autoReplyEnabled,
-      minConfidence: String(currentProject.minConfidence),
-    })
+    const key = draftKey(user.id, currentProject?.id)
+    const fallback = currentProject
+      ? projectToForm(currentProject)
+      : {
+        ...DEFAULT_FORM,
+        ownerName: user.user_metadata?.name || user.email?.split("@")[0] || "",
+      }
+    const draft = readDraft(key, fallback)
+
+    setForm(draft.form)
+    setDiscourseAuth(draft.discourseAuth)
+    setActiveDraftKey(key)
   }, [currentProject, user])
+
+  useEffect(() => {
+    if (!activeDraftKey) return
+    writeDraft(activeDraftKey, form, discourseAuth)
+  }, [activeDraftKey, form, discourseAuth])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -143,6 +222,15 @@ export default function ProjectSetup() {
   }
 
   async function connectDiscourse() {
+    const authWindow = window.open("about:blank", "_blank")
+    if (authWindow) {
+      try {
+        authWindow.document.title = "Connecting Discourse"
+      } catch {
+        // Some browsers restrict access immediately; navigation still works.
+      }
+    }
+
     setConnectingDiscourse(true)
     setError("")
     setMessage("")
@@ -158,8 +246,13 @@ export default function ProjectSetup() {
       })
       setDiscoursePayload("")
       setMessage("Authorize DailyThreadBot in Outlier Community, then paste the encrypted payload here.")
-      window.open(result.authorizationUrl, "_blank", "noopener,noreferrer")
+      if (authWindow) {
+        authWindow.location.href = result.authorizationUrl
+      } else {
+        window.open(result.authorizationUrl, "_blank", "noopener,noreferrer")
+      }
     } catch (err) {
+      authWindow?.close()
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setConnectingDiscourse(false)
@@ -222,6 +315,7 @@ export default function ProjectSetup() {
       const result = currentProject
         ? await api.updateProject(currentProject.id, payload)
         : await api.createProject(payload)
+      if (activeDraftKey) clearDraft(activeDraftKey)
       projectSelection.setProjectId(result.project.id)
       await refreshProjects()
       setMessage("Project saved.")
