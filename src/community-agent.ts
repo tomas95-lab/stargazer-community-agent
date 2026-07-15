@@ -2,7 +2,6 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-import Anthropic from '@anthropic-ai/sdk';
 import { loadBotConfig } from './config';
 import { DiscourseChatMessage, DiscourseClient } from './discourse-client';
 import { readDataJSON, writeDataJSON } from './data-store';
@@ -13,8 +12,8 @@ import { loadProjectLinks } from './links';
 import { getProjectContext } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
+import { resolveAnthropicRuntime } from './anthropic-runtime';
 
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
 const MAX_ANSWERS = parseInt(process.env.RESPONDER_MAX_ANSWERS || process.env.AGENT_MAX_ANSWERS || '4', 10);
 const MESSAGE_COUNT = parseInt(process.env.AGENT_MESSAGE_COUNT || '50', 10);
 const MIN_CONFIDENCE = Number(process.env.AGENT_MIN_CONFIDENCE || '0.50');
@@ -598,12 +597,10 @@ export async function evaluateSupportMessage(
   warRoomLink: string,
   canUseWarRoomLink: boolean,
 ): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'needsHuman'>> {
-  const apiKey = process.env.ANTHROPIC_API_KEY || '';
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-
   const snippets = await findProjectGuidelineSnippets(message, 4);
   const memory = await projectMemoryText(25);
-  const anthropic = new Anthropic({ apiKey });
+  const anthropicRuntime = resolveAnthropicRuntime();
+  const anthropic = anthropicRuntime.client;
   const projectName = getProjectContext().projectName || 'the active project';
   const warRoomInstruction = canUseWarRoomLink && warRoomLink
     ? `A War Room link is configured for this project: ${warRoomLink}. Include it only when live support is clearly relevant and supported by project memory, project guidelines, or recent context. Do not state live-support hours, weekdays, weekends, or room names unless they are present in project memory, project guidelines, or recent context.`
@@ -630,7 +627,7 @@ export async function evaluateSupportMessage(
 
   await assertAiUsageAllowed('support_evaluation', estimateTokens(`${systemPrompt}\n\n${userPrompt}`), 450);
   const response = await anthropic.messages.create({
-    model: ANTHROPIC_MODEL,
+    model: anthropicRuntime.model,
     max_tokens: 450,
     system: systemPrompt,
     messages: [
@@ -645,7 +642,7 @@ export async function evaluateSupportMessage(
   const usage = anthropicUsage(response);
   await recordAiUsage({
     feature: 'support_evaluation',
-    model: ANTHROPIC_MODEL,
+    model: anthropicRuntime.model,
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
     inputText: `${systemPrompt}\n\n${userPrompt}`,

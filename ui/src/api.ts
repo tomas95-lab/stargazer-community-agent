@@ -524,6 +524,10 @@ export interface QmProject {
   discourseUsername: string;
   discourseApiClientId: string;
   discourseApiKeyConfigured: boolean;
+  anthropicApiKeyConfigured: boolean;
+  anthropicModel: string;
+  aiDailyTokenLimit: number | null;
+  aiDailyCallLimit: number | null;
   projectGuidelines: string;
   projectGuidelinesCharacters: number;
   warRoomLink: string;
@@ -546,6 +550,10 @@ export interface QmProjectInput {
   discourseUsername?: string;
   discourseApiClientId?: string;
   discourseApiKey?: string;
+  anthropicApiKey?: string;
+  anthropicModel?: string;
+  aiDailyTokenLimit?: number | null;
+  aiDailyCallLimit?: number | null;
   projectGuidelines?: string;
   warRoomLink?: string;
   agentMode?: ProjectAgentMode;

@@ -33,12 +33,20 @@ export interface RuntimeProjectMemoryFact {
   source?: string;
 }
 
+export interface RuntimeAiConfig {
+  anthropicApiKey?: string;
+  anthropicModel?: string;
+  dailyTokenLimit?: number | null;
+  dailyCallLimit?: number | null;
+}
+
 export interface ProjectContext {
   projectId: string;
   source: ProjectContextSource;
   projectName?: string;
   ownerId?: string;
   botConfig?: RuntimeBotConfig;
+  aiConfig?: RuntimeAiConfig;
   projectGuidelines?: string;
   projectLinks?: RuntimeProjectLinks;
   projectMemoryFacts?: RuntimeProjectMemoryFact[];

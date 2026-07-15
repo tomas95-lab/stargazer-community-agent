@@ -32,6 +32,10 @@ export interface QmProjectRow {
   discourse_username: string;
   discourse_api_client_id: string;
   discourse_api_key_ciphertext: string;
+  anthropic_api_key_ciphertext: string;
+  anthropic_model: string;
+  ai_daily_token_limit: number | null;
+  ai_daily_call_limit: number | null;
   project_guidelines: string;
   war_room_link: string;
   agent_mode: ProjectAgentMode;
@@ -53,6 +57,10 @@ export interface QmProjectInput {
   discourseUsername?: string;
   discourseApiClientId?: string;
   discourseApiKey?: string;
+  anthropicApiKey?: string;
+  anthropicModel?: string;
+  aiDailyTokenLimit?: number | null;
+  aiDailyCallLimit?: number | null;
   projectGuidelines?: string;
   warRoomLink?: string;
   agentMode?: ProjectAgentMode;
@@ -74,6 +82,10 @@ export interface QmProjectPublic {
   discourseUsername: string;
   discourseApiClientId: string;
   discourseApiKeyConfigured: boolean;
+  anthropicApiKeyConfigured: boolean;
+  anthropicModel: string;
+  aiDailyTokenLimit: number | null;
+  aiDailyCallLimit: number | null;
   projectGuidelines: string;
   projectGuidelinesCharacters: number;
   warRoomLink: string;
@@ -176,6 +188,17 @@ function userName(user: User): string {
   return text(user.user_metadata?.name) || text(user.user_metadata?.full_name) || text(user.email).split('@')[0] || 'QM';
 }
 
+function positiveIntOrNull(value: unknown, fallback: number | null = null): number | null {
+  if (value === undefined) return fallback;
+  if (value === null || value === '') return null;
+  const parsed = typeof value === 'number' || typeof value === 'string' ? Number(value) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+function anthropicModel(value: unknown, fallback = 'claude-haiku-4-5'): string {
+  return text(value, fallback) || fallback;
+}
+
 function envFallback(key: string, fallback = ''): string {
   return env(key) || fallback;
 }
@@ -251,6 +274,10 @@ function publicProject(row: QmProjectRow): QmProjectPublic {
     discourseUsername: row.discourse_username,
     discourseApiClientId: row.discourse_api_client_id,
     discourseApiKeyConfigured: Boolean(row.discourse_api_key_ciphertext),
+    anthropicApiKeyConfigured: Boolean(row.anthropic_api_key_ciphertext),
+    anthropicModel: anthropicModel(row.anthropic_model),
+    aiDailyTokenLimit: positiveIntOrNull(row.ai_daily_token_limit),
+    aiDailyCallLimit: positiveIntOrNull(row.ai_daily_call_limit),
     projectGuidelines: row.project_guidelines,
     projectGuidelinesCharacters: row.project_guidelines.length,
     warRoomLink: row.war_room_link,
@@ -296,6 +323,7 @@ function normalizeProjectInput(
   shared?: QmProjectRow | null,
 ): Partial<QmProjectRow> {
   const discourseApiKey = text(input.discourseApiKey);
+  const anthropicApiKey = text(input.anthropicApiKey);
   const projectKey = projectKeyFromInput(input, existing);
   const legacyDefaults = legacyStargazerDefaults(projectKey);
   const projectName = text(input.projectName, existing?.project_name || shared?.project_name || legacyDefaults.project_name || 'Community project');
@@ -324,10 +352,18 @@ function normalizeProjectInput(
     community_chat_channel_id: channelId,
     discourse_username: discourseUsername,
     discourse_api_client_id: text(input.discourseApiClientId, existing?.discourse_api_client_id || 'daily-thread-bot'),
+    anthropic_model: anthropicModel(input.anthropicModel, existing?.anthropic_model || 'claude-haiku-4-5'),
+    ai_daily_token_limit: positiveIntOrNull(input.aiDailyTokenLimit, existing?.ai_daily_token_limit ?? null),
+    ai_daily_call_limit: positiveIntOrNull(input.aiDailyCallLimit, existing?.ai_daily_call_limit ?? null),
     ...(discourseApiKey
       ? { discourse_api_key_ciphertext: encryptSecret(discourseApiKey) }
       : !existing && storedDiscourseKeyCiphertext
         ? { discourse_api_key_ciphertext: storedDiscourseKeyCiphertext }
+        : {}),
+    ...(anthropicApiKey
+      ? { anthropic_api_key_ciphertext: encryptSecret(anthropicApiKey) }
+      : !existing
+        ? { anthropic_api_key_ciphertext: '' }
         : {}),
     project_guidelines: text(input.projectGuidelines, existing?.project_guidelines || shared?.project_guidelines || ''),
     war_room_link: text(input.warRoomLink, existing?.war_room_link || shared?.war_room_link || ''),
@@ -591,6 +627,9 @@ export function projectBotConfig(row: QmProjectRow): BotConfig {
 export function projectRuntimeContext(row: QmProjectRow): ProjectContext {
   const projectLinks: ProjectContext['projectLinks'] = {};
   if (text(row.war_room_link)) projectLinks.warRoom = text(row.war_room_link);
+  const anthropicApiKey = text(row.anthropic_api_key_ciphertext)
+    ? decryptSecret(row.anthropic_api_key_ciphertext)
+    : '';
 
   return {
     projectId: projectKeyFromRow(row),
@@ -598,6 +637,12 @@ export function projectRuntimeContext(row: QmProjectRow): ProjectContext {
     projectName: row.project_name,
     ownerId: row.owner_id,
     botConfig: projectBotConfig(row),
+    aiConfig: {
+      anthropicApiKey,
+      anthropicModel: anthropicModel(row.anthropic_model),
+      dailyTokenLimit: positiveIntOrNull(row.ai_daily_token_limit),
+      dailyCallLimit: positiveIntOrNull(row.ai_daily_call_limit),
+    },
     ...(text(row.project_guidelines) ? { projectGuidelines: text(row.project_guidelines) } : {}),
     ...(Object.keys(projectLinks).length > 0 ? { projectLinks } : {}),
   };

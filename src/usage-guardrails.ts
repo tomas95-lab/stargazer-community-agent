@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { readDataJSON, writeDataJSON } from './data-store';
+import { getProjectContext } from './project-context';
 
 const FILE = 'output/ai-usage-state.json';
 const MAX_EVENTS = 1000;
@@ -64,6 +65,12 @@ function numericEnv(key: string): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null;
 }
 
+function numericLimit(value: unknown, envKey: string): number | null {
+  const parsed = typeof value === 'number' || typeof value === 'string' ? Number(value) : NaN;
+  if (Number.isFinite(parsed) && parsed > 0) return Math.floor(parsed);
+  return numericEnv(envKey);
+}
+
 export function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / 4));
 }
@@ -71,6 +78,10 @@ export function estimateTokens(text: string): number {
 function normalizeTokens(value: unknown): number {
   const parsed = typeof value === 'number' || typeof value === 'string' ? Number(value) : NaN;
   return Number.isFinite(parsed) && parsed > 0 ? Math.ceil(parsed) : 0;
+}
+
+function currentAiModel(): string {
+  return getProjectContext().aiConfig?.anthropicModel || process.env.ANTHROPIC_MODEL || 'unknown';
 }
 
 async function readState(): Promise<AiUsageState> {
@@ -104,8 +115,9 @@ function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
   const inputTokens = todayEvents.reduce((sum, event) => sum + event.inputTokens, 0);
   const outputTokens = todayEvents.reduce((sum, event) => sum + event.outputTokens, 0);
   const totalTokens = inputTokens + outputTokens;
-  const dailyTokenLimit = numericEnv('AI_DAILY_TOKEN_LIMIT');
-  const dailyCallLimit = numericEnv('AI_DAILY_CALL_LIMIT');
+  const context = getProjectContext();
+  const dailyTokenLimit = numericLimit(context.aiConfig?.dailyTokenLimit, 'AI_DAILY_TOKEN_LIMIT');
+  const dailyCallLimit = numericLimit(context.aiConfig?.dailyCallLimit, 'AI_DAILY_CALL_LIMIT');
   const enforce = process.env.AI_GUARDRAILS_ENFORCE === 'true';
   const warnings: string[] = [];
 
@@ -155,7 +167,7 @@ export async function assertAiUsageAllowed(feature: string, estimatedInputTokens
   if (summary.limits.enforce && summary.limits.dailyTokenLimit && projectedTokens > summary.limits.dailyTokenLimit) {
     await recordAiUsage({
       feature,
-      model: process.env.ANTHROPIC_MODEL || 'unknown',
+      model: currentAiModel(),
       inputTokens: estimatedInputTokens,
       outputTokens: 0,
       status: 'blocked',
@@ -166,7 +178,7 @@ export async function assertAiUsageAllowed(feature: string, estimatedInputTokens
   if (summary.limits.enforce && summary.limits.dailyCallLimit && projectedCalls > summary.limits.dailyCallLimit) {
     await recordAiUsage({
       feature,
-      model: process.env.ANTHROPIC_MODEL || 'unknown',
+      model: currentAiModel(),
       inputTokens: estimatedInputTokens,
       outputTokens: 0,
       status: 'blocked',

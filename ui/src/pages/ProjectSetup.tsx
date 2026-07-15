@@ -30,6 +30,10 @@ interface ProjectFormState {
   discourseUsername: string
   discourseApiClientId: string
   discourseApiKey: string
+  anthropicApiKey: string
+  anthropicModel: string
+  aiDailyTokenLimit: string
+  aiDailyCallLimit: string
   projectGuidelines: string
   warRoomLink: string
   agentMode: "draft" | "supervised" | "auto"
@@ -37,7 +41,7 @@ interface ProjectFormState {
   minConfidence: string
 }
 
-type PersistedProjectFormState = Omit<ProjectFormState, "discourseApiKey">
+type PersistedProjectFormState = Omit<ProjectFormState, "discourseApiKey" | "anthropicApiKey">
 
 interface DiscourseAuthDraft {
   authorizationUrl: string
@@ -63,6 +67,10 @@ const DEFAULT_FORM: ProjectFormState = {
   discourseUsername: "",
   discourseApiClientId: "daily-thread-bot",
   discourseApiKey: "",
+  anthropicApiKey: "",
+  anthropicModel: "claude-haiku-4-5",
+  aiDailyTokenLimit: "50000",
+  aiDailyCallLimit: "100",
   projectGuidelines: "",
   warRoomLink: "",
   agentMode: "supervised",
@@ -82,6 +90,10 @@ function projectToForm(project: NonNullable<ReturnType<typeof usePlatform>["curr
     discourseUsername: project.discourseUsername,
     discourseApiClientId: project.discourseApiClientId,
     discourseApiKey: "",
+    anthropicApiKey: "",
+    anthropicModel: project.anthropicModel || "claude-haiku-4-5",
+    aiDailyTokenLimit: project.aiDailyTokenLimit ? String(project.aiDailyTokenLimit) : "",
+    aiDailyCallLimit: project.aiDailyCallLimit ? String(project.aiDailyCallLimit) : "",
     projectGuidelines: project.projectGuidelines,
     warRoomLink: project.warRoomLink,
     agentMode: project.agentMode,
@@ -95,7 +107,7 @@ function draftKey(userId: string, projectId?: string): string {
 }
 
 function persistedForm(form: ProjectFormState): PersistedProjectFormState {
-  const { discourseApiKey: _discourseApiKey, ...rest } = form
+  const { discourseApiKey: _discourseApiKey, anthropicApiKey: _anthropicApiKey, ...rest } = form
   return rest
 }
 
@@ -111,6 +123,7 @@ function readDraft(key: string, fallback: ProjectFormState): { form: ProjectForm
         ...fallback,
         ...parsed.form,
         discourseApiKey: "",
+        anthropicApiKey: "",
       },
       discourseAuth: parsed.discourseAuth || null,
     }
@@ -213,6 +226,13 @@ export default function ProjectSetup() {
       ? "Discourse API key (leave blank to keep current key)"
       : "Discourse API key"
   }, [editing, currentProject, discourseStatus])
+
+  const anthropicApiKeyLabel = useMemo(() => {
+    if (!editing) return "Anthropic API key"
+    return currentProject?.anthropicApiKeyConfigured
+      ? "Anthropic API key (leave blank to keep current key)"
+      : "Anthropic API key"
+  }, [editing, currentProject])
 
   function update<K extends keyof ProjectFormState>(key: K, value: ProjectFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -326,6 +346,11 @@ export default function ProjectSetup() {
     }
   }
 
+  function optionalNumber(value: string): number | null {
+    const trimmed = value.trim()
+    return trimmed ? Number(trimmed) : null
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPending(true)
@@ -343,6 +368,10 @@ export default function ProjectSetup() {
       discourseUsername: form.discourseUsername,
       discourseApiClientId: form.discourseApiClientId,
       discourseApiKey: form.discourseApiKey || undefined,
+      anthropicApiKey: form.anthropicApiKey || undefined,
+      anthropicModel: form.anthropicModel,
+      aiDailyTokenLimit: optionalNumber(form.aiDailyTokenLimit),
+      aiDailyCallLimit: optionalNumber(form.aiDailyCallLimit),
       projectGuidelines: form.projectGuidelines,
       warRoomLink: form.warRoomLink,
       agentMode: form.agentMode,
@@ -541,6 +570,52 @@ export default function ProjectSetup() {
                     value={form.discourseApiKey}
                     onChange={(event) => update("discourseApiKey", event.target.value)}
                     required={!editing && !discourseStatus?.connected}
+                  />
+                </div>
+                <div className="grid gap-2 md:col-span-2">
+                  <Label htmlFor="anthropicApiKey">{anthropicApiKeyLabel}</Label>
+                  <Input
+                    id="anthropicApiKey"
+                    type="password"
+                    value={form.anthropicApiKey}
+                    onChange={(event) => update("anthropicApiKey", event.target.value)}
+                    placeholder="sk-ant-..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Stored encrypted. Claude features use this project key, never another QM&apos;s key.
+                  </p>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="anthropicModel">Claude model</Label>
+                  <Input
+                    id="anthropicModel"
+                    value={form.anthropicModel}
+                    onChange={(event) => update("anthropicModel", event.target.value)}
+                    placeholder="claude-haiku-4-5"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="aiDailyTokenLimit">Daily token limit</Label>
+                  <Input
+                    id="aiDailyTokenLimit"
+                    type="number"
+                    min="1"
+                    step="1000"
+                    value={form.aiDailyTokenLimit}
+                    onChange={(event) => update("aiDailyTokenLimit", event.target.value)}
+                    placeholder="50000"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="aiDailyCallLimit">Daily call limit</Label>
+                  <Input
+                    id="aiDailyCallLimit"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={form.aiDailyCallLimit}
+                    onChange={(event) => update("aiDailyCallLimit", event.target.value)}
+                    placeholder="100"
                   />
                 </div>
                 <div className="grid gap-2 md:col-span-2">

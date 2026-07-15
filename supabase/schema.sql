@@ -14,6 +14,10 @@ create table if not exists public.qm_projects (
   discourse_username text not null default '',
   discourse_api_client_id text not null default 'daily-thread-bot',
   discourse_api_key_ciphertext text not null,
+  anthropic_api_key_ciphertext text not null default '',
+  anthropic_model text not null default 'claude-haiku-4-5',
+  ai_daily_token_limit integer,
+  ai_daily_call_limit integer,
   project_guidelines text not null default '',
   war_room_link text not null default '',
   agent_mode text not null default 'supervised' check (agent_mode in ('draft', 'supervised', 'auto')),
@@ -25,6 +29,10 @@ create table if not exists public.qm_projects (
 );
 
 alter table public.qm_projects add column if not exists project_key text;
+alter table public.qm_projects add column if not exists anthropic_api_key_ciphertext text not null default '';
+alter table public.qm_projects add column if not exists anthropic_model text not null default 'claude-haiku-4-5';
+alter table public.qm_projects add column if not exists ai_daily_token_limit integer;
+alter table public.qm_projects add column if not exists ai_daily_call_limit integer;
 
 update public.qm_projects
 set project_key = case
@@ -48,6 +56,25 @@ begin
     alter table public.qm_projects
       add constraint qm_projects_project_key_format
       check (project_key ~ '^[a-z0-9][a-z0-9-]{1,63}$');
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'qm_projects_ai_token_limit_positive'
+  ) then
+    alter table public.qm_projects
+      add constraint qm_projects_ai_token_limit_positive
+      check (ai_daily_token_limit is null or ai_daily_token_limit > 0);
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'qm_projects_ai_call_limit_positive'
+  ) then
+    alter table public.qm_projects
+      add constraint qm_projects_ai_call_limit_positive
+      check (ai_daily_call_limit is null or ai_daily_call_limit > 0);
   end if;
 end $$;
 

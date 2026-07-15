@@ -2,7 +2,6 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-import Anthropic from '@anthropic-ai/sdk';
 import { loadProjectLinks } from './links';
 import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
@@ -10,8 +9,7 @@ import { projectMemoryText } from './project-memory';
 import { getProjectContext } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
-
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
+import { resolveAnthropicRuntime } from './anthropic-runtime';
 
 export const COMPOSER_CHANNELS = ['community', 'dm', 'daily_thread', 'reminder', 'announcement'] as const;
 export const COMPOSER_TONES = ['friendly', 'professional', 'direct', 'warm_supportive', 'urgent', 'short_clear'] as const;
@@ -159,13 +157,11 @@ function normalizeVariant(raw: ClaudeComposerVariant | undefined): ComposerVaria
 
 export async function generateComposedMessage(input: MessageComposerInput): Promise<MessageComposerResult> {
   const request = normalizeComposerRequest(input);
-  const apiKey = process.env.ANTHROPIC_API_KEY || '';
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-
   const links = await loadProjectLinks();
   const snippets = await findProjectGuidelineSnippets(`${request.prompt}\n${request.extraContext}`, 5);
   const memory = await projectMemoryText(25);
-  const anthropic = new Anthropic({ apiKey });
+  const anthropicRuntime = resolveAnthropicRuntime();
+  const anthropic = anthropicRuntime.client;
   const maxTokens = request.variantCount === 1 ? 700 : 1200;
   const projectName = getProjectContext().projectName || 'the active project';
   const systemPrompt = [
@@ -198,7 +194,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
     await assertAiUsageAllowed('message_composer', estimateTokens(`${systemPrompt}\n\n${userPrompt}`), maxTokens);
 
     const response = await anthropic.messages.create({
-      model: ANTHROPIC_MODEL,
+      model: anthropicRuntime.model,
       max_tokens: maxTokens,
       temperature: 0.4,
       system: systemPrompt,
@@ -213,7 +209,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
     const usage = anthropicUsage(response);
     await recordAiUsage({
       feature: 'message_composer',
-      model: ANTHROPIC_MODEL,
+      model: anthropicRuntime.model,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
       inputText: `${systemPrompt}\n\n${userPrompt}`,

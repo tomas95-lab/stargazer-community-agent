@@ -34,6 +34,14 @@ function projectInput(body: unknown): QmProjectInput {
     discourseUsername: typeof raw.discourseUsername === 'string' ? raw.discourseUsername : undefined,
     discourseApiClientId: typeof raw.discourseApiClientId === 'string' ? raw.discourseApiClientId : undefined,
     discourseApiKey: typeof raw.discourseApiKey === 'string' ? raw.discourseApiKey : undefined,
+    anthropicApiKey: typeof raw.anthropicApiKey === 'string' ? raw.anthropicApiKey : undefined,
+    anthropicModel: typeof raw.anthropicModel === 'string' ? raw.anthropicModel : undefined,
+    aiDailyTokenLimit: typeof raw.aiDailyTokenLimit === 'number' || typeof raw.aiDailyTokenLimit === 'string'
+      ? Number(raw.aiDailyTokenLimit)
+      : raw.aiDailyTokenLimit === null ? null : undefined,
+    aiDailyCallLimit: typeof raw.aiDailyCallLimit === 'number' || typeof raw.aiDailyCallLimit === 'string'
+      ? Number(raw.aiDailyCallLimit)
+      : raw.aiDailyCallLimit === null ? null : undefined,
     projectGuidelines: typeof raw.projectGuidelines === 'string' ? raw.projectGuidelines : undefined,
     warRoomLink: typeof raw.warRoomLink === 'string' ? raw.warRoomLink : undefined,
     agentMode: raw.agentMode === 'auto' || raw.agentMode === 'supervised' || raw.agentMode === 'draft'
