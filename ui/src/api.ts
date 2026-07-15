@@ -615,6 +615,11 @@ export const api = {
       body: JSON.stringify({ payload, mode }),
     }),
   getPreview: (date: string) => request<PreviewData>(`/preview/${date}`),
+  publishDailyThread: (date: string, opts: { postChat?: boolean } = {}) =>
+    request<{ ok: boolean; skipped?: boolean; reason?: string; url?: string }>(`/publish/${date}`, {
+      method: 'POST',
+      body: JSON.stringify({ postChat: opts.postChat !== false }),
+    }),
   getHistory: () => request<HistoryFile[]>('/history'),
   getHistoryFile: (name: string) => request<{ name: string; content: string }>(`/history/${name}`),
   getConfig: () => request<Record<string, string>>('/config'),

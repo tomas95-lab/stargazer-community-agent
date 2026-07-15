@@ -12,6 +12,10 @@ import { appendOperationLog } from '../../src/operations-log';
 
 const router = Router();
 
+function routeParam(value: unknown): string {
+  return Array.isArray(value) ? String(value[0] || '') : String(value || '');
+}
+
 function isDuplicateTitleError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
   return /Discourse API error 422/i.test(message) && /Title has already been used/i.test(message);
@@ -29,9 +33,11 @@ async function findExistingPublishedThread(title: string, botConfig: ReturnType<
 }
 
 router.post('/:date', requireAdminToken, async (req: Request, res: Response) => {
+  const date = routeParam(req.params.date);
+
   try {
     const topics = await readDataJSON<DailyThreadConfig[]>('data/topics.json');
-    const topic = topics.find((t) => t.date === req.params.date);
+    const topic = topics.find((t) => t.date === date);
     if (!topic) {
       res.status(404).json({ error: 'Topic not found' });
       return;
@@ -69,22 +75,22 @@ router.post('/:date', requireAdminToken, async (req: Request, res: Response) => 
     if (isDuplicateTitleError(err)) {
       try {
         const botConfig = loadBotConfig();
-        const postTitle = formatPostTitle(req.params.date);
+        const postTitle = formatPostTitle(date);
         const existingUrl = await findExistingPublishedThread(postTitle, botConfig);
 
         if (existingUrl) {
           await writeDataJSON(
-            `output/published-url-${req.params.date}.txt`,
-            { url: existingUrl, date: req.params.date, publishedAt: new Date().toISOString(), source: 'existing_community_topic' },
-            `published thread for ${req.params.date}`
+            `output/published-url-${date}.txt`,
+            { url: existingUrl, date, publishedAt: new Date().toISOString(), source: 'existing_community_topic' },
+            `published thread for ${date}`
           );
         }
 
         await appendOperationLog({
           action: 'publish_daily_thread',
           status: 'skipped',
-          message: `Daily thread for ${req.params.date} already exists in Community`,
-          metadata: { date: req.params.date, reason: 'duplicate_title', url: existingUrl || undefined },
+          message: `Daily thread for ${date} already exists in Community`,
+          metadata: { date, reason: 'duplicate_title', url: existingUrl || undefined },
         });
         res.json({ ok: true, skipped: true, reason: 'duplicate_title', url: existingUrl || undefined });
         return;
@@ -97,7 +103,7 @@ router.post('/:date', requireAdminToken, async (req: Request, res: Response) => 
       action: 'publish_daily_thread',
       status: 'error',
       message: err instanceof Error ? err.message : String(err),
-      metadata: { date: req.params.date },
+      metadata: { date },
     });
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

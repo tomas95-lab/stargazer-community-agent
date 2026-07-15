@@ -217,7 +217,7 @@ GET  /api/cron/dm-review
 
 `POST /api/community-agent/run` accepts `{ "post": false }` for suggestions and `{ "post": true }` for auto-posting. Community-agent routes require `X-Admin-Token`.
 
-The cron routes are protected by `CRON_SECRET`.
+The cron routes are protected by `CRON_SECRET`. Vercel Cron requests are also accepted when the `vercel-cron/1.0` user agent and `x-vercel-cron-schedule` header match the exact schedule configured for that endpoint.
 
 Vercel calls `/api/cron/daily-thread` Monday-Friday at 10:00 and 11:00 Argentina time. The second run is a retry window: `runDailyPublishJob` checks `output/published-url-YYYY-MM-DD.txt` first and skips when today's thread was already published. On Hobby plans, Vercel may invoke cron jobs at any point within the configured hour, so the retry intentionally lives in the next hour.
 

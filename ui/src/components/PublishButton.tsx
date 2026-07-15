@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { api } from '@/api';
 
 interface Props {
   date: string;
@@ -16,19 +17,7 @@ export default function PublishButton({ date, disabled }: Props) {
     setError('');
 
     try {
-      const res = await fetch(`/api/publish/${date}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postChat: true }),
-      });
-
-      const data = await res.json() as { ok?: boolean; skipped?: boolean; url?: string; error?: string };
-
-      if (!res.ok || !data.ok) {
-        setError(data.error || 'Unknown error');
-        setStatus('error');
-        return;
-      }
+      const data = await api.publishDailyThread(date, { postChat: true });
 
       setPublishedUrl(data.url || '');
       setStatus(data.skipped ? 'skipped' : 'done');

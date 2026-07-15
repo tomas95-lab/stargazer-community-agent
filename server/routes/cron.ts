@@ -1,6 +1,6 @@
-import { timingSafeEqual } from 'crypto';
 import { Router, Request, Response } from 'express';
 import { runCommunityAgent } from '../../src/community-agent';
+import { isAuthorizedCronRequest } from '../../src/cron-auth';
 import { runDailyPublishJob } from '../../src/daily-publish-job';
 import { runDmReviewJob } from '../../src/dm-review-job';
 import { appendOperationLog, OperationStatus } from '../../src/operations-log';
@@ -17,16 +17,13 @@ import {
 
 const router = Router();
 
-function constantTimeEquals(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
-}
-
 function isCronAuthorized(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return constantTimeEquals(req.header('authorization') || '', `Bearer ${secret}`);
+  return isAuthorizedCronRequest({
+    authorization: req.header('authorization') || '',
+    endpoint: cronEndpoint(req),
+    userAgent: req.header('user-agent') || '',
+    vercelCronSchedule: req.header('x-vercel-cron-schedule') || '',
+  });
 }
 
 function cronEndpoint(req: Request): string {
