@@ -1,0 +1,81 @@
+{
+  "entry": {
+    "id": "4bb12bfd-b627-474b-9c8e-8ca91799f0b5",
+    "at": "2026-07-15T13:02:36.787Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 1,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": false,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": false,
+      "skipProcessed": true,
+      "markProcessed": false,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "suggestion",
+      "checked": 1,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": false,
+      "window": {
+        "utcDate": "2026-07-15",
+        "argentinaDate": "2026-07-15",
+        "startUtc": "2026-07-15T00:00:00.000Z",
+        "endUtc": "2026-07-16T00:00:00.000Z",
+        "operatingHours": "Agent scans the current UTC day. Live-support hours come from project guidelines or project memory."
+      },
+      "items": [
+        {
+          "id": "community:27772547",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "testing",
+          "createdAt": "2026-07-15T00:35:30Z",
+          "chatMessageId": 27772547,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Authored by the configured manager/bot user."
+        }
+      ],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27772547",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "testing",
+        "createdAt": "2026-07-15T00:35:30Z",
+        "chatMessageId": 27772547,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Authored by the configured manager/bot user."
+      }
+    ],
+    "candidates": [],
+    "decisions": []
+  }
+}
