@@ -1,5 +1,20 @@
 [
   {
+    "id": "ab5f5bdd-4d68-4ba6-ab7a-9a0789e1bfa9",
+    "at": "2026-07-15T22:02:12.159Z",
+    "action": "cron_request",
+    "status": "error",
+    "message": "Unauthorized cron request",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1300",
+      "slot": "1300",
+      "source": "codex-auth-probe-noauth",
+      "userAgent": "node",
+      "authorized": false,
+      "httpStatus": 401
+    }
+  },
+  {
     "id": "03eb320e-a183-471b-81e6-3628cb8fd9c3",
     "at": "2026-07-15T20:37:50.900Z",
     "action": "dm_reply",
