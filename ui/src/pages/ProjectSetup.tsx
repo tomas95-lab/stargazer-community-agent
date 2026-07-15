@@ -145,6 +145,7 @@ export default function ProjectSetup() {
   const [pending, setPending] = useState(false)
   const [connectingDiscourse, setConnectingDiscourse] = useState(false)
   const [savingDiscoursePayload, setSavingDiscoursePayload] = useState(false)
+  const [extractingGuidelines, setExtractingGuidelines] = useState(false)
   const [discourseStatus, setDiscourseStatus] = useState<DiscourseAuthStatus | null>(null)
   const [discourseAuth, setDiscourseAuth] = useState<{
     authorizationUrl: string
@@ -214,11 +215,45 @@ export default function ProjectSetup() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
+  async function fileToBase64(file: File): Promise<string> {
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    let binary = ""
+    const chunkSize = 0x8000
+    for (let index = 0; index < bytes.length; index += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize))
+    }
+    return window.btoa(binary)
+  }
+
   async function readGuidelinesFile(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget
     const file = event.target.files?.[0]
     if (!file) return
-    const text = await file.text()
-    update("projectGuidelines", text)
+
+    setError("")
+    setMessage("")
+    setExtractingGuidelines(true)
+
+    try {
+      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+        const result = await api.extractGuidelinesFromPdf({
+          fileName: file.name,
+          mimeType: file.type || "application/pdf",
+          base64: await fileToBase64(file),
+        })
+        update("projectGuidelines", result.text)
+        setMessage(`Extracted ${result.characters.toLocaleString()} characters from ${file.name}.`)
+      } else {
+        const text = await file.text()
+        update("projectGuidelines", text)
+        setMessage(`Loaded ${file.name}.`)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setExtractingGuidelines(false)
+      input.value = ""
+    }
   }
 
   async function connectDiscourse() {
@@ -505,17 +540,18 @@ export default function ProjectSetup() {
                   <div className="grid gap-1">
                     <Label htmlFor="projectGuidelines">Project guidelines and information</Label>
                     <p className="text-sm text-muted-foreground">
-                      Paste guidelines or upload a text/markdown file for agent context.
+                      Paste guidelines or upload a PDF, text, markdown, CSV or JSON file for agent context.
                     </p>
                   </div>
                   <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground">
-                    <IconFileText className="size-4" />
-                    Upload file
+                    {extractingGuidelines ? <IconLoader2 className="size-4 animate-spin" /> : <IconFileText className="size-4" />}
+                    {extractingGuidelines ? "Extracting" : "Upload file"}
                     <input
                       className="sr-only"
                       type="file"
-                      accept=".txt,.md,.markdown,.csv,.json"
+                      accept=".pdf,.txt,.md,.markdown,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json"
                       onChange={readGuidelinesFile}
+                      disabled={extractingGuidelines}
                     />
                   </label>
                 </div>

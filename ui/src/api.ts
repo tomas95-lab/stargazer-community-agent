@@ -525,6 +525,13 @@ export interface PlatformStatus {
   encryptionConfigured: boolean;
 }
 
+export interface GuidelinesExtractionResult {
+  text: string;
+  pages: number;
+  characters: number;
+  fileName: string;
+}
+
 export interface DiscourseAuthStatus {
   connected: boolean;
   username: string;
@@ -664,6 +671,11 @@ export const api = {
   getPlatformMe: () => request<{ user: { id: string; email: string; name: string } }>('/platform/me'),
   getProjects: () => request<{ projects: QmProject[] }>('/platform/projects'),
   getCurrentProject: () => request<{ project: QmProject | null }>('/platform/projects/current'),
+  extractGuidelinesFromPdf: (opts: { fileName: string; mimeType: string; base64: string }) =>
+    request<GuidelinesExtractionResult>('/platform/guidelines/extract', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
   createProject: (project: QmProjectInput) =>
     request<{ project: QmProject }>('/platform/projects', {
       method: 'POST',

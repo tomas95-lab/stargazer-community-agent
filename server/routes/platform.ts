@@ -9,6 +9,11 @@ import {
   toPublicProject,
   updateUserProject,
 } from '../platform-store';
+import {
+  base64ToBuffer,
+  extractTextFromPdfBuffer,
+  MAX_GUIDELINE_PDF_BYTES,
+} from '../../src/guideline-file-extractor';
 
 const router = Router();
 
@@ -72,6 +77,40 @@ router.get('/projects/current', requirePlatformUser, async (req: Request, res: R
     res.json({ project: project ? toPublicProject(project) : null });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/guidelines/extract', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const raw = req.body && typeof req.body === 'object' ? req.body as Record<string, unknown> : {};
+    const fileName = typeof raw.fileName === 'string' ? raw.fileName : '';
+    const mimeType = typeof raw.mimeType === 'string' ? raw.mimeType : '';
+    const base64 = typeof raw.base64 === 'string' ? raw.base64 : '';
+
+    if (!base64) {
+      res.status(400).json({ error: 'Upload a PDF file first.' });
+      return;
+    }
+    if (fileName && !fileName.toLowerCase().endsWith('.pdf')) {
+      res.status(400).json({ error: 'Only PDF files are supported by this extractor.' });
+      return;
+    }
+    if (mimeType && mimeType !== 'application/pdf' && !fileName.toLowerCase().endsWith('.pdf')) {
+      res.status(400).json({ error: 'Only PDF files are supported by this extractor.' });
+      return;
+    }
+    if (base64.length > Math.ceil(MAX_GUIDELINE_PDF_BYTES * 1.4)) {
+      res.status(413).json({ error: 'The PDF is too large. Upload a PDF up to 12 MB.' });
+      return;
+    }
+
+    const result = await extractTextFromPdfBuffer(base64ToBuffer(base64));
+    res.json({
+      ...result,
+      fileName,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
 

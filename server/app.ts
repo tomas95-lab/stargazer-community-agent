@@ -26,7 +26,7 @@ import { attachProjectContext } from './auth';
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '18mb' }));
 app.use(attachProjectContext);
 
 app.use('/api/platform', platformRouter);
