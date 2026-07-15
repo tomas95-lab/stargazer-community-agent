@@ -1,0 +1,16 @@
+{
+  "events": [
+    {
+      "id": "c594780f-ba13-4668-b0e8-71b75602d1d3",
+      "at": "2026-07-15T03:26:57.901Z",
+      "utcDate": "2026-07-15",
+      "argentinaDate": "2026-07-15",
+      "feature": "support_evaluation",
+      "model": "claude-haiku-4-5",
+      "inputTokens": 4691,
+      "outputTokens": 185,
+      "totalTokens": 4876,
+      "status": "success"
+    }
+  ]
+}
