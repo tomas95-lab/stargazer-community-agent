@@ -217,7 +217,7 @@ GET  /api/cron/dm-review
 
 `POST /api/community-agent/run` accepts `{ "post": false }` for suggestions and `{ "post": true }` for auto-posting. Community-agent routes require `X-Admin-Token`.
 
-The cron routes are protected by `CRON_SECRET`. Vercel Cron requests are also accepted when the `vercel-cron/1.0` user agent and `x-vercel-cron-schedule` header match the exact schedule configured for that endpoint.
+The cron routes are protected by `CRON_SECRET`. External schedulers send it as `X-Cron-Secret`; Vercel Cron requests are also accepted when the `vercel-cron/1.0` user agent and `x-vercel-cron-schedule` header match the exact schedule configured for that endpoint.
 
 Vercel calls `/api/cron/daily-thread` Monday-Friday at 10:00 and 11:00 Argentina time. The second run is a retry window: `runDailyPublishJob` checks `output/published-url-YYYY-MM-DD.txt` first and skips when today's thread was already published. On Hobby plans, Vercel may invoke cron jobs at any point within the configured hour, so the retry intentionally lives in the next hour.
 
@@ -259,7 +259,7 @@ To preview the jobs without creating or updating anything:
 npm run scheduler:setup:cron-job-org -- --dry-run
 ```
 
-The setup script creates a `Stargazer Community Agent` folder, upserts the daily thread, community agent, and DM review jobs, and sends `Authorization: Bearer <CRON_SECRET>` on every request.
+The setup script creates a `Stargazer Community Agent` folder, upserts the daily thread, community agent, and DM review jobs, and sends `X-Cron-Secret: <CRON_SECRET>` on every request.
 
 ## Current Caveats
 

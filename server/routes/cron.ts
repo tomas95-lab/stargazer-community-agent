@@ -20,6 +20,7 @@ const router = Router();
 function isCronAuthorized(req: Request): boolean {
   return isAuthorizedCronRequest({
     authorization: req.header('authorization') || '',
+    cronSecretHeader: req.header('x-cron-secret') || '',
     endpoint: cronEndpoint(req),
     userAgent: req.header('user-agent') || '',
     vercelCronSchedule: req.header('x-vercel-cron-schedule') || '',

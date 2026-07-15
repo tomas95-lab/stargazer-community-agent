@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'crypto';
 
 export interface CronAuthInput {
   authorization?: string;
+  cronSecretHeader?: string;
   endpoint?: string;
   userAgent?: string;
   vercelCronSchedule?: string;
@@ -40,6 +41,9 @@ export function isAuthorizedCronRequest(input: CronAuthInput, secret = process.e
 
   const authorization = input.authorization || '';
   if (constantTimeEquals(authorization, `Bearer ${secret}`)) return true;
+
+  const cronSecretHeader = input.cronSecretHeader || '';
+  if (constantTimeEquals(cronSecretHeader, secret)) return true;
 
   return isExpectedVercelCron(input);
 }

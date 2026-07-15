@@ -22,6 +22,16 @@ test('cron auth rejects an incorrect bearer secret', () => {
   );
 });
 
+test('cron auth accepts the dedicated cron secret header', () => {
+  assert.equal(
+    isAuthorizedCronRequest(
+      { cronSecretHeader: 'test-secret' },
+      'test-secret',
+    ),
+    true,
+  );
+});
+
 test('cron auth accepts expected Vercel Cron headers for a known endpoint', () => {
   const input = {
     endpoint: '/api/cron/daily-thread/1100',

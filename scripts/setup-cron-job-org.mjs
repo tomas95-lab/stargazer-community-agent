@@ -103,7 +103,7 @@ function buildJob(job, folderId) {
     },
     extendedData: {
       headers: {
-        Authorization: `Bearer ${cronSecret}`,
+        'X-Cron-Secret': cronSecret,
         'X-Scheduler': 'cron-job-org',
       },
       body: '',

@@ -58,6 +58,14 @@ export async function getRequestUser(req: Request): Promise<AuthenticatedUser | 
 
 export async function attachProjectContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (req.originalUrl.startsWith('/api/cron')) {
+      runWithProjectContext({
+        projectId: defaultProjectId(),
+        source: 'default' as const,
+      }, () => next());
+      return;
+    }
+
     const user = await getRequestUser(req);
     let project: QmProjectRow | null = null;
     const projectId = requestedProjectId(req);
