@@ -1,5 +1,16 @@
 [
   {
+    "id": "7d765b25-e91c-4558-b4fe-7191b2bc343c",
+    "at": "2026-07-15T02:20:27.050Z",
+    "action": "update_comms_template",
+    "status": "success",
+    "message": "Updated comms template Custom Message",
+    "metadata": {
+      "id": "custom_message",
+      "category": "custom"
+    }
+  },
+  {
     "id": "6f5a70c1-8ff8-4a9c-9d62-d915772f22b4",
     "at": "2026-07-15T02:12:17.253Z",
     "action": "community_agent",
