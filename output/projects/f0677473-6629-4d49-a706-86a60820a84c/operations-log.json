@@ -1,0 +1,14 @@
+[
+  {
+    "id": "0060291a-0054-476c-b22d-2f87cbfefa88",
+    "at": "2026-07-15T00:28:53.637Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 1,
+      "deterministic": true
+    }
+  }
+]
