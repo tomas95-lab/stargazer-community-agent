@@ -4,7 +4,7 @@ import { runCommunityAgent } from '../../src/community-agent';
 import { runDailyPublishJob } from '../../src/daily-publish-job';
 import { runDmReviewJob } from '../../src/dm-review-job';
 import { appendOperationLog, OperationStatus } from '../../src/operations-log';
-import { defaultProjectId, LEGACY_PROJECT_ID, ProjectContext, runWithProjectContext, sanitizeProjectId } from '../../src/project-context';
+import { canonicalProjectId, defaultProjectId, isLegacyProjectId, ProjectContext, runWithProjectContext } from '../../src/project-context';
 import { withCronRunLock } from '../../src/cron-locks';
 import {
   isPlatformConfigured,
@@ -53,7 +53,7 @@ function slot(req: Request): string {
 function requestedCronProjectId(req: Request): string {
   const query = typeof req.query.project === 'string' ? req.query.project : '';
   const header = req.header('x-project-id') || req.header('x-tenant-id') || '';
-  return sanitizeProjectId(query || header || process.env.CRON_PROJECT_ID || '');
+  return canonicalProjectId(query || header || process.env.CRON_PROJECT_ID || '');
 }
 
 function legacyContext(): ProjectContext {
@@ -87,7 +87,7 @@ async function projectCronTargets(req: Request): Promise<ProjectContext[]> {
   const legacyId = defaultProjectId();
 
   if (requested) {
-    if (requested === LEGACY_PROJECT_ID || requested === legacyId) return [legacyContext()];
+    if (isLegacyProjectId(requested) || requested === legacyId) return [legacyContext()];
     const rows = await platformConnections();
     const row = rows.find((item) => projectKeyFromRow(item) === requested);
     if (!row) throw new Error(`Cron project not found: ${requested}`);
@@ -97,7 +97,7 @@ async function projectCronTargets(req: Request): Promise<ProjectContext[]> {
   if (!projectCronsEnabled()) return [legacyContext()];
 
   const rows = uniqueProjectConnections(await platformConnections())
-    .filter((row) => projectKeyFromRow(row) !== LEGACY_PROJECT_ID);
+    .filter((row) => !isLegacyProjectId(projectKeyFromRow(row)));
   return [legacyContext(), ...rows.map(projectRuntimeContext)];
 }
 
@@ -106,7 +106,7 @@ async function dmCronTargets(req: Request): Promise<ProjectContext[]> {
   const legacyId = defaultProjectId();
 
   if (requested) {
-    if (requested === LEGACY_PROJECT_ID || requested === legacyId) return [legacyContext()];
+    if (isLegacyProjectId(requested) || requested === legacyId) return [legacyContext()];
     const rows = await platformConnections();
     const matches = rows.filter((row) => projectKeyFromRow(row) === requested);
     if (matches.length === 0) throw new Error(`Cron project not found: ${requested}`);
@@ -115,7 +115,7 @@ async function dmCronTargets(req: Request): Promise<ProjectContext[]> {
 
   if (!dmCronsEnabled()) return [legacyContext()];
 
-  const rows = (await platformConnections()).filter((row) => projectKeyFromRow(row) !== LEGACY_PROJECT_ID);
+  const rows = (await platformConnections()).filter((row) => !isLegacyProjectId(projectKeyFromRow(row)));
   return [legacyContext(), ...rows.map(projectRuntimeContext)];
 }
 

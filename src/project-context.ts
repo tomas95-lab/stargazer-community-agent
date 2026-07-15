@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from 'async_hooks';
 
-export const LEGACY_PROJECT_ID = 'stargazer';
+export const STARGAZER_PROJECT_ID = '69cd3d3788bf65e1468428b1';
+export const LEGACY_PROJECT_ID = STARGAZER_PROJECT_ID;
+export const LEGACY_PROJECT_ALIAS = 'stargazer';
 export const PROJECT_ID_HEADER = 'x-project-id';
 
 export type ProjectContextSource = 'header' | 'query' | 'env' | 'default';
@@ -59,8 +61,19 @@ export function sanitizeProjectId(value: unknown): string {
   return normalizeProjectId(value);
 }
 
-export function assertValidProjectId(value: unknown): string {
+export function isLegacyProjectId(value: unknown): boolean {
   const id = sanitizeProjectId(value);
+  return id === LEGACY_PROJECT_ID || id === LEGACY_PROJECT_ALIAS;
+}
+
+export function canonicalProjectId(value: unknown): string {
+  const id = sanitizeProjectId(value);
+  if (!id) return '';
+  return isLegacyProjectId(id) ? LEGACY_PROJECT_ID : id;
+}
+
+export function assertValidProjectId(value: unknown): string {
+  const id = canonicalProjectId(value);
   if (!id || !/^[a-z0-9][a-z0-9-]{1,63}$/.test(id)) {
     throw new Error('Invalid project id. Use lowercase letters, numbers, and hyphens.');
   }
@@ -68,14 +81,14 @@ export function assertValidProjectId(value: unknown): string {
 }
 
 export function defaultProjectId(): string {
-  return sanitizeProjectId(process.env.DEFAULT_PROJECT_ID) || LEGACY_PROJECT_ID;
+  return canonicalProjectId(process.env.DEFAULT_PROJECT_ID) || LEGACY_PROJECT_ID;
 }
 
 export function envProjectId(): string {
   return (
-    sanitizeProjectId(process.env.QM_PROJECT_ID) ||
-    sanitizeProjectId(process.env.PROJECT_ID) ||
-    sanitizeProjectId(process.env.TENANT_ID) ||
+    canonicalProjectId(process.env.QM_PROJECT_ID) ||
+    canonicalProjectId(process.env.PROJECT_ID) ||
+    canonicalProjectId(process.env.TENANT_ID) ||
     defaultProjectId()
   );
 }
@@ -102,7 +115,7 @@ function normalizeRelativePath(filePath: string): string {
 }
 
 function shouldScope(filePath: string, projectId: string): boolean {
-  if (!projectId || projectId === LEGACY_PROJECT_ID) return false;
+  if (!projectId || isLegacyProjectId(projectId)) return false;
   if (filePath.startsWith('data/platform/') || filePath.startsWith('data/projects/')) return false;
   if (filePath.startsWith('output/projects/')) return false;
   return true;

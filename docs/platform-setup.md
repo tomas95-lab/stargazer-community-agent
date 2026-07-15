@@ -51,13 +51,15 @@ It also creates:
 
 Each QM connection has an internal UUID, but the shared community/project uses `project_key`, shown in the UI as `Project ID`.
 
-Use the same Project ID for every QM working on the same community project. For Stargazer, use:
+Use the same Project ID for every QM working on the same community project. For Stargazer, use the real Outlier project ID:
 
 ```txt
-stargazer
+69cd3d3788bf65e1468428b1
 ```
 
-Shared data such as topics, links, project memory, published markers and cron locks are scoped by Project ID. The special `stargazer` Project ID keeps using the legacy files:
+The legacy `stargazer` value is still accepted as a backwards-compatible alias.
+
+Shared data such as topics, links, project memory, published markers and cron locks are scoped by Project ID. The special Stargazer Project ID keeps using the legacy files:
 
 ```txt
 data/topics.json
@@ -81,7 +83,7 @@ Cron endpoints remain single-project legacy by default. Creating a Stargazer pro
 Default cron target:
 
 ```txt
-Project ID: stargazer
+Project ID: 69cd3d3788bf65e1468428b1
 Source: legacy env vars
 ```
 

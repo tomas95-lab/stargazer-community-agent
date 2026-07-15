@@ -5,7 +5,7 @@ create table if not exists public.qm_projects (
   owner_id uuid not null references auth.users(id) on delete cascade,
   owner_email text not null default '',
   owner_name text not null default '',
-  project_key text not null default 'stargazer',
+  project_key text not null default '69cd3d3788bf65e1468428b1',
   project_name text not null,
   community_base_url text not null default 'https://community.outlier.ai',
   community_category_id text not null,
@@ -28,13 +28,16 @@ alter table public.qm_projects add column if not exists project_key text;
 
 update public.qm_projects
 set project_key = case
+  when lower(regexp_replace(btrim(coalesce(project_key, '')), '[^a-zA-Z0-9]+', '-', 'g')) in ('stargazer', '69cd3d3788bf65e1468428b1') then '69cd3d3788bf65e1468428b1'
   when project_key is not null and btrim(project_key) <> '' then lower(regexp_replace(btrim(project_key), '[^a-zA-Z0-9]+', '-', 'g'))
-  when lower(project_name) like '%stargazer%' then 'stargazer'
+  when lower(project_name) like '%stargazer%' then '69cd3d3788bf65e1468428b1'
   else lower(regexp_replace(btrim(project_name), '[^a-zA-Z0-9]+', '-', 'g'))
 end
-where project_key is null or btrim(project_key) = '';
+where project_key is null
+  or btrim(project_key) = ''
+  or lower(regexp_replace(btrim(project_key), '[^a-zA-Z0-9]+', '-', 'g')) in ('stargazer', '69cd3d3788bf65e1468428b1');
 
-alter table public.qm_projects alter column project_key set default 'stargazer';
+alter table public.qm_projects alter column project_key set default '69cd3d3788bf65e1468428b1';
 alter table public.qm_projects alter column project_key set not null;
 
 do $$

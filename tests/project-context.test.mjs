@@ -1,11 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  canonicalProjectId,
   projectScopedDataPath,
   runWithProjectContext,
 } from '../dist/project-context.js';
 
-test('stargazer project id keeps legacy shared data paths', () => {
+test('real Stargazer project id keeps legacy shared data paths', () => {
+  assert.equal(projectScopedDataPath('data/topics.json', '69cd3d3788bf65e1468428b1'), 'data/topics.json');
+  assert.equal(projectScopedDataPath('data/project-guidelines.txt', '69cd3d3788bf65e1468428b1'), 'data/project-guidelines.txt');
+});
+
+test('legacy stargazer alias resolves to the real project id', () => {
+  assert.equal(canonicalProjectId('stargazer'), '69cd3d3788bf65e1468428b1');
   assert.equal(projectScopedDataPath('data/topics.json', 'stargazer'), 'data/topics.json');
   assert.equal(projectScopedDataPath('data/project-guidelines.txt', 'stargazer'), 'data/project-guidelines.txt');
 });

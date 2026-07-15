@@ -473,7 +473,7 @@ export default function ProjectSetup() {
                     id="projectKey"
                     value={form.projectKey}
                     onChange={(event) => update("projectKey", event.target.value)}
-                    placeholder="stargazer"
+                    placeholder="69cd3d3788bf65e1468428b1"
                     required
                   />
                   <p className="text-xs text-muted-foreground">

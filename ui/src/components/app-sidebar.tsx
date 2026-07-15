@@ -120,7 +120,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { currentProject } = usePlatform()
   const projectName = currentProject?.projectName || "Stargazer"
-  const projectKey = currentProject?.projectKey || "stargazer"
+  const projectKey = currentProject?.projectKey || "69cd3d3788bf65e1468428b1"
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>

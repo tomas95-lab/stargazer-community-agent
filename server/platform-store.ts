@@ -2,7 +2,13 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEq
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { BotConfig } from '../src/config';
 import { readDataJSON, writeDataJSON } from '../src/data-store';
-import { LEGACY_PROJECT_ID, ProjectContext, sanitizeProjectId } from '../src/project-context';
+import {
+  canonicalProjectId,
+  isLegacyProjectId,
+  LEGACY_PROJECT_ALIAS,
+  LEGACY_PROJECT_ID,
+  ProjectContext,
+} from '../src/project-context';
 
 export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
 
@@ -179,23 +185,23 @@ function looksLikeStargazer(value: string): boolean {
 }
 
 export function projectKeyFromRow(row: Pick<QmProjectRow, 'id' | 'project_name' | 'project_key'>): string {
-  const explicit = sanitizeProjectId(row.project_key || '');
+  const explicit = canonicalProjectId(row.project_key || '');
   if (explicit) return explicit;
   if (looksLikeStargazer(row.project_name || '')) return LEGACY_PROJECT_ID;
-  return sanitizeProjectId(row.project_name || '') || sanitizeProjectId(row.id) || LEGACY_PROJECT_ID;
+  return canonicalProjectId(row.project_name || '') || canonicalProjectId(row.id) || LEGACY_PROJECT_ID;
 }
 
 function projectKeyFromInput(input: QmProjectInput, existing?: QmProjectRow): string {
-  const explicit = sanitizeProjectId(input.projectKey || '');
+  const explicit = canonicalProjectId(input.projectKey || '');
   if (explicit) return explicit;
   if (existing) return projectKeyFromRow(existing);
-  const fromName = sanitizeProjectId(input.projectName || '');
+  const fromName = canonicalProjectId(input.projectName || '');
   if (fromName) return fromName;
   return LEGACY_PROJECT_ID;
 }
 
 function legacyStargazerDefaults(projectKey: string): Partial<QmProjectRow> {
-  if (projectKey !== LEGACY_PROJECT_ID) return {};
+  if (!isLegacyProjectId(projectKey)) return {};
   return {
     project_name: 'Stargazer',
     community_base_url: envFallback('COMMUNITY_BASE_URL', 'https://community.outlier.ai'),
@@ -208,6 +214,12 @@ function legacyStargazerDefaults(projectKey: string): Partial<QmProjectRow> {
 function missingProjectKeyColumn(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error || '');
   return /project_key/i.test(message) && /column|schema cache|could not find/i.test(message);
+}
+
+function projectKeyLookupValues(projectKey: string): string[] {
+  const key = canonicalProjectId(projectKey);
+  if (!key) return [];
+  return isLegacyProjectId(key) ? [LEGACY_PROJECT_ID, LEGACY_PROJECT_ALIAS] : [key];
 }
 
 export async function getUserFromAccessToken(accessToken: string): Promise<AuthenticatedUser> {
@@ -372,11 +384,12 @@ export async function getUserProject(userId: string, projectId: string): Promise
       .from(TABLE)
       .select('*')
       .eq('owner_id', userId)
-      .eq('project_key', sanitizeProjectId(projectId))
-      .maybeSingle();
+      .in('project_key', projectKeyLookupValues(projectId))
+      .order('created_at', { ascending: true })
+      .limit(1);
 
     if (byKeyError) throw new Error(byKeyError.message);
-    return byKey as QmProjectRow | null;
+    return (byKey?.[0] || null) as QmProjectRow | null;
   } catch (err) {
     if (missingProjectKeyColumn(err)) return null;
     throw err;
@@ -390,14 +403,14 @@ export async function getActiveUserProject(userId: string, projectId?: string): 
 }
 
 export async function getSharedProjectConnection(projectKey: string): Promise<QmProjectRow | null> {
-  const key = sanitizeProjectId(projectKey);
+  const key = canonicalProjectId(projectKey);
   if (!key) return null;
 
   try {
     const { data, error } = await getSupabaseAdmin()
       .from(TABLE)
       .select('*')
-      .eq('project_key', key)
+      .in('project_key', projectKeyLookupValues(key))
       .eq('enabled', true)
       .order('created_at', { ascending: true })
       .limit(1);
@@ -521,7 +534,7 @@ async function syncSharedProjectFields(row: QmProjectRow): Promise<void> {
 
 async function initializeProjectFiles(row: QmProjectRow): Promise<void> {
   const projectKey = projectKeyFromRow(row);
-  if (projectKey === LEGACY_PROJECT_ID) return;
+  if (isLegacyProjectId(projectKey)) return;
 
   const base = `data/projects/${projectKey}`;
   await Promise.all([

@@ -1,5 +1,5 @@
 import { readDataJSON, writeDataJSON } from './data-store';
-import { getProjectContext, LEGACY_PROJECT_ID } from './project-context';
+import { getProjectContext, isLegacyProjectId } from './project-context';
 
 const FILE = 'data/project-memory.json';
 
@@ -53,7 +53,7 @@ const DEFAULT_MEMORY: ProjectMemory = {
 
 function defaultMemoryForCurrentProject(): ProjectMemory {
   const context = getProjectContext();
-  if (context.projectId === LEGACY_PROJECT_ID) return DEFAULT_MEMORY;
+  if (isLegacyProjectId(context.projectId)) return DEFAULT_MEMORY;
 
   return {
     updatedAt: new Date().toISOString(),

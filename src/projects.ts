@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { readDataJSON, writeDataJSON, writeDataText } from './data-store';
 import { PATHS } from './paths';
-import { assertValidProjectId, defaultProjectId, LEGACY_PROJECT_ID, sanitizeProjectId } from './project-context';
+import { assertValidProjectId, canonicalProjectId, defaultProjectId, isLegacyProjectId, LEGACY_PROJECT_ID } from './project-context';
 
 export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
 
@@ -135,7 +135,7 @@ function mode(value: unknown): ProjectAgentMode {
 }
 
 function defaultPaths(projectId: string): ProjectPathsConfig {
-  if (projectId === LEGACY_PROJECT_ID) {
+  if (isLegacyProjectId(projectId)) {
     return {
       topics: 'data/topics.json',
       links: 'data/links.json',
@@ -223,7 +223,7 @@ export function normalizeProjectConfig(input: unknown): ProjectConfig {
 
   return {
     id,
-    name: text(raw.name) || (id === LEGACY_PROJECT_ID ? defaults.name : id),
+    name: text(raw.name) || (isLegacyProjectId(id) ? defaults.name : id),
     enabled: raw.enabled !== false,
     qm: {
       name: text(qm.name),
@@ -231,7 +231,7 @@ export function normalizeProjectConfig(input: unknown): ProjectConfig {
     },
     community: {
       baseUrlEnv: envName(community.baseUrlEnv),
-      baseUrl: text(community.baseUrl) || (id === LEGACY_PROJECT_ID ? defaults.community.baseUrl : 'https://community.outlier.ai'),
+      baseUrl: text(community.baseUrl) || (isLegacyProjectId(id) ? defaults.community.baseUrl : 'https://community.outlier.ai'),
       categoryIdEnv: envName(community.categoryIdEnv),
       categoryId: text(community.categoryId),
       categorySlugEnv: envName(community.categorySlugEnv),
@@ -274,7 +274,7 @@ export function normalizeProjectRegistry(input: unknown): ProjectRegistry {
     byId.set(project.id, project);
   }
 
-  const defaultId = sanitizeProjectId(raw.defaultProjectId) || defaultProjectId();
+  const defaultId = canonicalProjectId(raw.defaultProjectId) || defaultProjectId();
   return {
     defaultProjectId: byId.has(defaultId) ? defaultId : LEGACY_PROJECT_ID,
     projects: [...byId.values()].sort((left, right) => left.name.localeCompare(right.name)),
@@ -377,7 +377,7 @@ export async function saveProjectRegistry(registry: ProjectRegistry): Promise<Pr
 
 export async function createProject(input: CreateProjectInput): Promise<ProjectConfig> {
   const id = assertValidProjectId(input.id || input.name || '');
-  if (id === LEGACY_PROJECT_ID) throw new Error('The Stargazer project already exists.');
+  if (isLegacyProjectId(id)) throw new Error('The Stargazer project already exists.');
 
   const registry = await loadProjectRegistry(true);
   if (registry.projects.some((project) => project.id === id)) {
