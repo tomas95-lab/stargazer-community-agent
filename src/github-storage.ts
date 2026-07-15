@@ -25,6 +25,12 @@ class GitHubApiError extends Error {
   }
 }
 
+const WRITE_ATTEMPTS = 6;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function getRepo(): { owner: string; repo: string } {
   return {
     owner: process.env.GITHUB_OWNER || 'tomas95-lab',
@@ -83,10 +89,22 @@ async function currentSha(filePath: string): Promise<string | undefined> {
   }
 }
 
+function shaFromConflict(error: GitHubApiError): string | undefined {
+  try {
+    const parsed = JSON.parse(error.body) as { message?: unknown };
+    const message = typeof parsed.message === 'string' ? parsed.message : '';
+    const match = message.match(/\bis at\s+([a-zA-Z0-9_-]+)\s+but expected\b/);
+    return match?.[1];
+  } catch {
+    const match = error.body.match(/\bis at\s+([a-zA-Z0-9_-]+)\s+but expected\b/);
+    return match?.[1];
+  }
+}
+
 async function writeContent(filePath: string, content: string, message: string): Promise<void> {
   let sha = await currentSha(filePath);
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < WRITE_ATTEMPTS; attempt += 1) {
     try {
       await githubRequest(contentPath(filePath), {
         method: 'PUT',
@@ -98,11 +116,12 @@ async function writeContent(filePath: string, content: string, message: string):
       });
       return;
     } catch (err) {
-      if (!(err instanceof GitHubApiError) || err.status !== 409 || attempt === 2) {
+      if (!(err instanceof GitHubApiError) || err.status !== 409 || attempt === WRITE_ATTEMPTS - 1) {
         throw err;
       }
 
-      sha = await currentSha(filePath);
+      sha = shaFromConflict(err) || await currentSha(filePath);
+      await sleep(150 * (attempt + 1));
     }
   }
 }
