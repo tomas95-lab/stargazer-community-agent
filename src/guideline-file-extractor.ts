@@ -1,5 +1,3 @@
-import { PDFParse } from 'pdf-parse';
-
 export const MAX_GUIDELINE_PDF_BYTES = 12 * 1024 * 1024;
 
 export interface ExtractedGuidelineFile {
@@ -37,9 +35,16 @@ export function validatePdfBuffer(buffer: Buffer): void {
   }
 }
 
+async function loadPdfParser(): Promise<typeof import('pdf-parse').PDFParse> {
+  await import('@napi-rs/canvas').catch(() => undefined);
+  const module = await import('pdf-parse');
+  return module.PDFParse;
+}
+
 export async function extractTextFromPdfBuffer(buffer: Buffer): Promise<ExtractedGuidelineFile> {
   validatePdfBuffer(buffer);
 
+  const PDFParse = await loadPdfParser();
   const parser = new PDFParse({ data: new Uint8Array(buffer) });
   try {
     const result = await parser.getText({
