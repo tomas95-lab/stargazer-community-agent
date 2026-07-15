@@ -13,6 +13,18 @@ interface GitHubContentDirectoryItem {
   size: number;
 }
 
+class GitHubApiError extends Error {
+  status: number;
+  body: string;
+
+  constructor(status: number, body: string) {
+    super(`GitHub API error ${status}: ${body.slice(0, 500)}`);
+    this.name = 'GitHubApiError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
 function getRepo(): { owner: string; repo: string } {
   return {
     owner: process.env.GITHUB_OWNER || 'tomas95-lab',
@@ -44,7 +56,7 @@ async function githubRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`GitHub API error ${res.status}: ${body.slice(0, 500)}`);
+    throw new GitHubApiError(res.status, body);
   }
 
   return res.json() as Promise<T>;
@@ -61,46 +73,48 @@ export async function readJSON<T>(filePath: string): Promise<{ data: T; sha: str
   return { data: JSON.parse(content) as T, sha: file.sha };
 }
 
-export async function writeJSON<T>(filePath: string, data: T, message: string): Promise<void> {
-  let sha: string | undefined;
+async function currentSha(filePath: string): Promise<string | undefined> {
   try {
     const existing = await githubRequest<GitHubContentFile>(contentPath(filePath));
-    sha = existing.sha;
-  } catch {
-    sha = undefined;
+    return existing.sha;
+  } catch (err) {
+    if (err instanceof GitHubApiError && err.status === 404) return undefined;
+    throw err;
   }
+}
 
+async function writeContent(filePath: string, content: string, message: string): Promise<void> {
+  let sha = await currentSha(filePath);
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await githubRequest(contentPath(filePath), {
+        method: 'PUT',
+        body: JSON.stringify({
+          message,
+          content,
+          sha,
+        }),
+      });
+      return;
+    } catch (err) {
+      if (!(err instanceof GitHubApiError) || err.status !== 409 || attempt === 2) {
+        throw err;
+      }
+
+      sha = await currentSha(filePath);
+    }
+  }
+}
+
+export async function writeJSON<T>(filePath: string, data: T, message: string): Promise<void> {
   const content = Buffer.from(JSON.stringify(data, null, 2) + '\n').toString('base64');
-
-  await githubRequest(contentPath(filePath), {
-    method: 'PUT',
-    body: JSON.stringify({
-      message,
-      content,
-      sha,
-    }),
-  });
+  await writeContent(filePath, content, message);
 }
 
 export async function writeFile(filePath: string, text: string, message: string): Promise<void> {
-  let sha: string | undefined;
-  try {
-    const existing = await githubRequest<GitHubContentFile>(contentPath(filePath));
-    sha = existing.sha;
-  } catch {
-    sha = undefined;
-  }
-
   const content = Buffer.from(text).toString('base64');
-
-  await githubRequest(contentPath(filePath), {
-    method: 'PUT',
-    body: JSON.stringify({
-      message,
-      content,
-      sha,
-    }),
-  });
+  await writeContent(filePath, content, message);
 }
 
 export async function listDirectory(dirPath: string): Promise<Array<{ name: string; sha: string; size: number }>> {
