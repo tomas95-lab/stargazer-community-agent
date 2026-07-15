@@ -3,9 +3,11 @@ import { AuthenticatedRequest, requirePlatformUser } from '../auth';
 import {
   createUserProject,
   getActiveUserProject,
+  getUserAiKey,
   isPlatformConfigured,
   listUserProjects,
   QmProjectInput,
+  saveUserAiKey,
   toPublicProject,
   updateUserProject,
 } from '../platform-store';
@@ -72,7 +74,8 @@ router.get('/projects', requirePlatformUser, async (req: Request, res: Response)
   try {
     const authReq = req as AuthenticatedRequest;
     const projects = await listUserProjects(authReq.authUser!.id);
-    res.json({ projects: projects.map(toPublicProject) });
+    const aiKey = await getUserAiKey(authReq.authUser!.id);
+    res.json({ projects: projects.map((project) => toPublicProject(project, aiKey)) });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -83,7 +86,8 @@ router.get('/projects/current', requirePlatformUser, async (req: Request, res: R
     const authReq = req as AuthenticatedRequest;
     const requestedId = typeof req.query.project === 'string' ? req.query.project : undefined;
     const project = await getActiveUserProject(authReq.authUser!.id, requestedId);
-    res.json({ project: project ? toPublicProject(project) : null });
+    const aiKey = await getUserAiKey(authReq.authUser!.id);
+    res.json({ project: project ? toPublicProject(project, aiKey) : null });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -126,8 +130,10 @@ router.post('/guidelines/extract', requirePlatformUser, async (req: Request, res
 router.post('/projects', requirePlatformUser, async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const project = await createUserProject(authReq.authUser!, projectInput(req.body));
-    res.status(201).json({ project: toPublicProject(project) });
+    const input = projectInput(req.body);
+    const project = await createUserProject(authReq.authUser!, input);
+    const aiKey = await saveUserAiKey(authReq.authUser!.id, input);
+    res.status(201).json({ project: toPublicProject(project, aiKey) });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -136,8 +142,10 @@ router.post('/projects', requirePlatformUser, async (req: Request, res: Response
 router.put('/projects/:id', requirePlatformUser, async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const project = await updateUserProject(authReq.authUser!, routeParam(req.params.id), projectInput(req.body));
-    res.json({ project: toPublicProject(project) });
+    const input = projectInput(req.body);
+    const project = await updateUserProject(authReq.authUser!, routeParam(req.params.id), input);
+    const aiKey = await saveUserAiKey(authReq.authUser!.id, input);
+    res.json({ project: toPublicProject(project, aiKey) });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
   }

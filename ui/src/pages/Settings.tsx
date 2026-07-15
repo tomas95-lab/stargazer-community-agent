@@ -197,7 +197,7 @@ export default function Settings() {
         <div className="flex flex-col gap-3 border-b border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-foreground">AI Cost Guardrails</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Daily calls and token usage tracked from local Claude requests.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Daily calls and token usage tracked for the current QM's Claude requests.</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant={usage?.limits.enforce ? 'secondary' : 'outline'}>

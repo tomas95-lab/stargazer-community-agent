@@ -6,7 +6,7 @@ import {
   getActiveUserProject,
   getUserFromAccessToken,
   isPlatformConfigured,
-  projectRuntimeContext,
+  projectRuntimeContextForRow,
   QmProjectRow,
 } from './platform-store';
 
@@ -72,7 +72,7 @@ export async function attachProjectContext(req: Request, res: Response, next: Ne
     }
 
     const context = project
-      ? projectRuntimeContext(project)
+      ? await projectRuntimeContextForRow(project)
       : {
           projectId: defaultProjectId(),
           source: 'default' as const,

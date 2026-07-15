@@ -7,7 +7,7 @@ export interface ResolvedAnthropicRuntime {
   client: Anthropic;
   apiKey: string;
   model: string;
-  source: 'project' | 'legacy-env';
+  source: 'qm' | 'legacy-env';
 }
 
 function configuredModel(value: string | undefined): string {
@@ -24,7 +24,7 @@ export function resolveAnthropicRuntime(): ResolvedAnthropicRuntime {
       client: new Anthropic({ apiKey: projectApiKey }),
       apiKey: projectApiKey,
       model: projectModel,
-      source: 'project',
+      source: 'qm',
     };
   }
 
@@ -39,6 +39,5 @@ export function resolveAnthropicRuntime(): ResolvedAnthropicRuntime {
     };
   }
 
-  throw new Error('Anthropic API key is not configured for this project. Add your own Anthropic API key in Project Settings.');
+  throw new Error('Anthropic API key is not configured for this QM. Add your own Anthropic API key in Project Settings.');
 }
-

@@ -10,7 +10,7 @@ import {
   isPlatformConfigured,
   listEnabledProjectConnections,
   projectKeyFromRow,
-  projectRuntimeContext,
+  projectRuntimeContextForRow,
   QmProjectRow,
   uniqueProjectConnections,
 } from '../platform-store';
@@ -91,14 +91,14 @@ async function projectCronTargets(req: Request): Promise<ProjectContext[]> {
     const rows = await platformConnections();
     const row = rows.find((item) => projectKeyFromRow(item) === requested);
     if (!row) throw new Error(`Cron project not found: ${requested}`);
-    return [projectRuntimeContext(row)];
+    return [await projectRuntimeContextForRow(row)];
   }
 
   if (!projectCronsEnabled()) return [legacyContext()];
 
   const rows = uniqueProjectConnections(await platformConnections())
     .filter((row) => !isLegacyProjectId(projectKeyFromRow(row)));
-  return [legacyContext(), ...rows.map(projectRuntimeContext)];
+  return [legacyContext(), ...(await Promise.all(rows.map(projectRuntimeContextForRow)))];
 }
 
 async function dmCronTargets(req: Request): Promise<ProjectContext[]> {
@@ -110,13 +110,13 @@ async function dmCronTargets(req: Request): Promise<ProjectContext[]> {
     const rows = await platformConnections();
     const matches = rows.filter((row) => projectKeyFromRow(row) === requested);
     if (matches.length === 0) throw new Error(`Cron project not found: ${requested}`);
-    return matches.map(projectRuntimeContext);
+    return Promise.all(matches.map(projectRuntimeContextForRow));
   }
 
   if (!dmCronsEnabled()) return [legacyContext()];
 
   const rows = (await platformConnections()).filter((row) => !isLegacyProjectId(projectKeyFromRow(row)));
-  return [legacyContext(), ...rows.map(projectRuntimeContext)];
+  return [legacyContext(), ...(await Promise.all(rows.map(projectRuntimeContextForRow)))];
 }
 
 async function runInContext<T>(context: ProjectContext, fn: () => Promise<T>): Promise<T> {

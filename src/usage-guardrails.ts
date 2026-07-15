@@ -10,6 +10,8 @@ export interface AiUsageEvent {
   at: string;
   utcDate: string;
   argentinaDate?: string;
+  projectId?: string;
+  ownerId?: string;
   feature: string;
   model: string;
   inputTokens: number;
@@ -110,12 +112,17 @@ async function writeState(state: AiUsageState): Promise<void> {
 
 function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
   const date = utcDate(now);
-  const todayEvents = events.filter((event) => (event.utcDate || event.argentinaDate) === date);
+  const context = getProjectContext();
+  const scopedEvents = events.filter((event) => {
+    if (context.ownerId) return event.ownerId === context.ownerId;
+    if (event.ownerId) return false;
+    return !event.projectId || event.projectId === context.projectId;
+  });
+  const todayEvents = scopedEvents.filter((event) => (event.utcDate || event.argentinaDate) === date);
   const calls = todayEvents.length;
   const inputTokens = todayEvents.reduce((sum, event) => sum + event.inputTokens, 0);
   const outputTokens = todayEvents.reduce((sum, event) => sum + event.outputTokens, 0);
   const totalTokens = inputTokens + outputTokens;
-  const context = getProjectContext();
   const dailyTokenLimit = numericLimit(context.aiConfig?.dailyTokenLimit, 'AI_DAILY_TOKEN_LIMIT');
   const dailyCallLimit = numericLimit(context.aiConfig?.dailyCallLimit, 'AI_DAILY_CALL_LIMIT');
   const enforce = process.env.AI_GUARDRAILS_ENFORCE === 'true';
@@ -148,7 +155,7 @@ function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
       calls: dailyCallLimit ? Math.max(0, dailyCallLimit - calls) : null,
     },
     warnings,
-    recentEvents: events.slice(0, 25),
+    recentEvents: scopedEvents.slice(0, 25),
   };
 }
 
@@ -198,11 +205,14 @@ export async function recordAiUsage(input: {
 }): Promise<AiUsageEvent | undefined> {
   const inputTokens = normalizeTokens(input.inputTokens) || (input.inputText ? estimateTokens(input.inputText) : 0);
   const outputTokens = normalizeTokens(input.outputTokens) || (input.outputText ? estimateTokens(input.outputText) : 0);
+  const context = getProjectContext();
   const event: AiUsageEvent = {
     id: randomUUID(),
     at: new Date().toISOString(),
     utcDate: utcDate(),
     argentinaDate: utcDate(),
+    projectId: context.projectId,
+    ...(context.ownerId ? { ownerId: context.ownerId } : {}),
     feature: input.feature,
     model: input.model || 'unknown',
     inputTokens,

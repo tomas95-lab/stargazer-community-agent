@@ -32,10 +32,6 @@ export interface QmProjectRow {
   discourse_username: string;
   discourse_api_client_id: string;
   discourse_api_key_ciphertext: string;
-  anthropic_api_key_ciphertext: string;
-  anthropic_model: string;
-  ai_daily_token_limit: number | null;
-  ai_daily_call_limit: number | null;
   project_guidelines: string;
   war_room_link: string;
   agent_mode: ProjectAgentMode;
@@ -99,6 +95,7 @@ export interface QmProjectPublic {
 
 const TABLE = 'qm_projects';
 const USER_KEYS_TABLE = 'user_discourse_keys';
+const USER_AI_KEYS_TABLE = 'user_ai_keys';
 let supabaseAdmin: SupabaseClient | null = null;
 
 function env(key: string): string {
@@ -259,7 +256,7 @@ export async function getUserFromAccessToken(accessToken: string): Promise<Authe
   };
 }
 
-function publicProject(row: QmProjectRow): QmProjectPublic {
+function publicProject(row: QmProjectRow, aiKey?: UserAiKeyRow | null): QmProjectPublic {
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -274,10 +271,10 @@ function publicProject(row: QmProjectRow): QmProjectPublic {
     discourseUsername: row.discourse_username,
     discourseApiClientId: row.discourse_api_client_id,
     discourseApiKeyConfigured: Boolean(row.discourse_api_key_ciphertext),
-    anthropicApiKeyConfigured: Boolean(row.anthropic_api_key_ciphertext),
-    anthropicModel: anthropicModel(row.anthropic_model),
-    aiDailyTokenLimit: positiveIntOrNull(row.ai_daily_token_limit),
-    aiDailyCallLimit: positiveIntOrNull(row.ai_daily_call_limit),
+    anthropicApiKeyConfigured: Boolean(aiKey?.anthropic_api_key_ciphertext),
+    anthropicModel: anthropicModel(aiKey?.anthropic_model),
+    aiDailyTokenLimit: positiveIntOrNull(aiKey?.ai_daily_token_limit),
+    aiDailyCallLimit: positiveIntOrNull(aiKey?.ai_daily_call_limit),
     projectGuidelines: row.project_guidelines,
     projectGuidelinesCharacters: row.project_guidelines.length,
     warRoomLink: row.war_room_link,
@@ -290,8 +287,8 @@ function publicProject(row: QmProjectRow): QmProjectPublic {
   };
 }
 
-export function toPublicProject(row: QmProjectRow): QmProjectPublic {
-  return publicProject(row);
+export function toPublicProject(row: QmProjectRow, aiKey?: UserAiKeyRow | null): QmProjectPublic {
+  return publicProject(row, aiKey);
 }
 
 export interface UserDiscourseKeyRow {
@@ -315,6 +312,64 @@ export async function getUserDiscourseKey(userId: string): Promise<UserDiscourse
   return data as UserDiscourseKeyRow | null;
 }
 
+export interface UserAiKeyRow {
+  owner_id: string;
+  anthropic_api_key_ciphertext: string;
+  anthropic_model: string;
+  ai_daily_token_limit: number | null;
+  ai_daily_call_limit: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getUserAiKey(userId: string): Promise<UserAiKeyRow | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from(USER_AI_KEYS_TABLE)
+    .select('*')
+    .eq('owner_id', userId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data as UserAiKeyRow | null;
+}
+
+function hasAiInput(input: QmProjectInput): boolean {
+  return Boolean(
+    text(input.anthropicApiKey)
+    || input.anthropicModel !== undefined
+    || input.aiDailyTokenLimit !== undefined
+    || input.aiDailyCallLimit !== undefined
+  );
+}
+
+export async function saveUserAiKey(userId: string, input: QmProjectInput): Promise<UserAiKeyRow | null> {
+  const existing = await getUserAiKey(userId);
+  if (!existing && !hasAiInput(input)) return null;
+
+  const anthropicApiKey = text(input.anthropicApiKey);
+  const payload: Partial<UserAiKeyRow> & { owner_id: string } = {
+    owner_id: userId,
+    anthropic_model: anthropicModel(input.anthropicModel, existing?.anthropic_model || 'claude-haiku-4-5'),
+    ai_daily_token_limit: positiveIntOrNull(input.aiDailyTokenLimit, existing?.ai_daily_token_limit ?? null),
+    ai_daily_call_limit: positiveIntOrNull(input.aiDailyCallLimit, existing?.ai_daily_call_limit ?? null),
+    updated_at: new Date().toISOString(),
+    ...(anthropicApiKey
+      ? { anthropic_api_key_ciphertext: encryptSecret(anthropicApiKey) }
+      : existing
+        ? {}
+        : { anthropic_api_key_ciphertext: '' }),
+  };
+
+  const { data, error } = await getSupabaseAdmin()
+    .from(USER_AI_KEYS_TABLE)
+    .upsert(payload, { onConflict: 'owner_id' })
+    .select('*')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as UserAiKeyRow;
+}
+
 function normalizeProjectInput(
   input: QmProjectInput,
   user: AuthenticatedUser,
@@ -323,7 +378,6 @@ function normalizeProjectInput(
   shared?: QmProjectRow | null,
 ): Partial<QmProjectRow> {
   const discourseApiKey = text(input.discourseApiKey);
-  const anthropicApiKey = text(input.anthropicApiKey);
   const projectKey = projectKeyFromInput(input, existing);
   const legacyDefaults = legacyStargazerDefaults(projectKey);
   const projectName = text(input.projectName, existing?.project_name || shared?.project_name || legacyDefaults.project_name || 'Community project');
@@ -352,18 +406,10 @@ function normalizeProjectInput(
     community_chat_channel_id: channelId,
     discourse_username: discourseUsername,
     discourse_api_client_id: text(input.discourseApiClientId, existing?.discourse_api_client_id || 'daily-thread-bot'),
-    anthropic_model: anthropicModel(input.anthropicModel, existing?.anthropic_model || 'claude-haiku-4-5'),
-    ai_daily_token_limit: positiveIntOrNull(input.aiDailyTokenLimit, existing?.ai_daily_token_limit ?? null),
-    ai_daily_call_limit: positiveIntOrNull(input.aiDailyCallLimit, existing?.ai_daily_call_limit ?? null),
     ...(discourseApiKey
       ? { discourse_api_key_ciphertext: encryptSecret(discourseApiKey) }
       : !existing && storedDiscourseKeyCiphertext
         ? { discourse_api_key_ciphertext: storedDiscourseKeyCiphertext }
-        : {}),
-    ...(anthropicApiKey
-      ? { anthropic_api_key_ciphertext: encryptSecret(anthropicApiKey) }
-      : !existing
-        ? { anthropic_api_key_ciphertext: '' }
         : {}),
     project_guidelines: text(input.projectGuidelines, existing?.project_guidelines || shared?.project_guidelines || ''),
     war_room_link: text(input.warRoomLink, existing?.war_room_link || shared?.war_room_link || ''),
@@ -624,11 +670,11 @@ export function projectBotConfig(row: QmProjectRow): BotConfig {
   };
 }
 
-export function projectRuntimeContext(row: QmProjectRow): ProjectContext {
+export function projectRuntimeContext(row: QmProjectRow, aiKey?: UserAiKeyRow | null): ProjectContext {
   const projectLinks: ProjectContext['projectLinks'] = {};
   if (text(row.war_room_link)) projectLinks.warRoom = text(row.war_room_link);
-  const anthropicApiKey = text(row.anthropic_api_key_ciphertext)
-    ? decryptSecret(row.anthropic_api_key_ciphertext)
+  const anthropicApiKey = text(aiKey?.anthropic_api_key_ciphertext)
+    ? decryptSecret(aiKey!.anthropic_api_key_ciphertext)
     : '';
 
   return {
@@ -639,11 +685,16 @@ export function projectRuntimeContext(row: QmProjectRow): ProjectContext {
     botConfig: projectBotConfig(row),
     aiConfig: {
       anthropicApiKey,
-      anthropicModel: anthropicModel(row.anthropic_model),
-      dailyTokenLimit: positiveIntOrNull(row.ai_daily_token_limit),
-      dailyCallLimit: positiveIntOrNull(row.ai_daily_call_limit),
+      anthropicModel: anthropicModel(aiKey?.anthropic_model),
+      dailyTokenLimit: positiveIntOrNull(aiKey?.ai_daily_token_limit),
+      dailyCallLimit: positiveIntOrNull(aiKey?.ai_daily_call_limit),
     },
     ...(text(row.project_guidelines) ? { projectGuidelines: text(row.project_guidelines) } : {}),
     ...(Object.keys(projectLinks).length > 0 ? { projectLinks } : {}),
   };
+}
+
+export async function projectRuntimeContextForRow(row: QmProjectRow): Promise<ProjectContext> {
+  const aiKey = await getUserAiKey(row.owner_id);
+  return projectRuntimeContext(row, aiKey);
 }

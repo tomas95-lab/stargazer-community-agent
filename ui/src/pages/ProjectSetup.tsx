@@ -228,10 +228,10 @@ export default function ProjectSetup() {
   }, [editing, currentProject, discourseStatus])
 
   const anthropicApiKeyLabel = useMemo(() => {
-    if (!editing) return "Anthropic API key"
+    if (!editing) return "Your Anthropic API key"
     return currentProject?.anthropicApiKeyConfigured
-      ? "Anthropic API key (leave blank to keep current key)"
-      : "Anthropic API key"
+      ? "Your Anthropic API key (leave blank to keep current key)"
+      : "Your Anthropic API key"
   }, [editing, currentProject])
 
   function update<K extends keyof ProjectFormState>(key: K, value: ProjectFormState[K]) {
@@ -582,7 +582,7 @@ export default function ProjectSetup() {
                     placeholder="sk-ant-..."
                   />
                   <p className="text-xs text-muted-foreground">
-                    Stored encrypted. Claude features use this project key, never another QM&apos;s key.
+                    Stored encrypted. Claude features use your QM key across your projects, never another QM&apos;s key.
                   </p>
                 </div>
                 <div className="grid gap-2">

@@ -13,7 +13,7 @@ test('platform projects cannot fall back to the global Anthropic key', () => {
         { projectId: 'external-project', source: 'header', projectName: 'External Project' },
         () => resolveAnthropicRuntime(),
       ),
-      /not configured for this project/
+      /not configured for this QM/
     );
   } finally {
     if (previousKey === undefined) delete process.env.ANTHROPIC_API_KEY;
@@ -21,7 +21,7 @@ test('platform projects cannot fall back to the global Anthropic key', () => {
   }
 });
 
-test('project Anthropic key wins over the global fallback', () => {
+test('QM Anthropic key wins over the global fallback', () => {
   const previousKey = process.env.ANTHROPIC_API_KEY;
   process.env.ANTHROPIC_API_KEY = 'legacy-only-key';
 
@@ -32,16 +32,16 @@ test('project Anthropic key wins over the global fallback', () => {
         source: 'header',
         projectName: 'External Project',
         aiConfig: {
-          anthropicApiKey: 'project-key',
+          anthropicApiKey: 'qm-key',
           anthropicModel: 'claude-haiku-4-5',
         },
       },
       () => resolveAnthropicRuntime(),
     );
 
-    assert.equal(runtime.apiKey, 'project-key');
+    assert.equal(runtime.apiKey, 'qm-key');
     assert.equal(runtime.model, 'claude-haiku-4-5');
-    assert.equal(runtime.source, 'project');
+    assert.equal(runtime.source, 'qm');
   } finally {
     if (previousKey === undefined) delete process.env.ANTHROPIC_API_KEY;
     else process.env.ANTHROPIC_API_KEY = previousKey;
@@ -65,4 +65,3 @@ test('legacy default project can still use the global Anthropic key', () => {
     else process.env.ANTHROPIC_API_KEY = previousKey;
   }
 });
-
