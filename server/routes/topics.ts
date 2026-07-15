@@ -4,6 +4,11 @@ import { todayDate } from '../../src/utils';
 import { readDataJSON, writeDataJSON } from '../../src/data-store';
 import { requireAdminToken } from '../auth';
 import { appendOperationLog } from '../../src/operations-log';
+import {
+  mergeTopics,
+  TOPICS_JSON_EXAMPLE,
+  validateTopicsPayload,
+} from '../../src/topics-validator';
 
 const router = Router();
 const FILE = 'data/topics.json';
@@ -27,6 +32,70 @@ router.get('/today', async (_req: Request, res: Response) => {
     const topics = await readTopics();
     const match = topics.find((t) => t.date === date);
     res.json({ date, topic: match || null });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/import-schema', (_req: Request, res: Response) => {
+  res.json({
+    shape: 'Daily topics JSON must be an array of topic objects or an object with a "topics" array.',
+    requiredFields: [
+      'date',
+      'title',
+      'topic',
+      'reminderTitle',
+      'reminderBody',
+      'goodExample',
+      'badExample',
+      'quickRule',
+    ],
+    optionalFields: ['tags', 'webinar'],
+    example: TOPICS_JSON_EXAMPLE,
+  });
+});
+
+router.post('/import/validate', requireAdminToken, async (req: Request, res: Response) => {
+  const result = validateTopicsPayload(req.body);
+  res.json(result);
+});
+
+router.post('/import', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body as Record<string, unknown> : {};
+    const mode = body.mode === 'replace' ? 'replace' : 'append';
+    const payload = body.payload ?? body.topics ?? req.body;
+    const validation = validateTopicsPayload(payload);
+    if (!validation.ok) {
+      res.status(422).json(validation);
+      return;
+    }
+
+    const current = await readTopics();
+    const merged = mergeTopics(current, validation.topics, mode);
+    await writeDataJSON(FILE, merged.topics, mode === 'replace' ? 'replace topics from JSON import' : 'import topics from JSON');
+    await appendOperationLog({
+      action: 'import_topics_json',
+      status: 'success',
+      message: mode === 'replace'
+        ? `Replaced topics with ${validation.topics.length} imported topics`
+        : `Imported ${validation.topics.length} topics`,
+      metadata: {
+        mode,
+        created: merged.created,
+        updated: merged.updated,
+        total: merged.topics.length,
+      },
+    });
+    res.json({
+      ok: true,
+      mode,
+      imported: validation.topics.length,
+      created: merged.created,
+      updated: merged.updated,
+      total: merged.topics.length,
+      topics: merged.topics,
+    });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
-import { ClipboardList, Loader2, Upload } from 'lucide-react';
-import { api, type Topic } from '../api';
+import { useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import { CheckCircle2, ClipboardList, FileJson, Loader2, Upload, XCircle } from 'lucide-react';
+import { api, type Topic, type TopicImportError, type TopicImportSchema } from '../api';
 import TopicForm from '../components/TopicForm';
 import Preview from '../components/Preview';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 
 function SyncButton() {
   const [status, setStatus] = useState<'idle' | 'syncing' | 'ok' | 'error'>('idle');
@@ -47,10 +50,194 @@ function SyncButton() {
   );
 }
 
+function ImportErrors({ errors }: { errors: TopicImportError[] }) {
+  if (errors.length === 0) return null;
+  return (
+    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-destructive">
+        <XCircle className="size-4" />
+        Fix these JSON issues
+      </div>
+      <div className="max-h-44 overflow-auto">
+        {errors.map((error, index) => (
+          <p key={`${error.index}-${error.path}-${index}`} className="text-sm text-destructive">
+            {error.index >= 0 ? `Row ${error.index + 1}` : 'JSON'} / {error.path}: {error.message}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TopicsImportPanel({ onImported }: { onImported: () => void }) {
+  const [schema, setSchema] = useState<TopicImportSchema | null>(null);
+  const [jsonText, setJsonText] = useState('');
+  const [mode, setMode] = useState<'append' | 'replace'>('append');
+  const [validating, setValidating] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [errors, setErrors] = useState<TopicImportError[]>([]);
+  const [validCount, setValidCount] = useState<number | null>(null);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    api.getTopicsImportSchema()
+      .then((result) => {
+        setSchema(result);
+        setJsonText(JSON.stringify(result.example, null, 2));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const parsedPayload = () => {
+    try {
+      return { payload: JSON.parse(jsonText), error: '' };
+    } catch (err) {
+      return {
+        payload: null,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  };
+
+  const validate = async () => {
+    setValidating(true);
+    setMessage('');
+    const parsed = parsedPayload();
+    if (parsed.error) {
+      setErrors([{ index: -1, path: '$', message: parsed.error }]);
+      setValidCount(null);
+      setValidating(false);
+      return false;
+    }
+    try {
+      const result = await api.validateTopicsImport(parsed.payload);
+      setErrors(result.errors);
+      setValidCount(result.ok ? result.topics.length : null);
+      return result.ok;
+    } catch (err) {
+      setErrors([{ index: -1, path: '$', message: err instanceof Error ? err.message : String(err) }]);
+      setValidCount(null);
+      return false;
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const importTopics = async () => {
+    const ok = await validate();
+    if (!ok) return;
+    setImporting(true);
+    setMessage('');
+    const parsed = parsedPayload();
+    try {
+      const result = await api.importTopics(parsed.payload, mode);
+      setMessage(`${result.imported} topics imported. Created ${result.created}, updated ${result.updated}. Total: ${result.total}.`);
+      onImported();
+    } catch (err) {
+      setErrors([{ index: -1, path: '$', message: err instanceof Error ? err.message : String(err) }]);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const loadFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setJsonText(await file.text());
+    setErrors([]);
+    setValidCount(null);
+    setMessage(`Loaded ${file.name}.`);
+    event.currentTarget.value = '';
+  };
+
+  const example = useMemo(() => JSON.stringify(schema?.example || [], null, 2), [schema]);
+
+  return (
+    <Card className="rounded-lg p-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <FileJson className="size-5 text-primary" />
+            <h2 className="text-lg font-semibold">Import topics JSON</h2>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Upload a JSON array or an object with a <code>topics</code> array. Dates must use YYYY-MM-DD.
+          </p>
+        </div>
+        <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground">
+          <Upload className="size-4" />
+          Upload JSON
+          <input className="sr-only" type="file" accept=".json,application/json" onChange={loadFile} />
+        </label>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+        <div className="grid gap-3">
+          <Textarea
+            className="min-h-80 font-mono text-xs"
+            value={jsonText}
+            onChange={(event) => {
+              setJsonText(event.target.value);
+              setErrors([]);
+              setValidCount(null);
+              setMessage('');
+            }}
+          />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3 text-sm">
+              <label className="flex items-center gap-2">
+                <input type="radio" checked={mode === 'append'} onChange={() => setMode('append')} />
+                Add/update by date
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="radio" checked={mode === 'replace'} onChange={() => setMode('replace')} />
+                Replace all
+              </label>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={validate} disabled={validating || !jsonText.trim()}>
+                {validating ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+                Validate
+              </Button>
+              <Button type="button" onClick={importTopics} disabled={importing || !jsonText.trim()}>
+                {importing ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                Import
+              </Button>
+            </div>
+          </div>
+          <ImportErrors errors={errors} />
+          {validCount !== null && errors.length === 0 ? (
+            <div className="flex items-center gap-2 rounded-md border border-success/30 bg-success/5 p-3 text-sm text-success">
+              <CheckCircle2 className="size-4" />
+              Valid JSON. {validCount} topics ready to import.
+            </div>
+          ) : null}
+          {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+        </div>
+
+        <div className="rounded-md border bg-muted/30 p-3">
+          <p className="mb-2 text-sm font-medium">Expected structure</p>
+          <div className="mb-3 grid gap-1 text-xs text-muted-foreground">
+            {schema?.requiredFields.map((field) => (
+              <span key={field}>{field}: required string</span>
+            ))}
+            <span>tags: optional string[]</span>
+            <span>webinar: optional object</span>
+          </div>
+          <pre className="max-h-80 overflow-auto rounded-md bg-background p-3 text-xs text-muted-foreground">
+            {example}
+          </pre>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export default function TopicEditor() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selected, setSelected] = useState<Topic | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [previewData, setPreviewData] = useState<{ thread: string; announcement: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -95,7 +282,7 @@ export default function TopicEditor() {
   const past = sorted.filter((t) => t.date < today).reverse();
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Topics</h1>
@@ -103,6 +290,10 @@ export default function TopicEditor() {
         </div>
         <div className="flex items-center gap-3">
           <SyncButton />
+          <Button type="button" variant="outline" onClick={() => setShowImport((value) => !value)}>
+            <FileJson className="size-4" />
+            Import JSON
+          </Button>
           <button
             onClick={() => { setCreating(true); setSelected(null); setPreviewData(null); }}
             className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
@@ -111,6 +302,8 @@ export default function TopicEditor() {
           </button>
         </div>
       </div>
+
+      {showImport ? <TopicsImportPanel onImported={load} /> : null}
 
       {(selected || creating) && (
         <TopicForm
@@ -208,7 +401,7 @@ function TopicTable({ topics, today, onPreview, onEdit, onDelete, dim }: {
                 </td>
                 <td className="max-w-xs truncate px-4 py-3 text-foreground">{t.topic}</td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-1 flex-wrap">
+                  <div className="flex flex-wrap gap-1">
                     {(t.tags || []).map((tag) => (
                       <span key={tag} className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{tag}</span>
                     ))}

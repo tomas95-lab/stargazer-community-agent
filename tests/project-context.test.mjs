@@ -19,6 +19,7 @@ test('legacy stargazer alias resolves to the real project id', () => {
 
 test('non-legacy project id scopes shared data paths by project id', () => {
   assert.equal(projectScopedDataPath('data/topics.json', 'alpha-project'), 'data/projects/alpha-project/topics.json');
+  assert.equal(projectScopedDataPath('data/comms-templates.json', 'alpha-project'), 'data/projects/alpha-project/comms-templates.json');
   assert.equal(projectScopedDataPath('output/state.json', 'alpha-project'), 'output/projects/alpha-project/state.json');
 });
 

@@ -130,6 +130,7 @@ export function projectScopedDataPath(filePath: string, projectId = getCurrentPr
     ['data/topics.json', `data/projects/${id}/topics.json`],
     ['data/links.json', `data/projects/${id}/links.json`],
     ['data/webinars.json', `data/projects/${id}/webinars.json`],
+    ['data/comms-templates.json', `data/projects/${id}/comms-templates.json`],
     ['data/project-guidelines.txt', `data/projects/${id}/project-guidelines.txt`],
     ['data/project-memory.json', `data/projects/${id}/project-memory.json`],
   ]);

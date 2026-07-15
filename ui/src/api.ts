@@ -95,6 +95,35 @@ export interface PreviewData {
   announcement: string;
 }
 
+export interface TopicImportError {
+  index: number;
+  path: string;
+  message: string;
+}
+
+export interface TopicImportValidation {
+  ok: boolean;
+  topics: Topic[];
+  errors: TopicImportError[];
+}
+
+export interface TopicImportSchema {
+  shape: string;
+  requiredFields: string[];
+  optionalFields: string[];
+  example: Topic[];
+}
+
+export interface TopicImportResult {
+  ok: boolean;
+  mode: 'append' | 'replace';
+  imported: number;
+  created: number;
+  updated: number;
+  total: number;
+  topics: Topic[];
+}
+
 export interface HistoryFile {
   name: string;
   size: number;
@@ -562,6 +591,17 @@ export const api = {
   createTopic: (t: Topic) => request<Topic>('/topics', { method: 'POST', body: JSON.stringify(t) }),
   updateTopic: (date: string, t: Partial<Topic>) => request<Topic>(`/topics/${date}`, { method: 'PUT', body: JSON.stringify(t) }),
   deleteTopic: (date: string) => request<{ ok: boolean }>(`/topics/${date}`, { method: 'DELETE' }),
+  getTopicsImportSchema: () => request<TopicImportSchema>('/topics/import-schema'),
+  validateTopicsImport: (payload: unknown) =>
+    request<TopicImportValidation>('/topics/import/validate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  importTopics: (payload: unknown, mode: 'append' | 'replace') =>
+    request<TopicImportResult>('/topics/import', {
+      method: 'POST',
+      body: JSON.stringify({ payload, mode }),
+    }),
   getPreview: (date: string) => request<PreviewData>(`/preview/${date}`),
   getHistory: () => request<HistoryFile[]>('/history'),
   getHistoryFile: (name: string) => request<{ name: string; content: string }>(`/history/${name}`),
@@ -570,6 +610,18 @@ export const api = {
   getCommsTemplates: (category?: string) =>
     request<CommsTemplate[]>(`/comms/templates${category ? `?category=${category}` : ''}`),
   getCommsTemplate: (id: string) => request<CommsTemplate>(`/comms/templates/${id}`),
+  createCommsTemplate: (template: CommsTemplate) =>
+    request<CommsTemplate>('/comms/templates', {
+      method: 'POST',
+      body: JSON.stringify(template),
+    }),
+  updateCommsTemplate: (id: string, template: CommsTemplate) =>
+    request<CommsTemplate>(`/comms/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(template),
+    }),
+  deleteCommsTemplate: (id: string) =>
+    request<{ ok: boolean }>(`/comms/templates/${id}`, { method: 'DELETE' }),
   renderComms: (id: string, variables: Record<string, string>) =>
     request<{ output: string } | { errors: string[] }>('/comms/render', {
       method: 'POST',
