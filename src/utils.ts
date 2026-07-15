@@ -3,11 +3,11 @@ import * as path from 'path';
 import { PATHS, DailyThreadConfig } from './config';
 import { readDataJSON } from './data-store';
 
-const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
+const UTC_TIMEZONE = 'UTC';
 
-export function argentinaDateParts(date = new Date()): { year: number; month: number; day: number; label: string } {
+export function utcDateParts(date = new Date()): { year: number; month: number; day: number; label: string } {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: ARG_TIMEZONE,
+    timeZone: UTC_TIMEZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -23,24 +23,24 @@ export function argentinaDateParts(date = new Date()): { year: number; month: nu
 }
 
 export function todayDate(now = new Date()): string {
-  return argentinaDateParts(now).label;
+  return utcDateParts(now).label;
 }
 
-export function argentinaDayOfWeek(now = new Date()): number {
+export function utcDayOfWeek(now = new Date()): number {
   const shortDay = new Intl.DateTimeFormat('en-US', {
-    timeZone: ARG_TIMEZONE,
+    timeZone: UTC_TIMEZONE,
     weekday: 'short',
   }).format(now);
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(shortDay);
 }
 
-export function isArgentinaWeekend(now = new Date()): boolean {
-  const day = argentinaDayOfWeek(now);
+export function isUtcWeekend(now = new Date()): boolean {
+  const day = utcDayOfWeek(now);
   return day === 0 || day === 6;
 }
 
-export function isArgentinaBusinessDay(now = new Date()): boolean {
-  const day = argentinaDayOfWeek(now);
+export function isUtcBusinessDay(now = new Date()): boolean {
+  const day = utcDayOfWeek(now);
   return day >= 1 && day <= 5;
 }
 

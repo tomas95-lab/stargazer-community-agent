@@ -8,7 +8,7 @@ import { renderAnnouncement, renderDailyThread } from './templates';
 import { readDataText, writeDataJSON } from './data-store';
 import { loadProjectLinks } from './links';
 import { appendOperationLog } from './operations-log';
-import { formatPostTitle, getTodayTopic, isArgentinaBusinessDay, todayDate } from './utils';
+import { formatPostTitle, getTodayTopic, isUtcBusinessDay, todayDate } from './utils';
 
 export interface DailyPublishJobResult {
   status: 'published' | 'skipped';
@@ -26,13 +26,13 @@ function truthy(value: string | undefined): boolean {
   return ['1', 'true', 'yes', 'y'].includes((value || '').toLowerCase());
 }
 
-export function dailyPublishSkipReason(now = new Date(), force = false): { date: string; reason: 'weekend_argentina'; message: string } | null {
+export function dailyPublishSkipReason(now = new Date(), force = false): { date: string; reason: 'weekend_utc'; message: string } | null {
   const date = todayDate(now);
-  if (force || isArgentinaBusinessDay(now)) return null;
+  if (force || isUtcBusinessDay(now)) return null;
   return {
     date,
-    reason: 'weekend_argentina',
-    message: `Daily thread for ${date} skipped because it is Saturday or Sunday in Argentina.`,
+    reason: 'weekend_utc',
+    message: `Daily thread for ${date} skipped because it is Saturday or Sunday in UTC.`,
   };
 }
 

@@ -102,7 +102,7 @@ test('annotateProbableReplies preserves replies discovered from Discourse thread
         {
           id: 'community:31',
           username: 'ops',
-          message: 'Good morning, the war room will be open at 11:15 am arg time',
+          message: 'Good morning, the War Room will be open at 14:15 UTC',
           createdAt: '2026-07-06T14:05:00.000Z',
           chatMessageId: 31,
           match: 'direct_reply',

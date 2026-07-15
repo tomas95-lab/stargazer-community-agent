@@ -154,7 +154,7 @@ export default function CommunityAgent() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Community Agent</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{overview?.window.operatingHours || 'Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG'}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{overview?.window.operatingHours || 'Agent scans the current UTC day.'}</p>
         </div>
         <button
           onClick={load}
@@ -166,7 +166,7 @@ export default function CommunityAgent() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat label="Date" value={overview?.window.argentinaDate || '-'} sub="ARG" />
+        <Stat label="Date" value={overview?.window.utcDate || overview?.window.argentinaDate || '-'} sub="UTC" />
         <Stat label="Guideline" value={overview?.guidelines.available ? 'Ready' : 'Missing'} sub={overview ? `${overview.guidelines.characters} chars` : ''} />
         <Stat label="Community" value={counts.community} sub={`${counts.answered} answered`} />
         <Stat label="Candidates" value={overview?.candidates.length || 0} sub="pending check" />

@@ -33,7 +33,7 @@ const DEFAULT_MEMORY: ProjectMemory = {
     {
       id: 'war-room-hours',
       title: 'War Room hours',
-      body: 'The War Room is open Monday through Friday from 11:15 AM to 7:00 PM ARG. It is closed Saturdays and Sundays.',
+      body: 'The War Room is open Monday through Friday from 14:15 to 22:00 UTC. It is closed Saturdays and Sundays.',
       source: 'project operations',
     },
     {
@@ -68,12 +68,6 @@ function defaultMemoryForCurrentProject(): ProjectMemory {
         id: 'style',
         title: 'Writing style',
         body: 'Do not use the em dash character. Use commas, parentheses, or a regular hyphen instead.',
-        source: 'platform default',
-      },
-      {
-        id: 'war-room-hours',
-        title: 'War Room hours',
-        body: 'The War Room is open Monday through Friday from 11:15 AM to 7:00 PM ARG. It is closed Saturdays and Sundays.',
         source: 'platform default',
       },
     ],

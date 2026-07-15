@@ -301,11 +301,13 @@ function normalizeProjectInput(
   const projectName = text(input.projectName, existing?.project_name || shared?.project_name || legacyDefaults.project_name || 'Community project');
   const categoryId = text(input.categoryId, existing?.community_category_id || shared?.community_category_id || legacyDefaults.community_category_id || '');
   const channelId = text(input.channelId, existing?.community_chat_channel_id || shared?.community_chat_channel_id || legacyDefaults.community_chat_channel_id || '');
+  const discourseUsername = text(input.discourseUsername, existing?.discourse_username || '');
 
   if (!projectName) throw new Error('Project name is required.');
   if (!projectKey) throw new Error('Project ID is required.');
   if (!categoryId) throw new Error('Category ID is required.');
   if (!channelId) throw new Error('Community channel ID is required.');
+  if (!discourseUsername) throw new Error('Discourse username is required so the agent can identify your own Community messages.');
   if (!existing && !discourseApiKey && !storedDiscourseKeyCiphertext) {
     throw new Error('Connect Discourse or paste a Discourse API key before saving this project.');
   }
@@ -320,7 +322,7 @@ function normalizeProjectInput(
     community_category_id: categoryId,
     community_category_slug: text(input.categorySlug, existing?.community_category_slug || shared?.community_category_slug || legacyDefaults.community_category_slug || ''),
     community_chat_channel_id: channelId,
-    discourse_username: text(input.discourseUsername, existing?.discourse_username || ''),
+    discourse_username: discourseUsername,
     discourse_api_client_id: text(input.discourseApiClientId, existing?.discourse_api_client_id || 'daily-thread-bot'),
     ...(discourseApiKey
       ? { discourse_api_key_ciphertext: encryptSecret(discourseApiKey) }
@@ -568,12 +570,6 @@ async function initializeProjectFiles(row: QmProjectRow): Promise<void> {
           title: 'Project name',
           body: `The active project is ${row.project_name}.`,
           source: 'project settings',
-        },
-        {
-          id: 'war-room-hours',
-          title: 'War Room hours',
-          body: 'The War Room is open Monday through Friday from 11:15 AM to 7:00 PM ARG. It is closed Saturdays and Sundays.',
-          source: 'platform default',
         },
       ],
     }, `initialize ${row.project_name} memory`),

@@ -13,7 +13,7 @@
     "header": "Community inbox review",
     "type": "Agent",
     "status": "In Process",
-    "target": "10-19 ARG",
+    "target": "UTC day",
     "limit": "4",
     "reviewer": "Claude Agent"
   },

@@ -11,9 +11,9 @@ import { api, type ReviewQueueItem, type ReviewQueueResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-function formatArgDate(value: string): string {
+function formatUtcDate(value: string): string {
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Argentina/Buenos_Aires',
+    timeZone: 'UTC',
     month: 'short',
     day: '2-digit',
     hour: '2-digit',
@@ -67,7 +67,7 @@ function QueueItem({ item }: { item: ReviewQueueItem }) {
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Run {formatArgDate(item.runAt)} ARG
+            Run {formatUtcDate(item.runAt)} UTC
             {item.channelId ? ` · Channel ${item.channelId}` : ''}
             {item.messageId ? ` · Message ${item.messageId}` : ''}
           </p>
@@ -139,7 +139,7 @@ export default function ReviewQueue() {
             <IconAlertTriangle className="size-5 text-primary" />
             <h1 className="text-2xl font-semibold text-foreground">Human Review Queue</h1>
           </div>
-          {result && <p className="mt-2 text-sm text-muted-foreground">Updated {formatArgDate(result.generatedAt)} ARG</p>}
+          {result && <p className="mt-2 text-sm text-muted-foreground">Updated {formatUtcDate(result.generatedAt)} UTC</p>}
         </div>
         <Button onClick={load} disabled={loading} variant="outline">
           <IconRefresh />

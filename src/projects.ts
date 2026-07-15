@@ -162,7 +162,7 @@ export function defaultProjectConfig(): ProjectConfig {
     name: 'Stargazer',
     enabled: true,
     qm: {
-      name: 'Tomas Ruiz',
+      name: 'Project QM',
       email: '',
     },
     community: {
@@ -187,11 +187,11 @@ export function defaultProjectConfig(): ProjectConfig {
       minConfidence: 0.5,
     },
     support: {
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'UTC',
       weekdays: [1, 2, 3, 4, 5],
-      warRoomOpenTime: '11:15',
-      startTime: '10:00',
-      endTime: '19:00',
+      warRoomOpenTime: '',
+      startTime: '00:00',
+      endTime: '23:59',
     },
     paths: defaultPaths(LEGACY_PROJECT_ID),
   };

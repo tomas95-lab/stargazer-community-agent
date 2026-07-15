@@ -7,7 +7,8 @@ export interface CronRunLock {
   job: string;
   projectId: string;
   slot: string;
-  argentinaDate: string;
+  utcDate: string;
+  argentinaDate?: string;
   status: CronLockStatus;
   startedAt: string;
   completedAt?: string;
@@ -32,13 +33,13 @@ function safePart(value: string): string {
     .slice(0, 80) || 'default';
 }
 
-function lockPath(job: string, projectId: string, slot: string, argentinaDate: string): string {
-  return `output/cron-runs/${argentinaDate}/${safePart(job)}-${safePart(projectId)}-${safePart(slot)}.json`;
+function lockPath(job: string, projectId: string, slot: string, utcDate: string): string {
+  return `output/cron-runs/${utcDate}/${safePart(job)}-${safePart(projectId)}-${safePart(slot)}.json`;
 }
 
-async function readLock(job: string, projectId: string, slot: string, argentinaDate: string): Promise<CronRunLock | null> {
+async function readLock(job: string, projectId: string, slot: string, utcDate: string): Promise<CronRunLock | null> {
   try {
-    return await readDataJSON<CronRunLock>(lockPath(job, projectId, slot, argentinaDate));
+    return await readDataJSON<CronRunLock>(lockPath(job, projectId, slot, utcDate));
   } catch {
     return null;
   }
@@ -46,9 +47,9 @@ async function readLock(job: string, projectId: string, slot: string, argentinaD
 
 async function writeLock(lock: CronRunLock): Promise<void> {
   await writeDataJSON(
-    lockPath(lock.job, lock.projectId, lock.slot, lock.argentinaDate),
+    lockPath(lock.job, lock.projectId, lock.slot, lock.utcDate),
     lock,
-    `cron lock ${lock.job} ${lock.projectId} ${lock.slot} ${lock.argentinaDate}`
+    `cron lock ${lock.job} ${lock.projectId} ${lock.slot} ${lock.utcDate}`
   );
 }
 
@@ -59,8 +60,8 @@ export async function withCronRunLock<T>(
   runner: () => Promise<T>,
   now = new Date(),
 ): Promise<CronRunLockedResult<T>> {
-  const argentinaDate = todayDate(now);
-  const current = await readLock(job, projectId, slot, argentinaDate);
+  const utcDate = todayDate(now);
+  const current = await readLock(job, projectId, slot, utcDate);
 
   if (current?.status === 'completed') {
     return { skipped: true, reason: 'already_completed', lock: current };
@@ -77,7 +78,8 @@ export async function withCronRunLock<T>(
     job,
     projectId,
     slot,
-    argentinaDate,
+    utcDate,
+    argentinaDate: utcDate,
     status: 'running',
     startedAt: now.toISOString(),
   };

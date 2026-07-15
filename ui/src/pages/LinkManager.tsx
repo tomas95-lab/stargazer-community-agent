@@ -3,10 +3,10 @@ import { api } from '../api';
 
 const LINK_LABELS: Record<string, string> = {
   guidelines: 'Guidelines',
-  templatesZip: 'Stargazer Templates ZIP',
+  templatesZip: 'Templates ZIP',
   warRoom: 'War Room',
   validationScript: 'Validation Script',
-  stargazerEval: 'Stargazer Eval',
+  stargazerEval: 'Evaluation Pack',
   commonErrorsDocument: 'Common Errors Document',
 };
 

@@ -104,7 +104,7 @@ PLATFORM_DM_CRONS_ENABLED=true
 
 Project-level jobs (`daily-thread`, `community-agent`) run once per Project ID. DM review runs per QM connection because DMs belong to a QM user key.
 
-Each cron run writes a lock by `job + project/qm + slot + Argentina date`, so duplicate requests for the same slot are skipped instead of posting twice.
+Each cron run writes a lock by `job + project/qm + slot + UTC date`, so duplicate requests for the same slot are skipped instead of posting twice.
 
 ## Legacy Compatibility
 

@@ -7,6 +7,7 @@ import { loadProjectLinks } from './links';
 import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
 import { projectMemoryText } from './project-memory';
+import { getProjectContext } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 
@@ -95,7 +96,7 @@ export function normalizeComposerRequest(input: MessageComposerInput): Normalize
 
   return {
     prompt,
-    audience: text(input.audience, 'Stargazer contributors') || 'Stargazer contributors',
+    audience: text(input.audience, 'Project contributors') || 'Project contributors',
     channel: oneOf(input.channel, COMPOSER_CHANNELS, 'community'),
     tone: oneOf(input.tone, COMPOSER_TONES, 'professional'),
     objective: oneOf(input.objective, COMPOSER_OBJECTIVES, 'inform'),
@@ -166,8 +167,9 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
   const memory = await projectMemoryText(25);
   const anthropic = new Anthropic({ apiKey });
   const maxTokens = request.variantCount === 1 ? 700 : 1200;
+  const projectName = getProjectContext().projectName || 'the active project';
   const systemPrompt = [
-    'You are a message composer for the Stargazer Axiom community management team.',
+    `You are a message composer for the ${projectName} community management team.`,
     'Always write user-facing content in English, even when the user request is in Spanish or another language.',
     'Do not write Spanish user-facing copy.',
     'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',

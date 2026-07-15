@@ -55,7 +55,7 @@
     "webinar": {
       "enabled": false,
       "mandatory": true,
-      "timeLabel": "12:00 ARG ",
+      "timeLabel": "15:00 UTC",
       "link": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success",
       "invitees": [
         "1312312321@gremotask.com"

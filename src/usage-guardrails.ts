@@ -7,7 +7,8 @@ const MAX_EVENTS = 1000;
 export interface AiUsageEvent {
   id: string;
   at: string;
-  argentinaDate: string;
+  utcDate: string;
+  argentinaDate?: string;
   feature: string;
   model: string;
   inputTokens: number;
@@ -18,7 +19,8 @@ export interface AiUsageEvent {
 
 export interface AiUsageSummary {
   generatedAt: string;
-  argentinaDate: string;
+  utcDate: string;
+  argentinaDate?: string;
   today: {
     calls: number;
     inputTokens: number;
@@ -42,9 +44,9 @@ interface AiUsageState {
   events: AiUsageEvent[];
 }
 
-function argentinaDate(now = new Date()): string {
+function utcDate(now = new Date()): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Argentina/Buenos_Aires',
+    timeZone: 'UTC',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -96,8 +98,8 @@ async function writeState(state: AiUsageState): Promise<void> {
 }
 
 function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
-  const date = argentinaDate(now);
-  const todayEvents = events.filter((event) => event.argentinaDate === date);
+  const date = utcDate(now);
+  const todayEvents = events.filter((event) => (event.utcDate || event.argentinaDate) === date);
   const calls = todayEvents.length;
   const inputTokens = todayEvents.reduce((sum, event) => sum + event.inputTokens, 0);
   const outputTokens = todayEvents.reduce((sum, event) => sum + event.outputTokens, 0);
@@ -116,6 +118,7 @@ function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
 
   return {
     generatedAt: now.toISOString(),
+    utcDate: date,
     argentinaDate: date,
     today: {
       calls,
@@ -157,7 +160,7 @@ export async function assertAiUsageAllowed(feature: string, estimatedInputTokens
       outputTokens: 0,
       status: 'blocked',
     });
-    throw new Error(`AI daily token limit reached for ${summary.argentinaDate}.`);
+    throw new Error(`AI daily token limit reached for ${summary.utcDate}.`);
   }
 
   if (summary.limits.enforce && summary.limits.dailyCallLimit && projectedCalls > summary.limits.dailyCallLimit) {
@@ -168,7 +171,7 @@ export async function assertAiUsageAllowed(feature: string, estimatedInputTokens
       outputTokens: 0,
       status: 'blocked',
     });
-    throw new Error(`AI daily call limit reached for ${summary.argentinaDate}.`);
+    throw new Error(`AI daily call limit reached for ${summary.utcDate}.`);
   }
 }
 
@@ -186,7 +189,8 @@ export async function recordAiUsage(input: {
   const event: AiUsageEvent = {
     id: randomUUID(),
     at: new Date().toISOString(),
-    argentinaDate: argentinaDate(),
+    utcDate: utcDate(),
+    argentinaDate: utcDate(),
     feature: input.feature,
     model: input.model || 'unknown',
     inputTokens,

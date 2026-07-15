@@ -110,7 +110,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-center py-24">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading Stargazer...</p>
+          <p className="text-sm text-muted-foreground">Loading project...</p>
         </div>
       </div>
     )
@@ -120,7 +120,7 @@ export default function Dashboard() {
     <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex items-center justify-between px-4 lg:px-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Stargazer Comms</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project Comms</h1>
           <p className="text-sm text-muted-foreground">
             {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>

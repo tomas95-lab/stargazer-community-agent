@@ -67,7 +67,7 @@ export default function MessageComposer() {
   const [templates, setTemplates] = useState<ComposerTemplate[]>([]);
   const [templateId, setTemplateId] = useState('custom');
   const [prompt, setPrompt] = useState('');
-  const [audience, setAudience] = useState('Stargazer contributors');
+  const [audience, setAudience] = useState('Project contributors');
   const [extraContext, setExtraContext] = useState('');
   const [channel, setChannel] = useState<ComposerChannel>('community');
   const [tone, setTone] = useState<ComposerTone>('professional');

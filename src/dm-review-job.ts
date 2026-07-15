@@ -11,14 +11,10 @@ import {
 } from './discourse-client';
 import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
-import {
-  evaluateSupportMessage,
-  warRoomAvailabilityDecision,
-  warRoomIsOpenDay,
-} from './community-agent';
+import { evaluateSupportMessage } from './community-agent';
 import { loadProjectLinks } from './links';
 
-const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
+const UTC_TIMEZONE = 'UTC';
 const DEFAULT_MESSAGE_COUNT = Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50);
 const DM_CHANNEL_SCAN_CAP = 5;
 const DEFAULT_MAX_CHANNELS = Math.min(Number(process.env.DM_REVIEW_MAX_CHANNELS || DM_CHANNEL_SCAN_CAP), DM_CHANNEL_SCAN_CAP);
@@ -28,7 +24,8 @@ const DM_AUTO_REPLY_STATE_FILE = 'output/dm-auto-reply-state.json';
 const DEFAULT_DM_AUTO_REPLY_MAX = Number(process.env.DM_AUTO_REPLY_MAX || 3);
 
 export interface DmReviewWindow {
-  argentinaDate: string;
+  utcDate: string;
+  argentinaDate?: string;
   startUtc: string;
   endUtc: string;
 }
@@ -135,7 +132,8 @@ export interface DmAutoReplySummary {
 }
 
 interface DmReviewNotificationState {
-  argentinaDate: string;
+  utcDate: string;
+  argentinaDate?: string;
   notifiedMessageIds: number[];
 }
 
@@ -149,9 +147,9 @@ interface DmAutoReplyState {
   }>;
 }
 
-function argentinaDateParts(date: Date): { year: number; month: number; day: number; label: string } {
+function utcDateParts(date: Date): { year: number; month: number; day: number; label: string } {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: ARG_TIMEZONE,
+    timeZone: UTC_TIMEZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -169,12 +167,13 @@ function argentinaDateParts(date: Date): { year: number; month: number; day: num
   };
 }
 
-export function getArgentinaDayWindow(now = new Date()): DmReviewWindow & { start: Date; end: Date } {
-  const { year, month, day, label } = argentinaDateParts(now);
-  const start = new Date(Date.UTC(year, month - 1, day, 3, 0, 0));
+export function getUtcDayWindow(now = new Date()): DmReviewWindow & { start: Date; end: Date } {
+  const { year, month, day, label } = utcDateParts(now);
+  const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
   const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
 
   return {
+    utcDate: label,
     argentinaDate: label,
     start,
     end,
@@ -336,18 +335,19 @@ function createClient(): { client: DiscourseClient; ownUsername: string } {
   };
 }
 
-async function readDmReviewNotificationState(argentinaDate: string): Promise<DmReviewNotificationState> {
+async function readDmReviewNotificationState(utcDate: string): Promise<DmReviewNotificationState> {
   try {
     const state = await readDataJSON<DmReviewNotificationState>(DM_NOTIFICATION_STATE_FILE);
-    if (state.argentinaDate !== argentinaDate) {
-      return { argentinaDate, notifiedMessageIds: [] };
+    if ((state.utcDate || state.argentinaDate) !== utcDate) {
+      return { utcDate, argentinaDate: utcDate, notifiedMessageIds: [] };
     }
     return {
-      argentinaDate,
+      utcDate,
+      argentinaDate: utcDate,
       notifiedMessageIds: Array.isArray(state.notifiedMessageIds) ? state.notifiedMessageIds : [],
     };
   } catch {
-    return { argentinaDate, notifiedMessageIds: [] };
+    return { utcDate, argentinaDate: utcDate, notifiedMessageIds: [] };
   }
 }
 
@@ -355,7 +355,7 @@ async function updateDmReviewNotificationState(result: DmReviewResult): Promise<
   newIncomingMessages: DmReviewMessage[];
 }> {
   const incoming = result.messages.filter((message) => message.incoming);
-  const state = await readDmReviewNotificationState(result.window.argentinaDate);
+  const state = await readDmReviewNotificationState(result.window.utcDate);
   const knownIds = new Set(state.notifiedMessageIds);
   const newIncomingMessages = incoming.filter((message) => !knownIds.has(message.messageId));
   const nextIds = Array.from(new Set([...state.notifiedMessageIds, ...incoming.map((message) => message.messageId)])).slice(-500);
@@ -363,8 +363,8 @@ async function updateDmReviewNotificationState(result: DmReviewResult): Promise<
   if (nextIds.join(',') !== state.notifiedMessageIds.join(',')) {
     await writeDataJSON(
       DM_NOTIFICATION_STATE_FILE,
-      { argentinaDate: result.window.argentinaDate, notifiedMessageIds: nextIds },
-      `update dm notification state ${result.window.argentinaDate}`
+      { utcDate: result.window.utcDate, argentinaDate: result.window.utcDate, notifiedMessageIds: nextIds },
+      `update dm notification state ${result.window.utcDate}`
     );
   }
 
@@ -400,7 +400,7 @@ function dmAutoReplyKey(channelId: number, lastIncomingMessageId: number): strin
 
 export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise<DmReviewResult> {
   const { client, ownUsername } = createClient();
-  const window = getArgentinaDayWindow(options.now || new Date());
+  const window = getUtcDayWindow(options.now || new Date());
   const messageCount = options.messageCount ?? DEFAULT_MESSAGE_COUNT;
   const maxChannels = Math.min(Math.max(1, options.maxChannels ?? DEFAULT_MAX_CHANNELS), DM_CHANNEL_SCAN_CAP);
   const fullScan = options.fullScan ?? true;
@@ -443,7 +443,8 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
     scanMode: fullScan ? 'full' : 'quick',
     generatedAt: new Date().toISOString(),
     window: {
-      argentinaDate: window.argentinaDate,
+      utcDate: window.utcDate,
+      argentinaDate: window.utcDate,
       startUtc: window.startUtc,
       endUtc: window.endUtc,
     },
@@ -472,9 +473,9 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
     const newIncomingMessages = notificationState.newIncomingMessages;
 
     await writeDataJSON(
-      `output/dm-review-${result.window.argentinaDate}.json`,
+      `output/dm-review-${result.window.utcDate}.json`,
       result,
-      `review direct messages ${result.window.argentinaDate}`
+      `review direct messages ${result.window.utcDate}`
     );
 
     await appendOperationLog({
@@ -482,10 +483,11 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
       status: result.errors.length > 0 ? 'error' : result.incomingMessages > 0 ? 'success' : 'skipped',
       message:
         result.incomingMessages > 0
-          ? `Found ${result.incomingMessages} incoming DM(s) for ${result.window.argentinaDate}.`
-          : `No incoming DMs found for ${result.window.argentinaDate}.`,
+          ? `Found ${result.incomingMessages} incoming DM(s) for ${result.window.utcDate}.`
+          : `No incoming DMs found for ${result.window.utcDate}.`,
       metadata: {
-        argentinaDate: result.window.argentinaDate,
+        utcDate: result.window.utcDate,
+        argentinaDate: result.window.utcDate,
         totalDirectChannels: result.totalDirectChannels,
         scannedChannels: result.scannedChannels,
         incomingMessages: result.incomingMessages,
@@ -543,9 +545,9 @@ export async function sendDirectMessageReply(channelId: number, message: string)
   };
 }
 
-function formatArgTime(value: string): string {
+function formatUtcTime(value: string): string {
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: ARG_TIMEZONE,
+    timeZone: UTC_TIMEZONE,
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
@@ -561,7 +563,7 @@ function buildDmContext(messages: DmReviewMessage[]): string {
     .sort((left, right) => messageTime(left) - messageTime(right))
     .map((message) => {
       const direction = message.incoming ? 'user' : 'manager';
-      return `[${formatArgTime(message.createdAt)} ARG/${direction}/${message.username}]: ${message.text.slice(0, 700)}`;
+      return `[${formatUtcTime(message.createdAt)} UTC/${direction}/${message.username}]: ${message.text.slice(0, 700)}`;
     })
     .join('\n');
 }
@@ -628,11 +630,15 @@ async function evaluateDirectMessageThread(
   const pendingText = pendingIncoming
     .map((message) => `${message.username}: ${message.text}`)
     .join('\n\n');
-  const window = getArgentinaDayWindow(now);
-  const context = `Private DM thread from ${window.argentinaDate} ARG:\n${buildDmContext(orderedMessages) || 'No messages today.'}`;
-  const deterministicDecision =
-    warRoomAvailabilityDecision(pendingText, warRoomLink, now) ||
-    await evaluateSupportMessage(lastIncoming.username, pendingText, context, warRoomLink, warRoomIsOpenDay(now));
+  const window = getUtcDayWindow(now);
+  const context = `Private DM thread from ${window.utcDate} UTC:\n${buildDmContext(orderedMessages) || 'No messages today.'}`;
+  const deterministicDecision = await evaluateSupportMessage(
+    lastIncoming.username,
+    pendingText,
+    context,
+    warRoomLink,
+    Boolean(warRoomLink),
+  );
 
   if (logDraft) {
     await appendOperationLog({
@@ -670,7 +676,7 @@ export async function draftDirectMessageReply(
   if (!Number.isFinite(channelId) || channelId <= 0) throw new Error('Invalid DM channel ID');
 
   const { client, ownUsername } = createClient();
-  const window = getArgentinaDayWindow(options.now || new Date());
+  const window = getUtcDayWindow(options.now || new Date());
   const messageCount = options.messageCount ?? DEFAULT_MESSAGE_COUNT;
   const directChannels = await client.readDirectMessageChannels();
   const channel = directChannels.find((item) => item.id === channelId) || { id: channelId };

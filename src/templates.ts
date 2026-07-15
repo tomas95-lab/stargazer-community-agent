@@ -1,4 +1,5 @@
 import { DailyThreadConfig } from './config';
+import { getProjectContext, isLegacyProjectId } from './project-context';
 
 export interface ProjectLinks {
   guidelines: string;
@@ -22,7 +23,7 @@ const DAILY_THREAD_TEMPLATE = `# 🚨 {{title}}
 
 > **TL;DR:** {{quickRule}}
 
-Daily **Stargazer Axiom** thread is up. Use this thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts.
+Daily **{{projectName}}** thread is up. Use this thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts.
 
 ---
 
@@ -57,10 +58,10 @@ Daily **Stargazer Axiom** thread is up. Use this thread for blockers, Cursor iss
 ## 🔗 LINKS
 
 📘 [Guidelines]({{guidelinesLink}})
-🧩 [Stargazer Templates ZIP]({{templatesZipLink}})
+🧩 [Templates ZIP]({{templatesZipLink}})
 🧭 [War Room]({{warRoomLink}})
 ✅ [Validation Script]({{validationScriptLink}})
-✅ [Stargazer Eval]({{stargazerEvalLink}})
+✅ [Evaluation Pack]({{stargazerEvalLink}})
 📚 [Common Errors Document]({{commonErrorsDocumentLink}})
 
 ---
@@ -80,7 +81,7 @@ Let's keep it clean and review-ready 🚀`;
 
 const ANNOUNCEMENT_TEMPLATE = `Hey team! 👋
 
-Today's [**Stargazer Axiom daily thread**]({{dailyThreadUrl}}) is up.
+Today's [**{{projectName}} daily thread**]({{dailyThreadUrl}}) is up.
 
 Please take a few minutes to read it before tasking today. The topic is **{{topic}}**, with a reminder about **{{reminderTitle}}**.
 
@@ -139,6 +140,11 @@ function interpolate(template: string, vars: Record<string, string>): string {
   return result;
 }
 
+function activeProjectName(): string {
+  const context = getProjectContext();
+  return context.projectName || (isLegacyProjectId(context.projectId) ? 'Stargazer Axiom' : 'the active project');
+}
+
 export function renderDailyThread(config: DailyThreadConfig, links?: Partial<ProjectLinks>): string {
   return renderDailyThreadWithLinks(config, links);
 }
@@ -149,6 +155,7 @@ export function renderDailyThreadWithLinks(
 ): string {
   const mergedLinks = { ...DEFAULT_PROJECT_LINKS, ...links };
   return interpolate(DAILY_THREAD_TEMPLATE, {
+    projectName: activeProjectName(),
     title: config.title,
     reminderTitle: config.reminderTitle,
     reminderBody: config.reminderBody,
@@ -167,6 +174,7 @@ export function renderDailyThreadWithLinks(
 
 export function renderAnnouncement(config: DailyThreadConfig, dailyThreadUrl: string): string {
   return interpolate(ANNOUNCEMENT_TEMPLATE, {
+    projectName: activeProjectName(),
     dailyThreadUrl,
     topic: config.topic,
     reminderTitle: config.reminderTitle,

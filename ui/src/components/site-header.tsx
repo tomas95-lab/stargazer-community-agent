@@ -6,7 +6,7 @@ import { NotificationBell } from "@/components/notification-bell"
 import { usePlatform } from "@/platform"
 
 const TITLES: Record<string, string> = {
-  "/": "Stargazer Dashboard",
+  "/": "Project Dashboard",
   "/topics": "Topics",
   "/comms": "Comms Automator",
   "/composer": "Message Composer",
@@ -26,7 +26,7 @@ const TITLES: Record<string, string> = {
 export function SiteHeader() {
   const { pathname } = useLocation()
   const { currentProject, projects, selectProject } = usePlatform()
-  const title = TITLES[pathname] ?? "Stargazer"
+  const title = TITLES[pathname] ?? "Project"
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">

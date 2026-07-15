@@ -521,6 +521,7 @@ export default function ProjectSetup() {
                     id="discourseUsername"
                     value={form.discourseUsername}
                     onChange={(event) => update("discourseUsername", event.target.value)}
+                    required
                   />
                 </div>
                 <div className="grid gap-2">

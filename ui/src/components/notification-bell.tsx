@@ -31,7 +31,7 @@ function asStrings(value: unknown): string[] {
 
 function userList(users: string[]): string {
   const unique = Array.from(new Set(users)).slice(0, 4)
-  return unique.length ? unique.join(", ") : "Stargazer"
+  return unique.length ? unique.join(", ") : "Project"
 }
 
 function notificationFor(entry: OperationLogEntry): NotificationPayload | null {

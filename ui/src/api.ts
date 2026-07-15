@@ -227,7 +227,8 @@ export interface CommunityAgentResult {
   ignored: number;
   withinSchedule: boolean;
   window: {
-    argentinaDate: string;
+    utcDate: string;
+    argentinaDate?: string;
     startUtc: string;
     endUtc: string;
     operatingHours: string;
@@ -285,7 +286,8 @@ export interface DmReviewResult {
   scanMode: 'quick' | 'full';
   generatedAt: string;
   window: {
-    argentinaDate: string;
+    utcDate: string;
+    argentinaDate?: string;
     startUtc: string;
     endUtc: string;
   };
@@ -473,7 +475,8 @@ export interface ProjectMemory {
 export interface AiUsageEvent {
   id: string;
   at: string;
-  argentinaDate: string;
+  utcDate: string;
+  argentinaDate?: string;
   feature: string;
   model: string;
   inputTokens: number;
@@ -484,7 +487,8 @@ export interface AiUsageEvent {
 
 export interface AiUsageSummary {
   generatedAt: string;
-  argentinaDate: string;
+  utcDate: string;
+  argentinaDate?: string;
   today: {
     calls: number;
     inputTokens: number;

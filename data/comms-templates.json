@@ -10,7 +10,7 @@
     "variables": [
       { "key": "oldModel", "label": "Old Model", "required": true, "defaultValue": "Qwen", "placeholder": "e.g. Qwen" },
       { "key": "newModel", "label": "New Model", "required": true, "defaultValue": "Sonnet 4.6", "placeholder": "e.g. Sonnet 4.6" },
-      { "key": "project", "label": "Project", "required": true, "defaultValue": "Stargazer Axiom", "placeholder": "e.g. Stargazer Axiom" }
+      { "key": "project", "label": "Project", "required": true, "defaultValue": "Project name", "placeholder": "e.g. Project name" }
     ],
     "body": "🚨 **IMPORTANT MODEL UPDATE — PLEASE READ** 🚨\n\nTeam, quick reminder: **do not use {{oldModel}} anymore for {{project}} tasks.**\n\nFrom now on, please use **{{newModel}}**.\n\nThis applies to all new attempts moving forward. Please double-check your model before starting or continuing a task.\n\nThank you!"
   },
@@ -37,7 +37,7 @@
     "audience": ["all_contributors", "invited_contributors"],
     "variables": [
       { "key": "date", "label": "Date", "required": true, "placeholder": "e.g. Friday July 4th" },
-      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 3:00 PM ARG" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 18:00 UTC" },
       { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" },
       { "key": "inviteeList", "label": "Invited Contributors", "required": false, "placeholder": "- @name1\n- @name2", "defaultValue": "" }
     ],
@@ -66,7 +66,7 @@
     "supportedTones": ["friendly", "slack_casual", "urgent"],
     "audience": ["invited_contributors"],
     "variables": [
-      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 3:00 PM ARG" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 18:00 UTC" },
       { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
     ],
     "body": "⏰ Just a reminder — the alignment webinar starts in **15 minutes** at {{timeLabel}}.\n\nWebinar link:\n{{webinarLink}}\n\nPlease make sure you're ready to join on time 🙏"
@@ -80,7 +80,7 @@
     "supportedTones": ["firm", "formal"],
     "audience": ["invited_contributors"],
     "variables": [
-      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 3:00 PM ARG" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 18:00 UTC" },
       { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
     ],
     "body": "Hi team 👋\n\nJust a reminder that attendance is required for the alignment webinar today at **{{timeLabel}}**.\n\nWebinar link:\n{{webinarLink}}\n\nPlease join on time so we can align on review/task quality expectations and current project standards. Thank you! 🙏"
@@ -150,7 +150,7 @@
     "variables": [
       { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
     ],
-    "body": "Team, quick reminder!\n\nThe War Room is usually open throughout the day, but QM support is normally available Monday to Friday, from **11:15 AM to 7:00 PM ARG time**.\n\nWar Room link:\n{{warRoomLink}}\n\nTime zones:\n\n11:15 AM - 7:00 PM ARG\n10:15 AM - 6:00 PM ET / CLT\n9:15 AM - 5:00 PM COT / PET\n8:15 AM - 4:00 PM Mexico City / Central America\n7:15 AM - 3:00 PM PT\n\nBefore or after that window, there may not be a QM available, but some experienced contributors from the project may still be around and willing to help with general questions.\n\nFor access issues, Cursor setup problems, onboarding/reactivation, or anything that needs QM support, please try to join during the QM coverage window so we can help you faster 🙏"
+    "body": "Team, quick reminder!\n\nThe War Room is usually open throughout the day, but QM support is normally available Monday to Friday, from **14:15 to 22:00 UTC**.\n\nWar Room link:\n{{warRoomLink}}\n\nBefore or after that window, there may not be a QM available, but some experienced contributors from the project may still be around and willing to help with general questions.\n\nFor access issues, Cursor setup problems, onboarding/reactivation, or anything that needs QM support, please try to join during the QM coverage window so we can help you faster 🙏"
   },
   {
     "id": "war_room_access_setup",
@@ -163,7 +163,7 @@
     "variables": [
       { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
     ],
-    "body": "Hi! For access issues or Cursor setup, the best place to get help is the War Room where we can walk you through it live.\n\nWar Room link:\n{{warRoomLink}}\n\nFeel free to drop in during QM support hours (Mon–Fri, 11:15 AM–7:00 PM ARG) 🙏"
+    "body": "Hi! For access issues or Cursor setup, the best place to get help is the War Room where we can walk you through it live.\n\nWar Room link:\n{{warRoomLink}}\n\nFeel free to drop in during QM support hours (Mon-Fri, 14:15-22:00 UTC) 🙏"
   },
   {
     "id": "explain_throttle",
@@ -211,7 +211,7 @@
     "variables": [
       { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" }
     ],
-    "body": "Hi {{name}}! 👋\n\nYou were added as a **reviewer for Stargazer Axiom** based on the quality of your recent work.\n\nCongrats! We really appreciate the work you've been doing 🚀"
+    "body": "Hi {{name}}! 👋\n\nYou were added as a **reviewer for this project** based on the quality of your recent work.\n\nCongrats! We really appreciate the work you've been doing 🚀"
   },
   {
     "id": "reviewer_alignment_invite",
@@ -223,7 +223,7 @@
     "audience": ["reviewers_only"],
     "variables": [
       { "key": "name", "label": "Name", "required": true, "placeholder": "e.g. @username" },
-      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 3:00 PM ARG" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 18:00 UTC" },
       { "key": "webinarLink", "label": "Webinar Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
     ],
     "body": "Hi {{name}}! 👋\n\nWe'd like to invite you to a reviewer alignment session today at **{{timeLabel}}**.\n\nZoom link:\n{{webinarLink}}\n\nThis session is specifically for reviewers and will cover current quality expectations and rubric standards. Attendance is highly recommended 🙏"
@@ -276,7 +276,7 @@
     "audience": ["new_contributors"],
     "variables": [
       { "key": "date", "label": "Date", "required": true, "placeholder": "e.g. tomorrow / Friday July 4th" },
-      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 10:00 AM ARG" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 13:00 UTC" },
       { "key": "webinarLink", "label": "Session Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" },
       { "key": "inviteeList", "label": "Invited Contributors", "required": false, "placeholder": "- @name1\n- @name2", "defaultValue": "" }
     ],
@@ -292,7 +292,7 @@
     "audience": ["new_contributors"],
     "variables": [
       { "key": "date", "label": "Date", "required": true, "placeholder": "e.g. tomorrow / Friday July 4th" },
-      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 10:00 AM ARG" },
+      { "key": "timeLabel", "label": "Time", "required": true, "placeholder": "e.g. 13:00 UTC" },
       { "key": "webinarLink", "label": "Session Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" },
       { "key": "inviteeList", "label": "Invited Contributors", "required": false, "placeholder": "- @name1\n- @name2", "defaultValue": "" }
     ],
@@ -322,7 +322,7 @@
     "variables": [
       { "key": "warRoomLink", "label": "War Room Link", "required": true, "defaultValue": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success" }
     ],
-    "body": "Hi team! For new contributors that completed the onboarding course and now are EQ, it is because you need access to cursor, please follow the step 0 of the project guidelines, also join the War Room so we can check your access status and help you get set up.\n\nWar Room link:\n{{warRoomLink}}\n\nDrop in during QM support hours (Mon–Fri, 11:15 AM–7:00 PM ARG) and we'll sort it out 🙏"
+    "body": "Hi team! For new contributors that completed the onboarding course and now are EQ, it is because you need access to cursor, please follow the step 0 of the project guidelines, also join the War Room so we can check your access status and help you get set up.\n\nWar Room link:\n{{warRoomLink}}\n\nDrop in during QM support hours (Mon-Fri, 14:15-22:00 UTC) and we'll sort it out 🙏"
   },
   {
     "id": "platform_issue_task",
@@ -441,7 +441,7 @@
       { "key": "reminderTitle", "label": "Reminder Title", "required": true, "placeholder": "e.g. One criterion = one thing" },
       { "key": "quickRule", "label": "Quick Rule", "required": true, "placeholder": "e.g. If your criterion has AND, split it." }
     ],
-    "body": "Hey team! 👋\n\nToday's [**Stargazer Axiom daily thread**]({{dailyThreadUrl}}) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **{{topic}}**, with a reminder about **{{reminderTitle}}**.\n\nQuick rule: {{quickRule}}\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌"
+    "body": "Hey team! 👋\n\nToday's [**daily thread**]({{dailyThreadUrl}}) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **{{topic}}**, with a reminder about **{{reminderTitle}}**.\n\nQuick rule: {{quickRule}}\n\nUse the daily thread for blockers, setup issues, validation/eval problems, onboarding questions, or task-related doubts 🙌"
   },
   {
     "id": "custom_message",

@@ -155,14 +155,24 @@ function cleanText(value: string): string {
     .trim();
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function configuredManagerUsernamePattern(): RegExp | null {
+  const username = (process.env.DISCOURSE_USERNAME || '').trim();
+  return username ? new RegExp(`\\b${escapeRegExp(username)}\\b`, 'gi') : null;
+}
+
 function redactForTraining(value: string): string {
-  return cleanText(value)
+  let redacted = cleanText(value)
     .replace(/@[a-z0-9_.-]+/gi, '@contributor')
     .replace(/\blatam\.coder\d+\b/gi, 'contributor')
     .replace(/\bpilots-coder\d+\b/gi, 'contributor')
-    .replace(/\bamanburman\d*\b/gi, 'contributor')
-    .replace(/\btomas\.ruiz_OBIC\b/gi, 'manager')
-    .slice(0, 1800);
+    .replace(/\bamanburman\d*\b/gi, 'contributor');
+  const managerUsernamePattern = configuredManagerUsernamePattern();
+  if (managerUsernamePattern) redacted = redacted.replace(managerUsernamePattern, 'manager');
+  return redacted.slice(0, 1800);
 }
 
 function normalizeText(value: string): string {
@@ -198,7 +208,7 @@ function inferCategory(text: string): string {
   const lower = normalizeText(text);
   const checks: Array<[string, string[]]> = [
     ['cursor_access_step_0', ['cursor', 'access', 'acceso', 'step 0', 'eq', 'ineligible', 'unlock']],
-    ['war_room_availability', ['war room', 'zoom', 'breakout', 'open now', 'closed', '11:15']],
+    ['war_room_availability', ['war room', 'zoom', 'breakout', 'open now', 'closed', '14:15']],
     ['model_setup', ['qwen', 'sonnet', 'claude', 'model']],
     ['task_throttle', ['throttle', '24hr', '24-hour', 'one task', '1 task']],
     ['course_onboarding', ['course', 'onboarding', 'training', 'enroll']],
@@ -626,7 +636,7 @@ function buildMemoryFacts(analysis: Omit<TrainingAnalysis, 'memoryFacts'>): Proj
     {
       id: 'manager-style-war-room',
       title: 'War Room support pattern',
-      body: 'When live support is relevant and it is a weekday after 11:15 AM ARG, tell contributors to join the War Room and then join the breakout room called Stargazer - Team. On weekends, say the War Room is closed and ask them to come back Monday between 11:15 AM and 7:00 PM ARG.',
+      body: 'When live support is relevant during Stargazer support hours after 14:15 UTC on weekdays, tell contributors to join the War Room and then join the breakout room called Stargazer - Team. On weekends, say the War Room is closed and ask them to come back Monday between 14:15 and 22:00 UTC.',
       source,
     },
     {

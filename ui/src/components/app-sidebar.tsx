@@ -119,7 +119,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { currentProject } = usePlatform()
-  const projectName = currentProject?.projectName || "Stargazer"
+  const projectName = currentProject?.projectName || "Project"
   const projectKey = currentProject?.projectKey || "69cd3d3788bf65e1468428b1"
 
   return (

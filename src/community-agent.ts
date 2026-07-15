@@ -10,6 +10,7 @@ import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
 import { projectMemoryText } from './project-memory';
 import { loadProjectLinks } from './links';
+import { getProjectContext } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 
@@ -21,12 +22,6 @@ const REPLY_LOOKAHEAD_MINUTES = 45;
 const THREAD_SCAN_LIMIT = parseInt(process.env.AGENT_THREAD_SCAN_LIMIT || '6', 10);
 const THREAD_MESSAGE_COUNT = parseInt(process.env.AGENT_THREAD_MESSAGE_COUNT || '30', 10);
 const STATE_FILE = 'output/community-agent-state.json';
-const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
-const WAR_ROOM_OPEN_MINUTES = 11 * 60 + 15;
-const WAR_ROOM_BREAKOUT_ROOM = 'Stargazer - Team';
-const WAR_ROOM_BREAKOUT_NOTICE = `Once you are in the War Room, join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`;
-const WAR_ROOM_WEEKEND_NOTICE =
-  'Today is a weekend day in Argentina, so the War Room is closed. Please come back on Monday between 11:15 AM and 7:00 PM ARG for live support.';
 
 export type CommunityAgentSource = 'community';
 export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
@@ -90,7 +85,8 @@ export interface CommunityAgentResult {
   ignored: number;
   withinSchedule: boolean;
   window: {
-    argentinaDate: string;
+    utcDate: string;
+    argentinaDate?: string;
     startUtc: string;
     endUtc: string;
     operatingHours: string;
@@ -128,73 +124,38 @@ export async function fetchRecentCommunityMessages(count = 20): Promise<Discours
   return client.readChatMessages(channelId, count);
 }
 
-function argentinaDateParts(date: Date): { year: number; month: number; day: number; label: string } {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: ARG_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date);
-
-  const year = Number(parts.find((part) => part.type === 'year')?.value);
-  const month = Number(parts.find((part) => part.type === 'month')?.value);
-  const day = Number(parts.find((part) => part.type === 'day')?.value);
-
-  return {
-    year,
-    month,
-    day,
-    label: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-  };
+function utcDateLabel(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
 function todayWindow(now = new Date()): CommunityAgentResult['window'] & { start: Date; end: Date } {
-  const { year, month, day, label } = argentinaDateParts(now);
-  const start = new Date(Date.UTC(year, month - 1, day, 3, 0, 0));
+  const label = utcDateLabel(now);
+  const start = new Date(`${label}T00:00:00.000Z`);
   const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
   return {
+    utcDate: label,
     argentinaDate: label,
     start,
     end,
     startUtc: start.toISOString(),
     endUtc: end.toISOString(),
-    operatingHours: 'Agent checks 10:00-19:00 America/Argentina/Buenos_Aires; War Room opens weekdays after 11:15 AM ARG; closed Saturdays and Sundays',
+    operatingHours: 'Agent scans the current UTC day. Live-support hours come from project guidelines or project memory.',
   };
 }
 
-function argentinaDayOfWeek(now = new Date()): number {
-  const shortDay = new Intl.DateTimeFormat('en-US', {
-    timeZone: ARG_TIMEZONE,
-    weekday: 'short',
-  }).format(now);
-  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(shortDay);
-}
-
-function argentinaMinutes(now = new Date()): number {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: ARG_TIMEZONE,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-  const parts = formatter.formatToParts(now);
-  const hour = Number(parts.find((part) => part.type === 'hour')?.value);
-  const minute = Number(parts.find((part) => part.type === 'minute')?.value);
-  return hour * 60 + minute;
-}
-
-function isArgentinaWeekend(now = new Date()): boolean {
-  const day = argentinaDayOfWeek(now);
-  return day === 0 || day === 6;
-}
-
 export function warRoomIsOpenDay(now = new Date()): boolean {
-  return !isArgentinaWeekend(now);
+  void now;
+  return true;
 }
 
 export function isWithinOperatingHours(now = new Date()): boolean {
-  const minutes = argentinaMinutes(now);
-  return minutes >= 10 * 60 && minutes <= 19 * 60;
+  const startHour = Number(process.env.AGENT_UTC_START_HOUR || '');
+  const endHour = Number(process.env.AGENT_UTC_END_HOUR || '');
+  if (!Number.isFinite(startHour) || !Number.isFinite(endHour)) return true;
+  const hour = now.getUTCHours();
+  return startHour <= endHour
+    ? hour >= startHour && hour <= endHour
+    : hour >= startHour || hour <= endHour;
 }
 
 function isWithinWindow(createdAt: string | undefined, window: { start: Date; end: Date }): boolean {
@@ -418,7 +379,8 @@ export function annotateProbableReplies(items: CommunityAgentItem[]): CommunityA
 }
 
 function shouldIgnoreAuthor(username: string): boolean {
-  const configuredUsername = loadBotConfig().discourseUsername || process.env.DISCOURSE_USERNAME || 'tomas.ruiz_OBIC';
+  const configuredUsername = loadBotConfig().discourseUsername || process.env.DISCOURSE_USERNAME || '';
+  if (!configuredUsername) return false;
   return username.toLowerCase() === configuredUsername.toLowerCase();
 }
 
@@ -583,42 +545,12 @@ function anthropicUsage(response: unknown): { inputTokens?: number; outputTokens
   };
 }
 
-function replyIncludesWarRoomLink(reply: string, warRoomLink: string): boolean {
-  const normalizedReply = normalizeText(reply);
-  const normalizedLink = normalizeText(warRoomLink);
-  return (
-    normalizedReply.includes(normalizedLink) ||
-    normalizedReply.includes('91510346485') ||
-    normalizedReply.includes('war room')
-  );
-}
-
 function removeWarRoomLink(reply: string, warRoomLink: string): string {
   return reply
     .replaceAll(warRoomLink, '')
     .replace(/War Room link:\s*/gi, '')
-    .replace(new RegExp(WAR_ROOM_BREAKOUT_NOTICE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-}
-
-function replyMentionsBreakoutRoom(reply: string): boolean {
-  return normalizeText(reply).includes(normalizeText(WAR_ROOM_BREAKOUT_ROOM));
-}
-
-function replyReferencesLiveSupport(reply: string, warRoomLink: string): boolean {
-  const normalized = normalizeText(reply);
-  const normalizedLink = normalizeText(warRoomLink);
-  return (
-    normalized.includes(normalizedLink) ||
-    normalized.includes('91510346485') ||
-    normalized.includes('war room') ||
-    normalized.includes('live support') ||
-    normalized.includes('zoom') ||
-    normalized.includes('qm availability') ||
-    normalized.includes('business hours') ||
-    normalized.includes('fastest support')
-  );
 }
 
 const NON_ENGLISH_REPLY_PATTERN = /[ñáéíóúü¿¡]|\b(hola|gracias|por favor|disculpa|ay[uú]dame|necesito|equipo|acceso)\b/i;
@@ -637,24 +569,15 @@ function cleanGeneratedReply(reply: string): string {
   return lines.join('\n').trim();
 }
 
-function withWarRoomSupportInfo(reply: string, warRoomLink: string, isWarRoomOpenDay: boolean): string {
+function withWarRoomSupportInfo(reply: string, warRoomLink: string, canUseWarRoomLink: boolean): string {
   const trimmed = cleanGeneratedReply(reply);
   if (!trimmed) return trimmed;
 
-  if (!isWarRoomOpenDay) {
-    const referencedLiveSupport = replyReferencesLiveSupport(trimmed, warRoomLink);
-    if (referencedLiveSupport) {
-      return WAR_ROOM_WEEKEND_NOTICE;
-    }
+  if (!canUseWarRoomLink || !warRoomLink) {
     return removeWarRoomLink(trimmed, warRoomLink);
   }
 
-  const withLink = replyIncludesWarRoomLink(trimmed, warRoomLink)
-    ? trimmed
-    : `${trimmed}\n\nWar Room link:\n${warRoomLink}`;
-
-  if (replyMentionsBreakoutRoom(withLink)) return withLink;
-  return `${withLink}\n\n${WAR_ROOM_BREAKOUT_NOTICE}`;
+  return trimmed;
 }
 
 export function warRoomAvailabilityDecision(
@@ -662,39 +585,10 @@ export function warRoomAvailabilityDecision(
   warRoomLink: string,
   now = new Date(),
 ): Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'needsHuman'> | null {
-  if (!isWarRoomAvailabilityQuestion(message)) return null;
-
-  if (!warRoomIsOpenDay(now)) {
-    return {
-      action: 'reply',
-      confidence: 1,
-      reason: 'Deterministic War Room weekend availability rule',
-      reply: cleanGeneratedReply(WAR_ROOM_WEEKEND_NOTICE),
-      guidelineSnippets: [],
-    };
-  }
-
-  if (argentinaMinutes(now) < WAR_ROOM_OPEN_MINUTES) {
-    return {
-      action: 'reply',
-      confidence: 1,
-      reason: 'Deterministic War Room pre-open availability rule',
-      reply: cleanGeneratedReply(
-        'Not yet. The War Room will be open after 11:15 AM ARG today. Please come back then for live support.'
-      ),
-      guidelineSnippets: [],
-    };
-  }
-
-  return {
-    action: 'reply',
-    confidence: 1,
-    reason: 'Deterministic War Room open availability rule',
-    reply: cleanGeneratedReply(
-      `Yes, the War Room is open now.\n\nWar Room link:\n${warRoomLink}\n\n${WAR_ROOM_BREAKOUT_NOTICE}`
-    ),
-    guidelineSnippets: [],
-  };
+  void message;
+  void warRoomLink;
+  void now;
+  return null;
 }
 
 export async function evaluateSupportMessage(
@@ -702,7 +596,7 @@ export async function evaluateSupportMessage(
   message: string,
   context: string,
   warRoomLink: string,
-  isWarRoomOpenDay: boolean,
+  canUseWarRoomLink: boolean,
 ): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'needsHuman'>> {
   const apiKey = process.env.ANTHROPIC_API_KEY || '';
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -710,8 +604,12 @@ export async function evaluateSupportMessage(
   const snippets = await findProjectGuidelineSnippets(message, 4);
   const memory = await projectMemoryText(25);
   const anthropic = new Anthropic({ apiKey });
+  const projectName = getProjectContext().projectName || 'the active project';
+  const warRoomInstruction = canUseWarRoomLink && warRoomLink
+    ? `A War Room link is configured for this project: ${warRoomLink}. Include it only when live support is clearly relevant and supported by project memory, project guidelines, or recent context. Do not state live-support hours, weekdays, weekends, or room names unless they are present in project memory, project guidelines, or recent context.`
+    : 'No War Room link is configured for this project. Do not include a War Room link.';
   const systemPrompt = [
-    'You are a community management agent for Stargazer Axiom.',
+    `You are a community management agent for ${projectName}.`,
     'Always write user-facing replies in English, even if the incoming message is Spanish, Portuguese, or any other language.',
     'Never write the reply in Spanish.',
     'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
@@ -720,12 +618,7 @@ export async function evaluateSupportMessage(
     'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
     'Keep replies under 4 short sentences.',
     'Do not add a footer, attribution, or assistant name.',
-    isWarRoomOpenDay
-      ? `When you choose action "reply", include the War Room Zoom link for live support: ${warRoomLink}. Always tell them that once inside the War Room they must join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}".`
-      : 'Today is a weekend day in Argentina, so the War Room is closed. Do not include the War Room Zoom link. If your reply mentions War Room, Zoom, QM availability, or live support in any way, say exactly that the user should come back on Monday between 11:15 AM and 7:00 PM ARG.',
-    isWarRoomOpenDay
-      ? `If the user says they are already in the War Room / Zoom call and nobody is helping them, do not resend the Zoom link. Instead, tell them to join the breakout room called "${WAR_ROOM_BREAKOUT_ROOM}" inside the call.`
-      : '',
+    warRoomInstruction,
     'Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
   ].filter(Boolean).join(' ');
   const userPrompt = [
@@ -771,7 +664,7 @@ export async function evaluateSupportMessage(
       ? 'human'
       : action;
   const reply = finalAction === 'reply'
-    ? cleanGeneratedReply(withWarRoomSupportInfo(rawReply, warRoomLink, isWarRoomOpenDay))
+    ? cleanGeneratedReply(withWarRoomSupportInfo(rawReply, warRoomLink, canUseWarRoomLink))
     : cleanGeneratedReply(rawReply);
 
   return {
@@ -813,7 +706,8 @@ export async function fetchCommunityAgentItems(options: CommunityAgentOptions = 
     candidates,
     errors: result.errors,
     window: {
-      argentinaDate: result.window.argentinaDate,
+      utcDate: result.window.utcDate,
+      argentinaDate: result.window.utcDate,
       startUtc: result.window.startUtc,
       endUtc: result.window.endUtc,
       operatingHours: result.window.operatingHours,
@@ -835,7 +729,8 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
 
   const fetched = await fetchCommunityItems({ includeCommunity, onlyToday, messageCount });
   const window = {
-    argentinaDate: fetched.window.argentinaDate,
+    utcDate: fetched.window.utcDate,
+    argentinaDate: fetched.window.utcDate,
     startUtc: fetched.window.startUtc,
     endUtc: fetched.window.endUtc,
     operatingHours: fetched.window.operatingHours,
@@ -884,13 +779,13 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
     .join('\n');
 
   const { warRoom: warRoomLink } = await loadProjectLinks();
-  const isWarRoomOpenDay = warRoomIsOpenDay();
+  const canUseWarRoomLink = Boolean(warRoomLink);
   const decisions: CommunityAgentDecision[] = [];
 
   for (const item of candidates) {
     try {
       const decision = warRoomAvailabilityDecision(item.message, warRoomLink) ||
-        await evaluateSupportMessage(item.username, item.message, context, warRoomLink, isWarRoomOpenDay);
+        await evaluateSupportMessage(item.username, item.message, context, warRoomLink, canUseWarRoomLink);
       let posted = false;
       if (post && decision.action === 'reply') {
         posted = await postDecision(client, channelId, decision.reply, item);

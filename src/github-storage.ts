@@ -32,9 +32,12 @@ function sleep(ms: number): Promise<void> {
 }
 
 function getRepo(): { owner: string; repo: string } {
+  const owner = process.env.GITHUB_OWNER || '';
+  const repo = process.env.GITHUB_REPO || '';
+  if (!owner || !repo) throw new Error('GITHUB_OWNER and GITHUB_REPO must be configured');
   return {
-    owner: process.env.GITHUB_OWNER || 'tomas95-lab',
-    repo: process.env.GITHUB_REPO || 'stargazer-community-agent',
+    owner,
+    repo,
   };
 }
 

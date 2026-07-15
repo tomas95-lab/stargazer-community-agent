@@ -178,14 +178,14 @@ export default function WebinarScheduler() {
               value={form.timeUtc}
               onChange={(e) => setForm({ ...form, timeUtc: e.target.value })}
             />
-            <p className="mt-1 text-xs text-muted-foreground">ARG is UTC-3. 12:30 PM ARG = 15:30 UTC</p>
+            <p className="mt-1 text-xs text-muted-foreground">Use UTC for all scheduled times.</p>
           </div>
 
           <div className="sm:col-span-2">
             <label className={labelCls}>Time Label (display)</label>
             <input
               className={inputCls}
-              placeholder="e.g. 12:30 PM ARG"
+              placeholder="e.g. 15:30 UTC"
               value={form.timeLabel}
               onChange={(e) => setForm({ ...form, timeLabel: e.target.value })}
             />

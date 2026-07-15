@@ -29,10 +29,10 @@ const LABELS: Record<string, string> = {
   PLATFORM_ENCRYPTION_CONFIGURED: 'Platform Encryption Configured',
 };
 
-function formatArgDate(value?: string): string {
+function formatUtcDate(value?: string): string {
   if (!value) return 'Not yet';
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Argentina/Buenos_Aires',
+    timeZone: 'UTC',
     month: 'short',
     day: '2-digit',
     hour: '2-digit',
@@ -169,15 +169,15 @@ export default function Settings() {
                       <p className="mt-1 font-mono text-xs text-muted-foreground">{item.endpoint}</p>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      <p>{formatArgDate(item.provider?.lastExecution || item.lastCronRequest?.at)}</p>
+                      <p>{formatUtcDate(item.provider?.lastExecution || item.lastCronRequest?.at)} UTC</p>
                       <p className="mt-1 text-xs">{item.provider?.lastStatusLabel || item.lastCronRequest?.status || '-'}</p>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      <p>{formatArgDate(item.lastAppResult?.at)}</p>
+                      <p>{formatUtcDate(item.lastAppResult?.at)} UTC</p>
                       <p className="mt-1 text-xs">{item.lastAppResult?.status || '-'}</p>
                     </td>
                     <td className="px-4 py-3 text-foreground">
-                      {formatArgDate(item.provider?.nextExecution)}
+                      {formatUtcDate(item.provider?.nextExecution)} UTC
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{metricValue(item)}</td>
                     <td className="px-4 py-3 text-muted-foreground">{item.healthReason}</td>
@@ -228,7 +228,7 @@ export default function Settings() {
           <div className="rounded-md border border-border bg-background p-4">
             <p className="text-xs font-semibold uppercase text-muted-foreground">Input Tokens</p>
             <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.inputTokens)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{usage?.argentinaDate || 'ARG day'}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{usage?.utcDate || usage?.argentinaDate || 'UTC day'}</p>
           </div>
           <div className="rounded-md border border-border bg-background p-4">
             <p className="text-xs font-semibold uppercase text-muted-foreground">Output Tokens</p>
@@ -262,7 +262,7 @@ export default function Settings() {
               ) : usage?.recentEvents.length ? (
                 usage.recentEvents.slice(0, 10).map((event) => (
                   <tr key={event.id} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 text-muted-foreground">{formatArgDate(event.at)}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatUtcDate(event.at)} UTC</td>
                     <td className="px-4 py-3 font-medium text-foreground">{event.feature}</td>
                     <td className="px-4 py-3 text-muted-foreground">{event.model}</td>
                     <td className="px-4 py-3 text-foreground">{formatNumber(event.totalTokens)}</td>
@@ -296,7 +296,7 @@ export default function Settings() {
       <div className="sg-panel overflow-hidden p-0">
         <div className="border-b border-border px-6 py-4">
           <h2 className="text-lg font-semibold text-foreground">Automation Schedule</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Vercel cron times in UTC and Argentina time.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Automation schedule in UTC.</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
@@ -305,7 +305,6 @@ export default function Settings() {
                 <th className="px-4 py-3 text-left font-semibold">Job</th>
                 <th className="px-4 py-3 text-left font-semibold">Endpoint</th>
                 <th className="px-4 py-3 text-left font-semibold">UTC</th>
-                <th className="px-4 py-3 text-left font-semibold">ARG</th>
                 <th className="px-4 py-3 text-left font-semibold">Purpose</th>
               </tr>
             </thead>
@@ -315,7 +314,6 @@ export default function Settings() {
                   <td className="px-4 py-3 font-medium text-foreground">{item.job}</td>
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.endpoint}</td>
                   <td className="px-4 py-3 text-foreground">{item.utc}</td>
-                  <td className="px-4 py-3 text-foreground">{item.arg}</td>
                   <td className="px-4 py-3 text-muted-foreground">{item.purpose}</td>
                 </tr>
               ))}

@@ -10,7 +10,7 @@ test('message composer normalizes defaults and trims text fields', () => {
   });
 
   assert.equal(result.prompt, 'remind contributors about Cursor access');
-  assert.equal(result.audience, 'Stargazer contributors');
+  assert.equal(result.audience, 'Project contributors');
   assert.equal(result.channel, 'community');
   assert.equal(result.tone, 'professional');
   assert.equal(result.objective, 'inform');

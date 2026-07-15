@@ -4,7 +4,7 @@ import {
   directMessagePeers,
   filterTodayDmMessages,
   filterTodayIncomingDmMessages,
-  getArgentinaDayWindow,
+  getUtcDayWindow,
 } from '../dist/dm-review-job.js';
 
 function message(id, username, createdAt, text = 'hello') {
@@ -16,24 +16,26 @@ function message(id, username, createdAt, text = 'hello') {
   };
 }
 
-test('DM review window follows the current Argentina day', () => {
-  const window = getArgentinaDayWindow(new Date('2026-07-06T18:30:00.000Z'));
+const ownUsername = 'manager.user';
 
-  assert.equal(window.argentinaDate, '2026-07-06');
-  assert.equal(window.startUtc, '2026-07-06T03:00:00.000Z');
-  assert.equal(window.endUtc, '2026-07-07T03:00:00.000Z');
+test('DM review window follows the current UTC day', () => {
+  const window = getUtcDayWindow(new Date('2026-07-06T18:30:00.000Z'));
+
+  assert.equal(window.utcDate, '2026-07-06');
+  assert.equal(window.startUtc, '2026-07-06T00:00:00.000Z');
+  assert.equal(window.endUtc, '2026-07-07T00:00:00.000Z');
 });
 
-test('DM review keeps only incoming messages from today in Argentina', () => {
-  const window = getArgentinaDayWindow(new Date('2026-07-06T18:30:00.000Z'));
+test('DM review keeps only incoming messages from today in UTC', () => {
+  const window = getUtcDayWindow(new Date('2026-07-06T18:30:00.000Z'));
   const filtered = filterTodayIncomingDmMessages(
     [
       message(1, 'latam.coder1232', '2026-07-05T17:51:31.000Z', 'yesterday reference'),
       message(2, 'latam.coder1232', '2026-07-06T03:01:00.000Z', 'today incoming'),
-      message(3, 'tomas.ruiz_OBIC', '2026-07-06T12:00:00.000Z', 'own response'),
-      message(4, 'latam.coder1232', '2026-07-07T03:00:00.000Z', 'next Argentina day'),
+      message(3, ownUsername, '2026-07-06T12:00:00.000Z', 'own response'),
+      message(4, 'latam.coder1232', '2026-07-07T03:00:00.000Z', 'next UTC day'),
     ],
-    'tomas.ruiz_OBIC',
+    ownUsername,
     window
   );
 
@@ -44,13 +46,13 @@ test('DM review keeps only incoming messages from today in Argentina', () => {
 });
 
 test('DM review keeps every message from today in a DM thread', () => {
-  const window = getArgentinaDayWindow(new Date('2026-07-06T18:30:00.000Z'));
+  const window = getUtcDayWindow(new Date('2026-07-06T18:30:00.000Z'));
   const filtered = filterTodayDmMessages(
     [
       message(1, 'latam.coder1232', '2026-07-05T17:51:31.000Z', 'yesterday reference'),
       message(2, 'latam.coder1232', '2026-07-06T15:51:00.000Z', 'first today message'),
       message(3, 'latam.coder1232', '2026-07-06T18:56:35.000Z', 'second today message'),
-      message(4, 'tomas.ruiz_OBIC', '2026-07-06T19:00:00.000Z', 'manager response'),
+      message(4, ownUsername, '2026-07-06T19:00:00.000Z', 'manager response'),
     ],
     window
   );

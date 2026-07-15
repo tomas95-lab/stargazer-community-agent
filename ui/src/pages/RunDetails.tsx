@@ -27,7 +27,7 @@ function asNumber(value: unknown, fallback = 0): number {
 function formatTime(value?: string): string {
   if (!value) return '-';
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Argentina/Buenos_Aires',
+    timeZone: 'UTC',
     month: 'short',
     day: '2-digit',
     hour: '2-digit',

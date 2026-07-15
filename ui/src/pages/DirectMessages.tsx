@@ -13,17 +13,17 @@ import { api, type DmDraftResult, type DmReviewMessage, type DmReviewResult, typ
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-function formatArgTime(value: string): string {
+function formatUtcTime(value: string): string {
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Argentina/Buenos_Aires',
+    timeZone: 'UTC',
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
 }
 
-function formatArgDateTime(value: string): string {
+function formatUtcDateTime(value: string): string {
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Argentina/Buenos_Aires',
+    timeZone: 'UTC',
     month: 'short',
     day: '2-digit',
     hour: '2-digit',
@@ -136,7 +136,7 @@ function DmThread({
               <span className="font-medium text-foreground">{message.incoming ? senderLabel(message) : 'You'}</span>
               <span className="flex items-center gap-1">
                 <IconClock className="size-3.5" />
-                {formatArgTime(message.createdAt)} ARG
+                {formatUtcTime(message.createdAt)} UTC
               </span>
             </div>
             <p className="whitespace-pre-wrap text-sm leading-6">{message.text}</p>
@@ -279,7 +279,7 @@ export default function DirectMessages() {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant="outline">Today only</Badge>
             {result && <Badge variant="outline">{result.scanMode === 'full' ? 'Full scan' : 'Quick preview'}</Badge>}
-            {result && <Badge variant="secondary">{result.window.argentinaDate} ARG</Badge>}
+            {result && <Badge variant="secondary">{result.window.utcDate || result.window.argentinaDate} UTC</Badge>}
             {reportSaved && (
               <Badge className="border-transparent bg-success text-success-foreground">
                 <IconCheck />
@@ -303,7 +303,7 @@ export default function DirectMessages() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat icon={IconInbox} label="Messages" value={result?.messages.length ?? '-'} sub={`${result?.incomingMessages ?? '-'} incoming`} />
         <Stat icon={IconUser} label="Channels" value={result?.scannedChannels ?? '-'} sub={`${result?.totalDirectChannels ?? '-'} total`} />
-        <Stat icon={IconClock} label="Window" value={result?.window.argentinaDate || '-'} sub={result ? `${formatArgDateTime(result.window.startUtc)} - ${formatArgDateTime(result.window.endUtc)}` : 'ARG day'} />
+        <Stat icon={IconClock} label="Window" value={result?.window.utcDate || result?.window.argentinaDate || '-'} sub={result ? `${formatUtcDateTime(result.window.startUtc)} - ${formatUtcDateTime(result.window.endUtc)} UTC` : 'UTC day'} />
         <Stat icon={IconCheck} label="Open Threads" value={result?.unresolvedChannels ?? '-'} sub={`${result?.pendingIncomingMessages ?? '-'} pending incoming`} />
       </div>
 
@@ -317,7 +317,7 @@ export default function DirectMessages() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-foreground">DM Threads</h2>
-          {result && <p className="text-xs text-muted-foreground">Updated {formatArgDateTime(result.generatedAt)} ARG</p>}
+          {result && <p className="text-xs text-muted-foreground">Updated {formatUtcDateTime(result.generatedAt)} UTC</p>}
         </div>
 
         <div className="sg-panel p-5">

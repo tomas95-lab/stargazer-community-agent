@@ -6,10 +6,8 @@ export interface AutomationJobDefinition {
   job: string;
   endpoint: string;
   utc: string;
-  arg: string;
   purpose: string;
   action: string;
-  cronJobOrgTitle: string;
 }
 
 export interface AutomationProviderJob {
@@ -63,124 +61,102 @@ const MATCH_WINDOW_MS = 15 * 60 * 1000;
 export const AUTOMATION_JOBS: AutomationJobDefinition[] = [
   {
     id: 'daily-thread-1000',
-    title: 'Daily Thread 10:00 ARG',
+    title: 'Daily Thread 13:00 UTC',
     job: 'Daily Thread',
     endpoint: '/api/cron/daily-thread/1000',
     utc: '13:00 UTC Mon-Fri',
-    arg: '10:00 ARG Mon-Fri',
     purpose: 'Primary weekday publish attempt',
     action: 'daily_publish_job',
-    cronJobOrgTitle: 'Stargazer - Daily Thread 10:00 ARG',
   },
   {
     id: 'daily-thread-1100',
-    title: 'Daily Thread retry 11:00 ARG',
+    title: 'Daily Thread retry 14:00 UTC',
     job: 'Daily Thread',
     endpoint: '/api/cron/daily-thread/1100',
     utc: '14:00 UTC Mon-Fri',
-    arg: '11:00 ARG Mon-Fri',
     purpose: 'Weekday retry if not already published',
     action: 'daily_publish_job',
-    cronJobOrgTitle: 'Stargazer - Daily Thread retry 11:00 ARG',
   },
   {
     id: 'community-agent-1000',
-    title: 'Community Agent 10:00 ARG',
+    title: 'Community Agent 13:00 UTC',
     job: 'Community Agent',
     endpoint: '/api/cron/community-agent/1000',
     utc: '13:00 UTC',
-    arg: '10:00 ARG',
     purpose: 'Community check',
     action: 'community_agent',
-    cronJobOrgTitle: 'Stargazer - Community Agent 10:00 ARG',
   },
   {
     id: 'community-agent-1130',
-    title: 'Community Agent 11:30 ARG',
+    title: 'Community Agent 14:30 UTC',
     job: 'Community Agent',
     endpoint: '/api/cron/community-agent/1130',
     utc: '14:30 UTC',
-    arg: '11:30 ARG',
     purpose: 'Community check',
     action: 'community_agent',
-    cronJobOrgTitle: 'Stargazer - Community Agent 11:30 ARG',
   },
   {
     id: 'community-agent-1300',
-    title: 'Community Agent 13:00 ARG',
+    title: 'Community Agent 16:00 UTC',
     job: 'Community Agent',
     endpoint: '/api/cron/community-agent/1300',
     utc: '16:00 UTC',
-    arg: '13:00 ARG',
     purpose: 'Community check',
     action: 'community_agent',
-    cronJobOrgTitle: 'Stargazer - Community Agent 13:00 ARG',
   },
   {
     id: 'community-agent-1430',
-    title: 'Community Agent 14:30 ARG',
+    title: 'Community Agent 17:30 UTC',
     job: 'Community Agent',
     endpoint: '/api/cron/community-agent/1430',
     utc: '17:30 UTC',
-    arg: '14:30 ARG',
     purpose: 'Community check',
     action: 'community_agent',
-    cronJobOrgTitle: 'Stargazer - Community Agent 14:30 ARG',
   },
   {
     id: 'community-agent-1600',
-    title: 'Community Agent 16:00 ARG',
+    title: 'Community Agent 19:00 UTC',
     job: 'Community Agent',
     endpoint: '/api/cron/community-agent/1600',
     utc: '19:00 UTC',
-    arg: '16:00 ARG',
     purpose: 'Community check',
     action: 'community_agent',
-    cronJobOrgTitle: 'Stargazer - Community Agent 16:00 ARG',
   },
   {
     id: 'community-agent-1730',
-    title: 'Community Agent 17:30 ARG',
+    title: 'Community Agent 20:30 UTC',
     job: 'Community Agent',
     endpoint: '/api/cron/community-agent/1730',
     utc: '20:30 UTC',
-    arg: '17:30 ARG',
     purpose: 'Community check',
     action: 'community_agent',
-    cronJobOrgTitle: 'Stargazer - Community Agent 17:30 ARG',
   },
   {
     id: 'community-agent-1900',
-    title: 'Community Agent 19:00 ARG',
+    title: 'Community Agent 22:00 UTC',
     job: 'Community Agent',
     endpoint: '/api/cron/community-agent/1900',
     utc: '22:00 UTC',
-    arg: '19:00 ARG',
     purpose: 'Final community check',
     action: 'community_agent',
-    cronJobOrgTitle: 'Stargazer - Community Agent 19:00 ARG',
   },
   {
     id: 'dm-review-1530',
-    title: 'DM Review 15:30 ARG',
+    title: 'DM Review 18:30 UTC',
     job: 'DM Review',
     endpoint: '/api/cron/dm-review/1530',
     utc: '18:30 UTC',
-    arg: '15:30 ARG',
     purpose: 'Afternoon DM scan',
     action: 'dm_review',
-    cronJobOrgTitle: 'Stargazer - DM Review 15:30 ARG',
   },
   {
     id: 'dm-review-1800',
-    title: 'DM Review 18:00 ARG',
+    title: 'DM Review 21:00 UTC',
     job: 'DM Review',
     endpoint: '/api/cron/dm-review/1800',
     utc: '21:00 UTC',
-    arg: '18:00 ARG',
     purpose: 'End-of-day DM scan',
     action: 'dm_review',
-    cronJobOrgTitle: 'Stargazer - DM Review 18:00 ARG',
   },
 ];
 
@@ -249,6 +225,16 @@ function findLastCronRequest(entries: OperationLogEntry[], endpoint: string): Op
   return entries.find((entry) => entry.action === 'cron_request' && endpointFromEntry(entry) === endpoint);
 }
 
+function providerForEndpoint(jobs: AutomationProviderJob[], endpoint: string): AutomationProviderJob | undefined {
+  return jobs.find((job) => {
+    try {
+      return new URL(job.url).pathname === endpoint;
+    } catch {
+      return job.url.includes(endpoint);
+    }
+  });
+}
+
 function withinMatchWindow(entryAt: string, referenceAt: string): boolean {
   const entryTime = new Date(entryAt).getTime();
   const referenceTime = new Date(referenceAt).getTime();
@@ -283,10 +269,8 @@ export async function getAutomationHealth(): Promise<AutomationHealthResult> {
     fetchCronJobOrgJobs(),
     readOperationLog(500),
   ]);
-  const providerByTitle = new Map(providerResult.jobs.map((job) => [job.title, job]));
-
   const jobs = AUTOMATION_JOBS.map((definition): AutomationHealthJob => {
-    const provider = providerByTitle.get(definition.cronJobOrgTitle);
+    const provider = providerForEndpoint(providerResult.jobs, definition.endpoint);
     const cronRequest = findLastCronRequest(entries, definition.endpoint);
     const referenceAt = cronRequest?.at || provider?.lastExecution;
     const appResult = findLastAppResult(entries, definition.action, referenceAt);

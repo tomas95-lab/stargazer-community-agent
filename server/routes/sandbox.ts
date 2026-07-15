@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { evaluateSupportMessage, warRoomAvailabilityDecision, warRoomIsOpenDay } from '../../src/community-agent';
+import { evaluateSupportMessage } from '../../src/community-agent';
 import { loadProjectLinks } from '../../src/links';
 import { appendOperationLog } from '../../src/operations-log';
 import { requireAdminToken } from '../auth';
@@ -37,14 +37,12 @@ router.post('/evaluate', requireAdminToken, async (req: Request, res: Response) 
       extraContext ? `Extra context:\n${extraContext}` : '',
     ].filter(Boolean).join('\n\n');
 
-    const deterministicDecision = warRoomAvailabilityDecision(message, warRoomLink, now);
-    const decision = deterministicDecision ||
-      await evaluateSupportMessage(username, message, context, warRoomLink, warRoomIsOpenDay(now));
+    const decision = await evaluateSupportMessage(username, message, context, warRoomLink, Boolean(warRoomLink));
 
     const result = {
       mode: 'sandbox',
       generatedAt: new Date().toISOString(),
-      deterministic: Boolean(deterministicDecision),
+      deterministic: false,
       input: {
         username,
         channel,
@@ -62,7 +60,7 @@ router.post('/evaluate', requireAdminToken, async (req: Request, res: Response) 
       metadata: {
         action: decision.action,
         confidence: decision.confidence,
-        deterministic: Boolean(deterministicDecision),
+        deterministic: false,
       },
     }, {
       type: 'sandbox_evaluation',
