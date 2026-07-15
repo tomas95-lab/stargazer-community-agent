@@ -1,5 +1,21 @@
 [
   {
+    "id": "12eef21a-3b41-4fb5-98cd-9f371a9dad29",
+    "at": "2026-07-15T22:05:17.227Z",
+    "action": "cron_request",
+    "status": "error",
+    "message": "Cron project not found: codex-auth-probe-bearer",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1300",
+      "slot": "1300",
+      "source": "codex-auth-probe-bearer",
+      "userAgent": "node",
+      "authorized": true,
+      "httpStatus": 500,
+      "job": "community_agent"
+    }
+  },
+  {
     "id": "62345898-63e5-4c05-90ad-05c7d75ded81",
     "at": "2026-07-15T22:05:16.184Z",
     "action": "cron_request",
