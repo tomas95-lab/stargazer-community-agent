@@ -44,7 +44,6 @@ export function SiteHeader() {
               value={currentProject?.id || ""}
               onChange={(event) => {
                 selectProject(event.target.value)
-                window.location.reload()
               }}
               aria-label="Active project"
             >

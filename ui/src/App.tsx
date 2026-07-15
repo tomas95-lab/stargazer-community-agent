@@ -58,6 +58,8 @@ function RequireProject({ children }: { children: ReactNode }) {
 }
 
 function WorkspaceRoutes() {
+  const { currentProject } = usePlatform()
+
   return (
     <SidebarProvider
       style={
@@ -73,7 +75,7 @@ function WorkspaceRoutes() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <main className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <Routes>
+              <Routes key={currentProject?.id || "default-project"}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/topics" element={<TopicEditor />} />
                 <Route path="/comms" element={<CommsAutomator />} />

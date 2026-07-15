@@ -16,12 +16,13 @@ const PlatformContext = createContext<PlatformContextValue | null>(null)
 
 export function PlatformProvider({ children }: { children: ReactNode }) {
   const { configured, session } = useAuth()
+  const userId = session?.user.id || ""
   const [projects, setProjects] = useState<QmProject[]>([])
   const [loading, setLoading] = useState(configured && Boolean(session))
   const [selectedId, setSelectedId] = useState(projectSelection.getProjectId())
 
   const refreshProjects = useCallback(async () => {
-    if (!configured || !session) {
+    if (!configured || !userId) {
       setProjects([])
       setLoading(false)
       return
@@ -51,7 +52,7 @@ export function PlatformProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [configured, session])
+  }, [configured, userId])
 
   useEffect(() => {
     void refreshProjects()
