@@ -6,6 +6,7 @@ import {
   IconDatabase,
   IconDashboard,
   IconFlask,
+  IconHelpCircle,
   IconHistory,
   IconInbox,
   IconInnerShadowTop,
@@ -77,6 +78,11 @@ const data = {
     },
   ],
   navSecondary: [
+    {
+      title: "Help",
+      url: "/help",
+      icon: IconHelpCircle,
+    },
     {
       title: "Settings",
       url: "/settings",

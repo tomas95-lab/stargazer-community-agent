@@ -168,8 +168,14 @@ function secondsToIso(value: unknown): string | undefined {
 function cronJobStatusLabel(value: number): string {
   if (value === 0) return 'not_run';
   if (value === 1) return 'success';
-  if (value === 2) return 'failed';
-  if (value === 3) return 'timeout';
+  if (value === 2) return 'dns_error';
+  if (value === 3) return 'connection_error';
+  if (value === 4) return 'http_error';
+  if (value === 5) return 'timeout';
+  if (value === 6) return 'too_much_response_data';
+  if (value === 7) return 'invalid_url';
+  if (value === 8) return 'internal_error';
+  if (value === 9) return 'unknown_error';
   return `status_${value}`;
 }
 
@@ -244,6 +250,24 @@ function withinMatchWindow(entryAt: string, referenceAt: string): boolean {
     entryTime - referenceTime <= MATCH_WINDOW_MS;
 }
 
+function nearMatchWindow(entryAt: string, referenceAt: string): boolean {
+  const entryTime = new Date(entryAt).getTime();
+  const referenceTime = new Date(referenceAt).getTime();
+  return Number.isFinite(entryTime) &&
+    Number.isFinite(referenceTime) &&
+    Math.abs(entryTime - referenceTime) <= MATCH_WINDOW_MS;
+}
+
+function findMatchingCronRequest(
+  entries: OperationLogEntry[],
+  endpoint: string,
+  referenceAt?: string,
+): OperationLogEntry | undefined {
+  const matches = entries.filter((entry) => entry.action === 'cron_request' && endpointFromEntry(entry) === endpoint);
+  if (!referenceAt) return matches[0];
+  return matches.find((entry) => nearMatchWindow(entry.at, referenceAt));
+}
+
 function findLastAppResult(
   entries: OperationLogEntry[],
   action: string,
@@ -253,13 +277,26 @@ function findLastAppResult(
   return entries.find((entry) => entry.action === action && withinMatchWindow(entry.at, referenceAt));
 }
 
-function healthFor(provider: AutomationProviderJob | undefined, appResult: OperationLogEntry | undefined): Pick<AutomationHealthJob, 'health' | 'healthReason'> {
+function isCronRequestResult(entry: OperationLogEntry | undefined): boolean {
+  return entry?.action === 'cron_request';
+}
+
+function healthFor(
+  provider: AutomationProviderJob | undefined,
+  appResult: OperationLogEntry | undefined,
+): Pick<AutomationHealthJob, 'health' | 'healthReason'> {
   if (!provider) return { health: 'pending', healthReason: 'No external scheduler job found yet.' };
   if (!provider.enabled) return { health: 'error', healthReason: 'External scheduler job is disabled.' };
   if (!provider.lastExecution) return { health: 'pending', healthReason: 'Scheduled but not executed yet.' };
-  if (provider.lastStatusLabel !== 'success') return { health: 'error', healthReason: `External scheduler last status is ${provider.lastStatusLabel}.` };
-  if (!appResult) return { health: 'warning', healthReason: 'Scheduler ran, but no matching app operation was found.' };
+  if (!appResult && provider.lastStatusLabel !== 'success') {
+    return { health: 'error', healthReason: `External scheduler failed with ${provider.lastStatusLabel}.` };
+  }
+  if (!appResult) return { health: 'pending', healthReason: 'Waiting for the app execution log.' };
   if (appResult.status === 'error') return { health: 'error', healthReason: appResult.message };
+  if (provider.lastStatusLabel !== 'success') {
+    return { health: 'ok', healthReason: `App completed. External scheduler reported ${provider.lastStatusLabel}.` };
+  }
+  if (isCronRequestResult(appResult)) return { health: 'ok', healthReason: appResult.message };
   if (appResult.status === 'skipped') return { health: 'ok', healthReason: appResult.message };
   return { health: 'ok', healthReason: appResult.message };
 }
@@ -271,9 +308,10 @@ export async function getAutomationHealth(): Promise<AutomationHealthResult> {
   ]);
   const jobs = AUTOMATION_JOBS.map((definition): AutomationHealthJob => {
     const provider = providerForEndpoint(providerResult.jobs, definition.endpoint);
-    const cronRequest = findLastCronRequest(entries, definition.endpoint);
+    const cronRequest = findMatchingCronRequest(entries, definition.endpoint, provider?.lastExecution)
+      || (!provider?.lastExecution ? findLastCronRequest(entries, definition.endpoint) : undefined);
     const referenceAt = cronRequest?.at || provider?.lastExecution;
-    const appResult = findLastAppResult(entries, definition.action, referenceAt);
+    const appResult = findLastAppResult(entries, definition.action, referenceAt) || cronRequest;
     const health = healthFor(provider, appResult);
 
     return {

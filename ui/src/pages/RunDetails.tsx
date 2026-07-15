@@ -38,8 +38,27 @@ function formatTime(value?: string): string {
 function statusClass(status: OperationLogEntry['status'] | string): string {
   if (status === 'success') return 'sg-status-success';
   if (status === 'error') return 'sg-status-danger';
-  if (status === 'skipped') return 'sg-status-warning';
+  if (status === 'skipped') return 'border-border bg-secondary text-secondary-foreground';
   return 'border-border bg-secondary text-secondary-foreground';
+}
+
+function isBenignDuplicatePublish(entry: OperationLogEntry): boolean {
+  return entry.status === 'error'
+    && entry.action === 'publish_daily_thread'
+    && /title has already been used/i.test(entry.message);
+}
+
+function displayStatus(entry: OperationLogEntry): { label: string; className: string } {
+  if (isBenignDuplicatePublish(entry)) {
+    return {
+      label: 'already exists',
+      className: 'border-border bg-secondary text-secondary-foreground',
+    };
+  }
+  if (entry.status === 'success') return { label: 'completed', className: statusClass('success') };
+  if (entry.status === 'skipped') return { label: 'no action', className: statusClass('skipped') };
+  if (entry.status === 'error') return { label: 'needs attention', className: statusClass('error') };
+  return { label: entry.status, className: statusClass(entry.status) };
 }
 
 function actionIcon(action: string) {
@@ -316,12 +335,17 @@ function DetailPanel({ selected }: { selected: OperationDetailResult | null }) {
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass(selected.entry.status)}`}>
-                {selected.entry.status}
+              <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${displayStatus(selected.entry).className}`}>
+                {displayStatus(selected.entry).label}
               </span>
               <h2 className="text-lg font-semibold capitalize text-foreground">{operationTitle(selected.entry.action)}</h2>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">{selected.entry.message}</p>
+            {isBenignDuplicatePublish(selected.entry) && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                This was a duplicate publish attempt. The daily thread already existed in Community, so no user action is needed.
+              </p>
+            )}
           </div>
           <span className="text-xs text-muted-foreground">{formatTime(selected.entry.at)}</span>
         </div>
@@ -388,7 +412,7 @@ export default function RunDetails() {
 
   const counts = useMemo(() => ({
     total: entries.length,
-    errors: entries.filter((entry) => entry.status === 'error').length,
+    attention: entries.filter((entry) => entry.status === 'error' && !isBenignDuplicatePublish(entry)).length,
     detailed: entries.filter((entry) => ['community_agent', 'dm_review', 'dm_auto_reply'].includes(entry.action)).length,
   }), [entries]);
 
@@ -401,7 +425,7 @@ export default function RunDetails() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{counts.total} runs</Badge>
-          <Badge variant={counts.errors ? 'destructive' : 'secondary'}>{counts.errors} errors</Badge>
+          <Badge variant={counts.attention ? 'destructive' : 'secondary'}>{counts.attention} need attention</Badge>
           <Badge variant="outline">{counts.detailed} agent runs</Badge>
           <Button onClick={() => void load()} disabled={loading} variant="outline" size="sm">
             {loading ? <Loader2 className="animate-spin" /> : <RefreshCw />}
@@ -427,6 +451,7 @@ export default function RunDetails() {
               entries.map((entry) => {
                 const Icon = actionIcon(entry.action);
                 const active = selected?.entry.id === entry.id;
+                const status = displayStatus(entry);
                 return (
                   <button
                     key={entry.id}
@@ -440,8 +465,8 @@ export default function RunDetails() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-3">
                         <p className="truncate text-sm font-semibold capitalize text-foreground">{operationTitle(entry.action)}</p>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass(entry.status)}`}>
-                          {entry.status}
+                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${status.className}`}>
+                          {status.label}
                         </span>
                       </div>
                       <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{entry.message}</p>

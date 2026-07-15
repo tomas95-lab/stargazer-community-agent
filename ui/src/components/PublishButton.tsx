@@ -6,7 +6,7 @@ interface Props {
 }
 
 export default function PublishButton({ date, disabled }: Props) {
-  const [status, setStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'running' | 'done' | 'skipped' | 'error'>('idle');
   const [publishedUrl, setPublishedUrl] = useState('');
   const [error, setError] = useState('');
 
@@ -22,7 +22,7 @@ export default function PublishButton({ date, disabled }: Props) {
         body: JSON.stringify({ postChat: true }),
       });
 
-      const data = await res.json() as { ok?: boolean; url?: string; error?: string };
+      const data = await res.json() as { ok?: boolean; skipped?: boolean; url?: string; error?: string };
 
       if (!res.ok || !data.ok) {
         setError(data.error || 'Unknown error');
@@ -31,7 +31,7 @@ export default function PublishButton({ date, disabled }: Props) {
       }
 
       setPublishedUrl(data.url || '');
-      setStatus('done');
+      setStatus(data.skipped ? 'skipped' : 'done');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setStatus('error');
@@ -45,15 +45,21 @@ export default function PublishButton({ date, disabled }: Props) {
         disabled={disabled || status === 'running'}
         className="rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
       >
-        {status === 'running' ? 'Publishing...' : status === 'done' ? 'Published!' : 'Publish to Community'}
+        {status === 'running' ? 'Publishing...' : status === 'done' ? 'Published!' : status === 'skipped' ? 'Already exists' : 'Publish to Community'}
       </button>
 
       {publishedUrl && (
         <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium text-success">Published:</span>
+          <span className="font-medium text-success">{status === 'skipped' ? 'Existing thread:' : 'Published:'}</span>
           <a href={publishedUrl} target="_blank" rel="noopener" className="break-all text-primary hover:underline">
             {publishedUrl}
           </a>
+        </div>
+      )}
+
+      {status === 'skipped' && !publishedUrl && (
+        <div className="rounded-lg border bg-secondary p-3 text-sm text-secondary-foreground">
+          This daily thread already exists in Community.
         </div>
       )}
 

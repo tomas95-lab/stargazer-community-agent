@@ -11,6 +11,7 @@ import CommsAutomator from "@/pages/CommsAutomator"
 import CommunityAgent from "@/pages/CommunityAgent"
 import Dashboard from "@/pages/Dashboard"
 import DirectMessages from "@/pages/DirectMessages"
+import Help from "@/pages/Help"
 import History from "@/pages/History"
 import LinkManager from "@/pages/LinkManager"
 import Login from "@/pages/Login"
@@ -89,6 +90,7 @@ function WorkspaceRoutes() {
                 <Route path="/review" element={<ReviewQueue />} />
                 <Route path="/sandbox" element={<TestingSandbox />} />
                 <Route path="/memory" element={<ProjectMemoryPage />} />
+                <Route path="/help" element={<Help />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/project" element={<ProjectSetup />} />
                 <Route path="*" element={<Dashboard />} />

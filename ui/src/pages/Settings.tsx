@@ -42,9 +42,16 @@ function formatUtcDate(value?: string): string {
 
 function healthClass(value: AutomationHealthJob['health']): string {
   if (value === 'ok') return 'sg-status-success';
-  if (value === 'warning') return 'sg-status-warning';
-  if (value === 'error') return 'sg-status-danger';
+  if (value === 'warning') return 'border-border bg-secondary text-secondary-foreground';
+  if (value === 'error') return 'sg-status-warning';
   return 'border-border bg-secondary text-secondary-foreground';
+}
+
+function healthLabel(value: AutomationHealthJob['health']): string {
+  if (value === 'ok') return 'ok';
+  if (value === 'warning') return 'check';
+  if (value === 'error') return 'attention';
+  return 'pending';
 }
 
 function metricValue(job: AutomationHealthJob): string {
@@ -161,7 +168,7 @@ export default function Settings() {
                   <tr key={item.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3">
                       <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${healthClass(item.health)}`}>
-                        {item.health}
+                        {healthLabel(item.health)}
                       </span>
                     </td>
                     <td className="px-4 py-3">

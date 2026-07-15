@@ -19,6 +19,7 @@ const TITLES: Record<string, string> = {
   "/review": "Human Review Queue",
   "/sandbox": "Testing Sandbox",
   "/memory": "Project Memory",
+  "/help": "Help",
   "/settings": "Settings",
   "/project": "Project Settings",
 }
