@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-15T02:13:06.271Z",
+  "updatedAt": "2026-07-15T03:27:19.474Z",
   "facts": [
     {
       "id": "language",
@@ -11,18 +11,6 @@
       "id": "style",
       "title": "Writing style",
       "body": "Do not use the em dash character. Use commas, parentheses, or a regular hyphen instead.",
-      "source": "platform default"
-    },
-    {
-      "id": "project-name",
-      "title": "Project name",
-      "body": "The active project is Stargazer Axiom.",
-      "source": "project settings"
-    },
-    {
-      "id": "war-room-hours",
-      "title": "War Room hours",
-      "body": "The War Room is open Monday through Friday from 14:15 to 22:00 UTC. It is closed Saturdays and Sundays.",
       "source": "platform default"
     }
   ]
