@@ -482,6 +482,7 @@ export interface QmProject {
   ownerId: string;
   ownerEmail: string;
   ownerName: string;
+  projectKey: string;
   projectName: string;
   communityBaseUrl: string;
   categoryId: string;
@@ -503,6 +504,7 @@ export interface QmProject {
 
 export interface QmProjectInput {
   ownerName?: string;
+  projectKey?: string;
   projectName?: string;
   communityBaseUrl?: string;
   categoryId?: string;

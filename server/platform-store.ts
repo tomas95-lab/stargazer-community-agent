@@ -1,8 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { BotConfig } from '../src/config';
-import { writeDataJSON } from '../src/data-store';
-import { ProjectContext } from '../src/project-context';
+import { readDataJSON, writeDataJSON } from '../src/data-store';
+import { LEGACY_PROJECT_ID, ProjectContext, sanitizeProjectId } from '../src/project-context';
 
 export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
 
@@ -17,6 +17,7 @@ export interface QmProjectRow {
   owner_id: string;
   owner_email: string;
   owner_name: string;
+  project_key?: string;
   project_name: string;
   community_base_url: string;
   community_category_id: string;
@@ -37,6 +38,7 @@ export interface QmProjectRow {
 
 export interface QmProjectInput {
   ownerName?: string;
+  projectKey?: string;
   projectName?: string;
   communityBaseUrl?: string;
   categoryId?: string;
@@ -57,6 +59,7 @@ export interface QmProjectPublic {
   ownerId: string;
   ownerEmail: string;
   ownerName: string;
+  projectKey: string;
   projectName: string;
   communityBaseUrl: string;
   categoryId: string;
@@ -167,6 +170,46 @@ function userName(user: User): string {
   return text(user.user_metadata?.name) || text(user.user_metadata?.full_name) || text(user.email).split('@')[0] || 'QM';
 }
 
+function envFallback(key: string, fallback = ''): string {
+  return env(key) || fallback;
+}
+
+function looksLikeStargazer(value: string): boolean {
+  return value.toLowerCase().includes('stargazer');
+}
+
+export function projectKeyFromRow(row: Pick<QmProjectRow, 'id' | 'project_name' | 'project_key'>): string {
+  const explicit = sanitizeProjectId(row.project_key || '');
+  if (explicit) return explicit;
+  if (looksLikeStargazer(row.project_name || '')) return LEGACY_PROJECT_ID;
+  return sanitizeProjectId(row.project_name || '') || sanitizeProjectId(row.id) || LEGACY_PROJECT_ID;
+}
+
+function projectKeyFromInput(input: QmProjectInput, existing?: QmProjectRow): string {
+  const explicit = sanitizeProjectId(input.projectKey || '');
+  if (explicit) return explicit;
+  if (existing) return projectKeyFromRow(existing);
+  const fromName = sanitizeProjectId(input.projectName || '');
+  if (fromName) return fromName;
+  return LEGACY_PROJECT_ID;
+}
+
+function legacyStargazerDefaults(projectKey: string): Partial<QmProjectRow> {
+  if (projectKey !== LEGACY_PROJECT_ID) return {};
+  return {
+    project_name: 'Stargazer',
+    community_base_url: envFallback('COMMUNITY_BASE_URL', 'https://community.outlier.ai'),
+    community_category_id: envFallback('COMMUNITY_CATEGORY_ID', '15895'),
+    community_category_slug: envFallback('COMMUNITY_CATEGORY_SLUG', 'stargazer-axiom'),
+    community_chat_channel_id: envFallback('COMMUNITY_CHAT_CHANNEL_ID', '828853'),
+  };
+}
+
+function missingProjectKeyColumn(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error || '');
+  return /project_key/i.test(message) && /column|schema cache|could not find/i.test(message);
+}
+
 export async function getUserFromAccessToken(accessToken: string): Promise<AuthenticatedUser> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.auth.getUser(accessToken);
@@ -187,6 +230,7 @@ function publicProject(row: QmProjectRow): QmProjectPublic {
     ownerId: row.owner_id,
     ownerEmail: row.owner_email,
     ownerName: row.owner_name,
+    projectKey: projectKeyFromRow(row),
     projectName: row.project_name,
     communityBaseUrl: row.community_base_url,
     categoryId: row.community_category_id,
@@ -237,13 +281,17 @@ function normalizeProjectInput(
   user: AuthenticatedUser,
   existing?: QmProjectRow,
   storedDiscourseKeyCiphertext?: string,
+  shared?: QmProjectRow | null,
 ): Partial<QmProjectRow> {
   const discourseApiKey = text(input.discourseApiKey);
-  const projectName = text(input.projectName, existing?.project_name || 'Community project');
-  const categoryId = text(input.categoryId, existing?.community_category_id || '');
-  const channelId = text(input.channelId, existing?.community_chat_channel_id || '');
+  const projectKey = projectKeyFromInput(input, existing);
+  const legacyDefaults = legacyStargazerDefaults(projectKey);
+  const projectName = text(input.projectName, existing?.project_name || shared?.project_name || legacyDefaults.project_name || 'Community project');
+  const categoryId = text(input.categoryId, existing?.community_category_id || shared?.community_category_id || legacyDefaults.community_category_id || '');
+  const channelId = text(input.channelId, existing?.community_chat_channel_id || shared?.community_chat_channel_id || legacyDefaults.community_chat_channel_id || '');
 
   if (!projectName) throw new Error('Project name is required.');
+  if (!projectKey) throw new Error('Project ID is required.');
   if (!categoryId) throw new Error('Category ID is required.');
   if (!channelId) throw new Error('Community channel ID is required.');
   if (!existing && !discourseApiKey && !storedDiscourseKeyCiphertext) {
@@ -254,10 +302,11 @@ function normalizeProjectInput(
     owner_id: user.id,
     owner_email: user.email,
     owner_name: text(input.ownerName, existing?.owner_name || user.name),
+    project_key: projectKey,
     project_name: projectName,
-    community_base_url: text(input.communityBaseUrl, existing?.community_base_url || 'https://community.outlier.ai').replace(/\/+$/, ''),
+    community_base_url: text(input.communityBaseUrl, existing?.community_base_url || shared?.community_base_url || legacyDefaults.community_base_url || 'https://community.outlier.ai').replace(/\/+$/, ''),
     community_category_id: categoryId,
-    community_category_slug: text(input.categorySlug, existing?.community_category_slug || ''),
+    community_category_slug: text(input.categorySlug, existing?.community_category_slug || shared?.community_category_slug || legacyDefaults.community_category_slug || ''),
     community_chat_channel_id: channelId,
     discourse_username: text(input.discourseUsername, existing?.discourse_username || ''),
     discourse_api_client_id: text(input.discourseApiClientId, existing?.discourse_api_client_id || 'daily-thread-bot'),
@@ -266,8 +315,8 @@ function normalizeProjectInput(
       : !existing && storedDiscourseKeyCiphertext
         ? { discourse_api_key_ciphertext: storedDiscourseKeyCiphertext }
         : {}),
-    project_guidelines: text(input.projectGuidelines, existing?.project_guidelines || ''),
-    war_room_link: text(input.warRoomLink, existing?.war_room_link || ''),
+    project_guidelines: text(input.projectGuidelines, existing?.project_guidelines || shared?.project_guidelines || ''),
+    war_room_link: text(input.warRoomLink, existing?.war_room_link || shared?.war_room_link || ''),
     agent_mode: agentMode(input.agentMode || existing?.agent_mode),
     auto_reply_enabled: input.autoReplyEnabled ?? existing?.auto_reply_enabled ?? false,
     min_confidence: clampConfidence(input.minConfidence ?? existing?.min_confidence),
@@ -287,6 +336,26 @@ export async function listUserProjects(userId: string): Promise<QmProjectRow[]> 
   return (data || []) as QmProjectRow[];
 }
 
+export async function listEnabledProjectConnections(): Promise<QmProjectRow[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .select('*')
+    .eq('enabled', true)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data || []) as QmProjectRow[];
+}
+
+export function uniqueProjectConnections(rows: QmProjectRow[]): QmProjectRow[] {
+  const byProjectKey = new Map<string, QmProjectRow>();
+  for (const row of rows) {
+    const key = projectKeyFromRow(row);
+    if (!byProjectKey.has(key)) byProjectKey.set(key, row);
+  }
+  return Array.from(byProjectKey.values());
+}
+
 export async function getUserProject(userId: string, projectId: string): Promise<QmProjectRow | null> {
   const { data, error } = await getSupabaseAdmin()
     .from(TABLE)
@@ -296,7 +365,22 @@ export async function getUserProject(userId: string, projectId: string): Promise
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  return data as QmProjectRow | null;
+  if (data) return data as QmProjectRow;
+
+  try {
+    const { data: byKey, error: byKeyError } = await getSupabaseAdmin()
+      .from(TABLE)
+      .select('*')
+      .eq('owner_id', userId)
+      .eq('project_key', sanitizeProjectId(projectId))
+      .maybeSingle();
+
+    if (byKeyError) throw new Error(byKeyError.message);
+    return byKey as QmProjectRow | null;
+  } catch (err) {
+    if (missingProjectKeyColumn(err)) return null;
+    throw err;
+  }
 }
 
 export async function getActiveUserProject(userId: string, projectId?: string): Promise<QmProjectRow | null> {
@@ -305,21 +389,86 @@ export async function getActiveUserProject(userId: string, projectId?: string): 
   return projects.find((project) => project.enabled) || projects[0] || null;
 }
 
-export async function createUserProject(user: AuthenticatedUser, input: QmProjectInput): Promise<QmProjectRow> {
-  const storedKey = await getUserDiscourseKey(user.id);
-  const hydratedInput = storedKey && !text(input.discourseUsername)
-    ? { ...input, discourseUsername: storedKey.discourse_username }
-    : input;
-  const payload = normalizeProjectInput(hydratedInput, user, undefined, storedKey?.discourse_api_key_ciphertext);
+export async function getSharedProjectConnection(projectKey: string): Promise<QmProjectRow | null> {
+  const key = sanitizeProjectId(projectKey);
+  if (!key) return null;
+
+  try {
+    const { data, error } = await getSupabaseAdmin()
+      .from(TABLE)
+      .select('*')
+      .eq('project_key', key)
+      .eq('enabled', true)
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    if (error) throw new Error(error.message);
+    return (data?.[0] || null) as QmProjectRow | null;
+  } catch (err) {
+    if (missingProjectKeyColumn(err)) return null;
+    throw err;
+  }
+}
+
+async function insertProjectPayload(payload: Partial<QmProjectRow>): Promise<QmProjectRow> {
   const { data, error } = await getSupabaseAdmin()
     .from(TABLE)
     .insert(payload)
     .select('*')
     .single();
 
-  if (error) throw new Error(error.message);
-  const project = data as QmProjectRow;
+  if (!error) return data as QmProjectRow;
+  if (!missingProjectKeyColumn(new Error(error.message))) throw new Error(error.message);
+
+  const fallbackPayload = { ...payload };
+  delete fallbackPayload.project_key;
+  const retry = await getSupabaseAdmin()
+    .from(TABLE)
+    .insert(fallbackPayload)
+    .select('*')
+    .single();
+
+  if (retry.error) throw new Error(retry.error.message);
+  return retry.data as QmProjectRow;
+}
+
+async function updateProjectPayload(userId: string, projectId: string, payload: Partial<QmProjectRow>): Promise<QmProjectRow> {
+  const query = getSupabaseAdmin()
+    .from(TABLE)
+    .update(payload)
+    .eq('owner_id', userId)
+    .eq('id', projectId)
+    .select('*')
+    .single();
+  const { data, error } = await query;
+
+  if (!error) return data as QmProjectRow;
+  if (!missingProjectKeyColumn(new Error(error.message))) throw new Error(error.message);
+
+  const fallbackPayload = { ...payload };
+  delete fallbackPayload.project_key;
+  const retry = await getSupabaseAdmin()
+    .from(TABLE)
+    .update(fallbackPayload)
+    .eq('owner_id', userId)
+    .eq('id', projectId)
+    .select('*')
+    .single();
+
+  if (retry.error) throw new Error(retry.error.message);
+  return retry.data as QmProjectRow;
+}
+
+export async function createUserProject(user: AuthenticatedUser, input: QmProjectInput): Promise<QmProjectRow> {
+  const storedKey = await getUserDiscourseKey(user.id);
+  const hydratedInput = storedKey && !text(input.discourseUsername)
+    ? { ...input, discourseUsername: storedKey.discourse_username }
+    : input;
+  const shared = await getSharedProjectConnection(projectKeyFromInput(hydratedInput));
+  const payload = normalizeProjectInput(hydratedInput, user, undefined, storedKey?.discourse_api_key_ciphertext, shared);
+  const project = await insertProjectPayload(payload);
   await initializeProjectFiles(project);
+  await syncSharedProjectFields(project).catch(() => undefined);
   return project;
 }
 
@@ -327,25 +476,58 @@ export async function updateUserProject(user: AuthenticatedUser, projectId: stri
   const existing = await getUserProject(user.id, projectId);
   if (!existing) throw new Error('Project not found.');
 
-  const payload = normalizeProjectInput(input, user, existing);
-  const { data, error } = await getSupabaseAdmin()
-    .from(TABLE)
-    .update(payload)
-    .eq('owner_id', user.id)
-    .eq('id', projectId)
-    .select('*')
-    .single();
+  const shared = await getSharedProjectConnection(projectKeyFromInput(input, existing));
+  const payload = normalizeProjectInput(input, user, existing, undefined, shared?.id === existing.id ? null : shared);
+  const project = await updateProjectPayload(user.id, projectId, payload);
+  await initializeProjectFiles(project);
+  await syncSharedProjectFields(project).catch(() => undefined);
+  return project;
+}
 
-  if (error) throw new Error(error.message);
-  return data as QmProjectRow;
+async function writeDataJSONIfMissing<T>(filePath: string, data: T, message: string): Promise<void> {
+  try {
+    await readDataJSON<T>(filePath);
+  } catch {
+    await writeDataJSON(filePath, data, message);
+  }
+}
+
+async function syncSharedProjectFields(row: QmProjectRow): Promise<void> {
+  const projectKey = projectKeyFromRow(row);
+  if (!projectKey) return;
+
+  const patch = {
+    project_name: row.project_name,
+    community_base_url: row.community_base_url,
+    community_category_id: row.community_category_id,
+    community_category_slug: row.community_category_slug,
+    community_chat_channel_id: row.community_chat_channel_id,
+    project_guidelines: row.project_guidelines,
+    war_room_link: row.war_room_link,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const { error } = await getSupabaseAdmin()
+      .from(TABLE)
+      .update(patch)
+      .eq('project_key', projectKey)
+      .neq('id', row.id);
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    if (!missingProjectKeyColumn(err)) throw err;
+  }
 }
 
 async function initializeProjectFiles(row: QmProjectRow): Promise<void> {
-  const base = `data/projects/${row.id}`;
+  const projectKey = projectKeyFromRow(row);
+  if (projectKey === LEGACY_PROJECT_ID) return;
+
+  const base = `data/projects/${projectKey}`;
   await Promise.all([
-    writeDataJSON(`${base}/topics.json`, [], `initialize ${row.project_name} topics`),
-    writeDataJSON(`${base}/webinars.json`, [], `initialize ${row.project_name} sessions`),
-    writeDataJSON(`${base}/links.json`, {
+    writeDataJSONIfMissing(`${base}/topics.json`, [], `initialize ${row.project_name} topics`),
+    writeDataJSONIfMissing(`${base}/webinars.json`, [], `initialize ${row.project_name} sessions`),
+    writeDataJSONIfMissing(`${base}/links.json`, {
       warRoom: row.war_room_link,
       guidelines: '',
       templatesZip: '',
@@ -353,7 +535,7 @@ async function initializeProjectFiles(row: QmProjectRow): Promise<void> {
       stargazerEval: '',
       commonErrorsDocument: '',
     }, `initialize ${row.project_name} links`),
-    writeDataJSON(`${base}/project-memory.json`, {
+    writeDataJSONIfMissing(`${base}/project-memory.json`, {
       updatedAt: new Date().toISOString(),
       facts: [
         {
@@ -398,20 +580,16 @@ export function projectBotConfig(row: QmProjectRow): BotConfig {
 }
 
 export function projectRuntimeContext(row: QmProjectRow): ProjectContext {
+  const projectLinks: ProjectContext['projectLinks'] = {};
+  if (text(row.war_room_link)) projectLinks.warRoom = text(row.war_room_link);
+
   return {
-    projectId: row.id,
+    projectId: projectKeyFromRow(row),
     source: 'header',
     projectName: row.project_name,
     ownerId: row.owner_id,
     botConfig: projectBotConfig(row),
-    projectGuidelines: row.project_guidelines,
-    projectLinks: {
-      warRoom: row.war_room_link,
-      guidelines: '',
-      templatesZip: '',
-      validationScript: '',
-      stargazerEval: '',
-      commonErrorsDocument: '',
-    },
+    ...(text(row.project_guidelines) ? { projectGuidelines: text(row.project_guidelines) } : {}),
+    ...(Object.keys(projectLinks).length > 0 ? { projectLinks } : {}),
   };
 }

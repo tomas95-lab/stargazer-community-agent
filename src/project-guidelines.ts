@@ -35,7 +35,7 @@ let cachedGuidelines: string | null = null;
 
 export async function loadProjectGuidelines(): Promise<string> {
   const runtimeGuidelines = getProjectContext().projectGuidelines;
-  if (runtimeGuidelines !== undefined) return runtimeGuidelines;
+  if (runtimeGuidelines?.trim()) return runtimeGuidelines;
 
   if (cachedGuidelines !== null) return cachedGuidelines;
 

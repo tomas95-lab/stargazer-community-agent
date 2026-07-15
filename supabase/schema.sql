@@ -5,6 +5,7 @@ create table if not exists public.qm_projects (
   owner_id uuid not null references auth.users(id) on delete cascade,
   owner_email text not null default '',
   owner_name text not null default '',
+  project_key text not null default 'stargazer',
   project_name text not null,
   community_base_url text not null default 'https://community.outlier.ai',
   community_category_id text not null,
@@ -23,7 +24,32 @@ create table if not exists public.qm_projects (
   updated_at timestamptz not null default now()
 );
 
+alter table public.qm_projects add column if not exists project_key text;
+
+update public.qm_projects
+set project_key = case
+  when project_key is not null and btrim(project_key) <> '' then lower(regexp_replace(btrim(project_key), '[^a-zA-Z0-9]+', '-', 'g'))
+  when lower(project_name) like '%stargazer%' then 'stargazer'
+  else lower(regexp_replace(btrim(project_name), '[^a-zA-Z0-9]+', '-', 'g'))
+end
+where project_key is null or btrim(project_key) = '';
+
+alter table public.qm_projects alter column project_key set default 'stargazer';
+alter table public.qm_projects alter column project_key set not null;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'qm_projects_project_key_format'
+  ) then
+    alter table public.qm_projects
+      add constraint qm_projects_project_key_format
+      check (project_key ~ '^[a-z0-9][a-z0-9-]{1,63}$');
+  end if;
+end $$;
+
 create index if not exists qm_projects_owner_id_idx on public.qm_projects(owner_id);
+create index if not exists qm_projects_project_key_idx on public.qm_projects(project_key);
 
 alter table public.qm_projects enable row level security;
 

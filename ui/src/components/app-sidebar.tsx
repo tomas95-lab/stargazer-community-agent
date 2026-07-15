@@ -120,7 +120,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { currentProject } = usePlatform()
   const projectName = currentProject?.projectName || "Stargazer"
-  const ownerEmail = currentProject?.ownerEmail || "Community Ops"
+  const projectKey = currentProject?.projectKey || "stargazer"
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -148,7 +148,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser
           user={{
             name: projectName,
-            email: ownerEmail,
+            email: `Project ID: ${projectKey}`,
             avatar: "",
           }}
         />

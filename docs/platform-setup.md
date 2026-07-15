@@ -47,6 +47,63 @@ It also creates:
 8. The UI sends `Authorization: Bearer <supabase-session>` and `X-Project-Id`.
 9. The API resolves the project context, so the same agent code uses that project's category, channel, credentials, guidelines, links and memory.
 
+## Project ID Model
+
+Each QM connection has an internal UUID, but the shared community/project uses `project_key`, shown in the UI as `Project ID`.
+
+Use the same Project ID for every QM working on the same community project. For Stargazer, use:
+
+```txt
+stargazer
+```
+
+Shared data such as topics, links, project memory, published markers and cron locks are scoped by Project ID. The special `stargazer` Project ID keeps using the legacy files:
+
+```txt
+data/topics.json
+data/links.json
+data/project-guidelines.txt
+data/project-memory.json
+```
+
+Non-legacy projects use:
+
+```txt
+data/projects/<project-id>/topics.json
+data/projects/<project-id>/links.json
+data/projects/<project-id>/project-memory.json
+```
+
+## Cron Behavior
+
+Cron endpoints remain single-project legacy by default. Creating a Stargazer project in the UI does not make Vercel cron run twice.
+
+Default cron target:
+
+```txt
+Project ID: stargazer
+Source: legacy env vars
+```
+
+You can force a specific project for a cron request:
+
+```txt
+/api/cron/community-agent/1000?project=<project-id>
+/api/cron/daily-thread/1000?project=<project-id>
+/api/cron/dm-review/1530?project=<project-id>
+```
+
+Multi-project cron fan-out is opt-in:
+
+```env
+PLATFORM_PROJECT_CRONS_ENABLED=true
+PLATFORM_DM_CRONS_ENABLED=true
+```
+
+Project-level jobs (`daily-thread`, `community-agent`) run once per Project ID. DM review runs per QM connection because DMs belong to a QM user key.
+
+Each cron run writes a lock by `job + project/qm + slot + Argentina date`, so duplicate requests for the same slot are skipped instead of posting twice.
+
 ## Legacy Compatibility
 
 If a request does not include a Supabase session, the existing Stargazer `.env` configuration remains the fallback. Cron endpoints continue to use `CRON_SECRET`.

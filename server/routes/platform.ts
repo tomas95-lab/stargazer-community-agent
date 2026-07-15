@@ -25,6 +25,7 @@ function projectInput(body: unknown): QmProjectInput {
   const raw = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   return {
     ownerName: typeof raw.ownerName === 'string' ? raw.ownerName : undefined,
+    projectKey: typeof raw.projectKey === 'string' ? raw.projectKey : undefined,
     projectName: typeof raw.projectName === 'string' ? raw.projectName : undefined,
     communityBaseUrl: typeof raw.communityBaseUrl === 'string' ? raw.communityBaseUrl : undefined,
     categoryId: typeof raw.categoryId === 'string' ? raw.categoryId : undefined,

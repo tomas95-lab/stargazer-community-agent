@@ -50,13 +50,13 @@ export function SiteHeader() {
             >
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
-                  {project.projectName}
+                  {project.projectName} ({project.projectKey})
                 </option>
               ))}
             </select>
           ) : currentProject ? (
             <span className="hidden max-w-52 truncate text-sm text-muted-foreground sm:inline">
-              {currentProject.projectName}
+              {currentProject.projectName} ({currentProject.projectKey})
             </span>
           ) : null}
           <NotificationBell />

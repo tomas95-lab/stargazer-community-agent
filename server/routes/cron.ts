@@ -4,6 +4,16 @@ import { runCommunityAgent } from '../../src/community-agent';
 import { runDailyPublishJob } from '../../src/daily-publish-job';
 import { runDmReviewJob } from '../../src/dm-review-job';
 import { appendOperationLog, OperationStatus } from '../../src/operations-log';
+import { defaultProjectId, LEGACY_PROJECT_ID, ProjectContext, runWithProjectContext, sanitizeProjectId } from '../../src/project-context';
+import { withCronRunLock } from '../../src/cron-locks';
+import {
+  isPlatformConfigured,
+  listEnabledProjectConnections,
+  projectKeyFromRow,
+  projectRuntimeContext,
+  QmProjectRow,
+  uniqueProjectConnections,
+} from '../platform-store';
 
 const router = Router();
 
@@ -30,6 +40,87 @@ function cronSource(req: Request): string {
   const userAgent = req.header('user-agent') || '';
   if (userAgent.toLowerCase().includes('cron-job.org')) return 'cron-job.org';
   return 'manual';
+}
+
+function truthy(value: string | undefined): boolean {
+  return ['1', 'true', 'yes', 'y'].includes((value || '').trim().toLowerCase());
+}
+
+function slot(req: Request): string {
+  return String(req.params.slot || 'default');
+}
+
+function requestedCronProjectId(req: Request): string {
+  const query = typeof req.query.project === 'string' ? req.query.project : '';
+  const header = req.header('x-project-id') || req.header('x-tenant-id') || '';
+  return sanitizeProjectId(query || header || process.env.CRON_PROJECT_ID || '');
+}
+
+function legacyContext(): ProjectContext {
+  return {
+    projectId: defaultProjectId(),
+    source: 'default',
+    projectName: 'Stargazer',
+  };
+}
+
+function projectCronsEnabled(): boolean {
+  return truthy(process.env.PLATFORM_PROJECT_CRONS_ENABLED) || truthy(process.env.CRON_RUN_PLATFORM_PROJECTS);
+}
+
+function dmCronsEnabled(): boolean {
+  return truthy(process.env.PLATFORM_DM_CRONS_ENABLED) || truthy(process.env.CRON_RUN_PLATFORM_DMS);
+}
+
+async function platformConnections(): Promise<QmProjectRow[]> {
+  if (!isPlatformConfigured()) return [];
+  try {
+    return await listEnabledProjectConnections();
+  } catch (err) {
+    console.warn('Could not load platform cron connections:', err);
+    return [];
+  }
+}
+
+async function projectCronTargets(req: Request): Promise<ProjectContext[]> {
+  const requested = requestedCronProjectId(req);
+  const legacyId = defaultProjectId();
+
+  if (requested) {
+    if (requested === LEGACY_PROJECT_ID || requested === legacyId) return [legacyContext()];
+    const rows = await platformConnections();
+    const row = rows.find((item) => projectKeyFromRow(item) === requested);
+    if (!row) throw new Error(`Cron project not found: ${requested}`);
+    return [projectRuntimeContext(row)];
+  }
+
+  if (!projectCronsEnabled()) return [legacyContext()];
+
+  const rows = uniqueProjectConnections(await platformConnections())
+    .filter((row) => projectKeyFromRow(row) !== LEGACY_PROJECT_ID);
+  return [legacyContext(), ...rows.map(projectRuntimeContext)];
+}
+
+async function dmCronTargets(req: Request): Promise<ProjectContext[]> {
+  const requested = requestedCronProjectId(req);
+  const legacyId = defaultProjectId();
+
+  if (requested) {
+    if (requested === LEGACY_PROJECT_ID || requested === legacyId) return [legacyContext()];
+    const rows = await platformConnections();
+    const matches = rows.filter((row) => projectKeyFromRow(row) === requested);
+    if (matches.length === 0) throw new Error(`Cron project not found: ${requested}`);
+    return matches.map(projectRuntimeContext);
+  }
+
+  if (!dmCronsEnabled()) return [legacyContext()];
+
+  const rows = (await platformConnections()).filter((row) => projectKeyFromRow(row) !== LEGACY_PROJECT_ID);
+  return [legacyContext(), ...rows.map(projectRuntimeContext)];
+}
+
+async function runInContext<T>(context: ProjectContext, fn: () => Promise<T>): Promise<T> {
+  return runWithProjectContext(context, fn);
 }
 
 async function logCronRequest(
@@ -67,27 +158,51 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
   }
 
   try {
-    const result = await runCommunityAgent({
-      post: process.env.AGENT_AUTO_POST === 'true',
-      includeCommunity: true,
-      onlyToday: true,
-      respectSchedule: true,
-      skipProcessed: true,
-      markProcessed: true,
-      maxAnswers: Number(process.env.AGENT_MAX_ANSWERS || 4),
-      messageCount: Number(process.env.AGENT_MESSAGE_COUNT || 50),
-    });
+    const targets = await projectCronTargets(req);
+    const runs = [];
 
-    await logCronRequest(req, 'success', 'Community agent cron completed', {
+    for (const context of targets) {
+      const locked = await runInContext(context, () => withCronRunLock(
+        'community-agent',
+        context.projectId,
+        slot(req),
+        () => runCommunityAgent({
+          post: process.env.AGENT_AUTO_POST === 'true',
+          includeCommunity: true,
+          onlyToday: true,
+          respectSchedule: true,
+          skipProcessed: true,
+          markProcessed: true,
+          maxAnswers: Number(process.env.AGENT_MAX_ANSWERS || 4),
+          messageCount: Number(process.env.AGENT_MESSAGE_COUNT || 50),
+        })
+      ));
+      runs.push({
+        projectId: context.projectId,
+        skipped: locked.skipped,
+        reason: locked.reason,
+        result: locked.result,
+      });
+    }
+
+    const posted = runs.reduce((sum, run) => sum + (run.result?.posted || 0), 0);
+    const checked = runs.reduce((sum, run) => sum + (run.result?.checked || 0), 0);
+    const candidates = runs.reduce((sum, run) => sum + (run.result?.candidates || 0), 0);
+    const needsHuman = runs.reduce((sum, run) => sum + (run.result?.needsHuman || 0), 0);
+    const skipped = runs.filter((run) => run.skipped).length;
+
+    await logCronRequest(req, skipped === runs.length ? 'skipped' : 'success', 'Community agent cron completed', {
       authorized: true,
       httpStatus: 200,
       job: 'community_agent',
-      checked: result.checked,
-      candidates: result.candidates,
-      posted: result.posted,
-      needsHuman: result.needsHuman,
+      targets: runs.map((run) => run.projectId),
+      checked,
+      candidates,
+      posted,
+      needsHuman,
+      skipped,
     });
-    res.json({ ok: true, result });
+    res.json({ ok: true, targets: runs });
   } catch (err) {
     await logCronRequest(req, 'error', err instanceof Error ? err.message : String(err), {
       authorized: true,
@@ -112,17 +227,36 @@ async function handleDailyThreadCron(req: Request, res: Response): Promise<void>
   }
 
   try {
-    const result = await runDailyPublishJob();
-    await logCronRequest(req, result.status === 'skipped' ? 'skipped' : 'success', 'Daily thread cron completed', {
+    const targets = await projectCronTargets(req);
+    const runs = [];
+
+    for (const context of targets) {
+      const locked = await runInContext(context, () => withCronRunLock(
+        'daily-thread',
+        context.projectId,
+        slot(req),
+        () => runDailyPublishJob()
+      ));
+      runs.push({
+        projectId: context.projectId,
+        skipped: locked.skipped,
+        reason: locked.reason,
+        result: locked.result,
+      });
+    }
+
+    const published = runs.filter((run) => run.result?.status === 'published').length;
+    const skipped = runs.filter((run) => run.skipped || run.result?.status === 'skipped').length;
+
+    await logCronRequest(req, published > 0 ? 'success' : 'skipped', 'Daily thread cron completed', {
       authorized: true,
       httpStatus: 200,
       job: 'daily_publish_job',
-      resultStatus: result.status,
-      date: result.date,
-      reason: result.reason,
-      url: result.url,
+      targets: runs.map((run) => run.projectId),
+      published,
+      skipped,
     });
-    res.json({ ok: true, result });
+    res.json({ ok: true, targets: runs });
   } catch (err) {
     await logCronRequest(req, 'error', err instanceof Error ? err.message : String(err), {
       authorized: true,
@@ -147,24 +281,51 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const result = await runDmReviewJob({
-      messageCount: Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50),
-      maxChannels: Number(process.env.DM_REVIEW_MAX_CHANNELS || 5),
-      requestDelayMs: Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500),
-      autoReply: process.env.DM_AUTO_REPLY === 'true',
-      maxAutoReplies: Number(process.env.DM_AUTO_REPLY_MAX || 3),
-    });
-    await logCronRequest(req, result.errors.length > 0 ? 'error' : result.incomingMessages > 0 ? 'success' : 'skipped', 'DM review cron completed', {
+    const targets = await dmCronTargets(req);
+    const runs = [];
+
+    for (const context of targets) {
+      const locked = await runInContext(context, () => withCronRunLock(
+        'dm-review',
+        context.ownerId || context.projectId,
+        slot(req),
+        () => runDmReviewJob({
+          messageCount: Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50),
+          maxChannels: Number(process.env.DM_REVIEW_MAX_CHANNELS || 5),
+          requestDelayMs: Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500),
+          autoReply: process.env.DM_AUTO_REPLY === 'true',
+          maxAutoReplies: Number(process.env.DM_AUTO_REPLY_MAX || 3),
+        })
+      ));
+      runs.push({
+        projectId: context.projectId,
+        ownerId: context.ownerId,
+        skipped: locked.skipped,
+        reason: locked.reason,
+        result: locked.result,
+      });
+    }
+
+    const incomingMessages = runs.reduce((sum, run) => sum + (run.result?.incomingMessages || 0), 0);
+    const scannedChannels = runs.reduce((sum, run) => sum + (run.result?.scannedChannels || 0), 0);
+    const autoReplied = runs.reduce((sum, run) => sum + (run.result?.autoReply?.replied || 0), 0);
+    const autoNeedsHuman = runs.reduce((sum, run) => sum + (run.result?.autoReply?.needsHuman || 0), 0);
+    const errors = runs.reduce((sum, run) => sum + (run.result?.errors.length || 0), 0);
+    const skipped = runs.filter((run) => run.skipped).length;
+
+    await logCronRequest(req, errors > 0 ? 'error' : incomingMessages > 0 ? 'success' : 'skipped', 'DM review cron completed', {
       authorized: true,
       httpStatus: 200,
       job: 'dm_review',
-      incomingMessages: result.incomingMessages,
-      scannedChannels: result.scannedChannels,
-      autoReplied: result.autoReply?.replied || 0,
-      autoNeedsHuman: result.autoReply?.needsHuman || 0,
-      errors: result.errors.length,
+      targets: runs.map((run) => run.ownerId ? `${run.projectId}:${run.ownerId}` : run.projectId),
+      incomingMessages,
+      scannedChannels,
+      autoReplied,
+      autoNeedsHuman,
+      errors,
+      skipped,
     });
-    res.json({ ok: true, result });
+    res.json({ ok: true, targets: runs });
   } catch (err) {
     await logCronRequest(req, 'error', err instanceof Error ? err.message : String(err), {
       authorized: true,

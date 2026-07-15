@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea"
 
 interface ProjectFormState {
   ownerName: string
+  projectKey: string
   projectName: string
   communityBaseUrl: string
   categoryId: string
@@ -53,6 +54,7 @@ interface ProjectSetupDraft {
 
 const DEFAULT_FORM: ProjectFormState = {
   ownerName: "",
+  projectKey: "",
   projectName: "",
   communityBaseUrl: "https://community.outlier.ai",
   categoryId: "",
@@ -71,6 +73,7 @@ const DEFAULT_FORM: ProjectFormState = {
 function projectToForm(project: NonNullable<ReturnType<typeof usePlatform>["currentProject"]>): ProjectFormState {
   return {
     ownerName: project.ownerName,
+    projectKey: project.projectKey,
     projectName: project.projectName,
     communityBaseUrl: project.communityBaseUrl,
     categoryId: project.categoryId,
@@ -331,6 +334,7 @@ export default function ProjectSetup() {
 
     const payload: QmProjectInput = {
       ownerName: form.ownerName,
+      projectKey: form.projectKey,
       projectName: form.projectName,
       communityBaseUrl: form.communityBaseUrl,
       categoryId: form.categoryId,
@@ -462,6 +466,19 @@ export default function ProjectSetup() {
                     onChange={(event) => update("projectName", event.target.value)}
                     required
                   />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="projectKey">Project ID</Label>
+                  <Input
+                    id="projectKey"
+                    value={form.projectKey}
+                    onChange={(event) => update("projectKey", event.target.value)}
+                    placeholder="stargazer"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Shared by every QM in the same community project.
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="communityBaseUrl">Community base URL</Label>
