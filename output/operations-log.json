@@ -1,5 +1,30 @@
 [
   {
+    "id": "70ebe0b5-8155-4342-af2e-97199a68253a",
+    "at": "2026-07-16T16:00:16.563Z",
+    "action": "cron_request",
+    "status": "skipped",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1300",
+      "slot": "1300",
+      "source": "vercel-cron",
+      "schedule": "0 16 * * *",
+      "userAgent": "vercel-cron/1.0",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "targets": [
+        "69cd3d3788bf65e1468428b1"
+      ],
+      "checked": 0,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "skipped": 1
+    }
+  },
+  {
     "id": "c0f17a7b-720f-45be-8378-6278d3bde4f8",
     "at": "2026-07-16T16:00:14.917Z",
     "action": "community_agent",
