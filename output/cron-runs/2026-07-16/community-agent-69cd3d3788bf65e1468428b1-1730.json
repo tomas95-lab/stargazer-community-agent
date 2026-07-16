@@ -4,6 +4,8 @@
   "slot": "1730",
   "utcDate": "2026-07-16",
   "argentinaDate": "2026-07-16",
-  "status": "running",
-  "startedAt": "2026-07-16T20:30:09.919Z"
+  "status": "error",
+  "startedAt": "2026-07-16T20:30:09.919Z",
+  "completedAt": "2026-07-16T20:30:13.049Z",
+  "error": "GitHub API error 400: \r\n<html>\r\n  <head>\r\n    <meta content=\"origin\" name=\"referrer\">\r\n    <title>Bad request &middot; GitHub</title>\r\n    <meta name=\"viewport\" content=\"width=device-width\">\r\n    <style type=\"text/css\" media=\"screen\">\r\n      body {\r\n        background-color: #f6f8fa;\r\n        color: rgba(0, 0, 0, 0.5);\r\n        font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol;\r\n        font-size: 14px;\r\n        line-height: 1.5;\r\n      "
 }
