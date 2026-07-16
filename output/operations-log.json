@@ -1,5 +1,17 @@
 [
   {
+    "id": "5188e978-8d79-4b58-ba85-12e8643835c3",
+    "at": "2026-07-16T13:01:23.792Z",
+    "action": "publish_daily_thread",
+    "status": "skipped",
+    "message": "Daily thread for 2026-07-16 already exists in Community",
+    "metadata": {
+      "date": "2026-07-16",
+      "reason": "duplicate_title",
+      "url": "https://community.outlier.ai/t/daily-thread-07-16/2904771"
+    }
+  },
+  {
     "id": "d1b747d0-052d-44bb-9ea1-c138467d9ca3",
     "at": "2026-07-16T13:00:35.885Z",
     "action": "cron_request",
