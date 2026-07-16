@@ -1,5 +1,21 @@
 [
   {
+    "id": "75c8c28b-7d84-4d45-8415-d768a3105ef5",
+    "at": "2026-07-16T20:30:11.549Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-16",
+        "argentinaDate": "2026-07-16",
+        "startUtc": "2026-07-16T00:00:00.000Z",
+        "endUtc": "2026-07-17T00:00:00.000Z",
+        "operatingHours": "Agent scans the current UTC day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  {
     "id": "dcae98b0-604c-4bd8-9e12-e1878ecbd214",
     "at": "2026-07-16T19:00:17.317Z",
     "action": "cron_request",
