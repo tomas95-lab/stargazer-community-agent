@@ -1,5 +1,24 @@
 [
   {
+    "id": "98908517-bd36-4ac1-9a4c-d4ea762b138c",
+    "at": "2026-07-16T20:31:58.564Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 4,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "inqa-coder0146"
+      ],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
     "id": "084824ef-a752-42a8-924d-dba49ffdecc2",
     "at": "2026-07-16T20:30:13.839Z",
     "action": "cron_request",
