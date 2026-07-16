@@ -4,6 +4,8 @@
   "slot": "1000",
   "utcDate": "2026-07-16",
   "argentinaDate": "2026-07-16",
-  "status": "running",
-  "startedAt": "2026-07-16T13:00:26.734Z"
+  "status": "error",
+  "startedAt": "2026-07-16T13:00:26.734Z",
+  "completedAt": "2026-07-16T13:00:35.017Z",
+  "error": "GitHub API error 409: {\"message\":\"output/cron-runs/2026-07-16/community-agent-69cd3d3788bf65e1468428b1-1000.json does not match 9dc31fa57cbc86fa3aa65058d5b95740b5136211\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
 }
