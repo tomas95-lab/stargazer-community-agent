@@ -1,5 +1,29 @@
 [
   {
+    "id": "deaf774e-11be-4b33-95f7-e7489011c6a5",
+    "at": "2026-07-16T22:00:18.942Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1900",
+      "slot": "1900",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "targets": [
+        "69cd3d3788bf65e1468428b1"
+      ],
+      "checked": 5,
+      "candidates": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "skipped": 0
+    }
+  },
+  {
     "id": "80b211c7-ae05-4f61-a617-eb210008a3b2",
     "at": "2026-07-16T22:00:15.981Z",
     "action": "community_agent",
