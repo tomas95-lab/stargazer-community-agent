@@ -1,5 +1,30 @@
 [
   {
+    "id": "837aa2a0-04fc-4b7a-8edc-5f98709c2355",
+    "at": "2026-07-16T21:00:24.836Z",
+    "action": "cron_request",
+    "status": "skipped",
+    "message": "DM review cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/dm-review/1800",
+      "slot": "1800",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "dm_review",
+      "targets": [
+        "69cd3d3788bf65e1468428b1"
+      ],
+      "incomingMessages": 0,
+      "scannedChannels": 5,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
     "id": "c6dd8039-9cb6-4fce-8d26-a887d60d8fe6",
     "at": "2026-07-16T21:00:22.516Z",
     "action": "dm_review",
