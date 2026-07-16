@@ -1,5 +1,21 @@
 [
   {
+    "id": "d1b747d0-052d-44bb-9ea1-c138467d9ca3",
+    "at": "2026-07-16T13:00:35.885Z",
+    "action": "cron_request",
+    "status": "error",
+    "message": "GitHub API error 409: {\"message\":\"output/cron-runs/2026-07-16/community-agent-69cd3d3788bf65e1468428b1-1000.json does not match 9dc31fa57cbc86fa3aa65058d5b95740b5136211\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1000",
+      "slot": "1000",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 500,
+      "job": "community_agent"
+    }
+  },
+  {
     "id": "30a0fa05-5d2a-4bf0-942e-10e0cb7b1bff",
     "at": "2026-07-16T13:00:33.047Z",
     "action": "cron_request",
