@@ -1,5 +1,26 @@
 [
   {
+    "id": "99a50d7f-6b4c-4775-a55a-68b501efd80c",
+    "at": "2026-07-17T13:00:19.654Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Daily thread cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/daily-thread/1000",
+      "slot": "1000",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "daily_publish_job",
+      "targets": [
+        "69cd3d3788bf65e1468428b1"
+      ],
+      "published": 1,
+      "skipped": 0
+    }
+  },
+  {
     "id": "a30debc3-f545-4501-9fff-d51565d04764",
     "at": "2026-07-17T13:00:18.007Z",
     "action": "daily_publish_job",
