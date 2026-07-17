@@ -1,5 +1,59 @@
 [
   {
+    "id": "40715b1d-6e46-4f27-8745-ec4452306cef",
+    "at": "2026-07-17T20:48:21.430Z",
+    "action": "schedule_chat_message",
+    "status": "success",
+    "message": "Scheduled chat message for 2026-07-20 10:00 PST",
+    "metadata": {
+      "id": "9b84b7a7-949d-428b-b222-a60474c306e3",
+      "channelId": "828853",
+      "scheduledFor": "2026-07-20T17:00:00.000Z",
+      "messageLength": 736
+    }
+  },
+  {
+    "id": "45e92832-5efd-49d7-98da-8943ecff2c4a",
+    "at": "2026-07-17T20:30:14.424Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1730",
+      "slot": "1730",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "targets": [
+        "69cd3d3788bf65e1468428b1"
+      ],
+      "checked": 1,
+      "candidates": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "id": "d1a1d659-8f0b-48c4-8dbc-f25a2c073232",
+    "at": "2026-07-17T20:30:12.157Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-17",
+        "argentinaDate": "2026-07-17",
+        "startUtc": "2026-07-17T07:00:00.000Z",
+        "endUtc": "2026-07-18T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  {
     "id": "aa0a65fd-bf04-4d71-ad4c-d5333ebadb0c",
     "at": "2026-07-17T20:18:31.191Z",
     "action": "message_composer",
