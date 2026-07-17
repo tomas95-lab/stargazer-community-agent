@@ -1,5 +1,17 @@
 [
   {
+    "id": "a30debc3-f545-4501-9fff-d51565d04764",
+    "at": "2026-07-17T13:00:18.007Z",
+    "action": "daily_publish_job",
+    "status": "success",
+    "message": "Published daily thread for 2026-07-17",
+    "metadata": {
+      "date": "2026-07-17",
+      "url": "https://community.outlier.ai/t/daily-thread-07-17/2904938",
+      "postChat": true
+    }
+  },
+  {
     "id": "e015d905-0baa-4407-b768-d6f52350ef0c",
     "at": "2026-07-17T13:00:15.834Z",
     "action": "cron_request",
