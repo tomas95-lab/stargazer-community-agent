@@ -1,0 +1,219 @@
+{
+  "entry": {
+    "id": "98908517-bd36-4ac1-9a4c-d4ea762b138c",
+    "at": "2026-07-16T20:31:58.564Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 4,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "inqa-coder0146"
+      ],
+      "postedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": false,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": false,
+      "skipProcessed": false,
+      "markProcessed": false,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "suggestion",
+      "checked": 4,
+      "candidates": 1,
+      "handled": 1,
+      "posted": 0,
+      "needsHuman": 0,
+      "ignored": 1,
+      "withinSchedule": false,
+      "window": {
+        "utcDate": "2026-07-16",
+        "argentinaDate": "2026-07-16",
+        "startUtc": "2026-07-16T00:00:00.000Z",
+        "endUtc": "2026-07-17T00:00:00.000Z",
+        "operatingHours": "Agent scans the current UTC day. Live-support hours come from project guidelines or project memory."
+      },
+      "items": [
+        {
+          "id": "community:27788214",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-16/2904771) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Prompt Quality**, with a reminder about **Bug Injection = fix. New Feature = add. Migration = migrate. Don't mix them.**.\n\nQuick rule: Bug fix language in a New Feature prompt = automatic rejection.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-16T13:00:30Z",
+          "chatMessageId": 27788214,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+        },
+        {
+          "id": "community:27792597",
+          "source": "community",
+          "username": "inqa-coder0146",
+          "message": "Hi @tomas.ruiz_OBIC \nCan i get the war room link for today?",
+          "createdAt": "2026-07-16T18:48:30Z",
+          "chatMessageId": 27792597,
+          "threadId": 1506806,
+          "isStaff": false,
+          "probableReplies": [
+            {
+              "id": "community:27794216",
+              "username": "tomas.ruiz_OBIC",
+              "message": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success",
+              "createdAt": "2026-07-16T20:23:50Z",
+              "chatMessageId": 27794216,
+              "match": "direct_reply"
+            }
+          ],
+          "ignoredReason": "Already has a probable reply in the chat or thread."
+        },
+        {
+          "id": "community:27792604",
+          "source": "community",
+          "username": "inqa-coder0146",
+          "message": "Anyone??",
+          "createdAt": "2026-07-16T18:49:26Z",
+          "chatMessageId": 27792604,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": []
+        },
+        {
+          "id": "community:27794216",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "The war room is always the same link https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success",
+          "createdAt": "2026-07-16T20:23:50Z",
+          "chatMessageId": 27794216,
+          "threadId": 1506806,
+          "replyToChatMessageId": 27792597,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Authored by the configured manager/bot user."
+        }
+      ],
+      "decisions": [
+        {
+          "itemId": "community:27792604",
+          "source": "community",
+          "username": "inqa-coder0146",
+          "message": "Anyone??",
+          "posted": false,
+          "needsHuman": false,
+          "action": "ignore",
+          "confidence": 0.95,
+          "reason": "This is a follow-up message from the same user after Tomas already provided the War Room link. The question has been answered in the chat context, so no additional reply is needed.",
+          "reply": "",
+          "guidelineSnippets": [
+            "Stargazer Axiom Guidelines\nWelcome! This document outlines the process and structure for creating issues for the\nStargazer Axiom project, including code base preparation, issue creation, solution\ndevelopment, test writing, and setting up Docker files and execution scripts.\nTable of Contents TOC\nProject Overview 2\nTask Overview 3\nStep 0 Onboarding & Installations (return to TOC 3\nProject Onboarding (return to TOC 3\nEnvironment Setup (return to TOC 4\nProject Structure (return to TOC 4\nComponent Descriptions (return to TOC 5\nStep 1 Setup and Analysis (return to TOC 6\n1.1 Environment Setup (return to TOC 6\nStep 2 Issue Creation and Solution (return to TOC 7\n2.1 Write Issue Statement (return to TOC 7\n2.2 Rate the difficulty of your issue (return to TOC 9\n2.3 Create the Issue (return to TOC 9\n2.4 Test the Issue Message (return to TOC 10\n2.5 Generate the Solution and Gold Patch (return to TOC 10\nStep 3 Testing (return to TOC 11\nExpected Test Behavior (return to TOC 12\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO",
+            "-- 1 of 23 --"
+          ]
+        }
+      ],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27788214",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-16/2904771) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Prompt Quality**, with a reminder about **Bug Injection = fix. New Feature = add. Migration = migrate. Don't mix them.**.\n\nQuick rule: Bug fix language in a New Feature prompt = automatic rejection.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-16T13:00:30Z",
+        "chatMessageId": 27788214,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+      },
+      {
+        "id": "community:27792597",
+        "source": "community",
+        "username": "inqa-coder0146",
+        "message": "Hi @tomas.ruiz_OBIC \nCan i get the war room link for today?",
+        "createdAt": "2026-07-16T18:48:30Z",
+        "chatMessageId": 27792597,
+        "threadId": 1506806,
+        "isStaff": false,
+        "probableReplies": [
+          {
+            "id": "community:27794216",
+            "username": "tomas.ruiz_OBIC",
+            "message": "https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success",
+            "createdAt": "2026-07-16T20:23:50Z",
+            "chatMessageId": 27794216,
+            "match": "direct_reply"
+          }
+        ],
+        "ignoredReason": "Already has a probable reply in the chat or thread."
+      },
+      {
+        "id": "community:27792604",
+        "source": "community",
+        "username": "inqa-coder0146",
+        "message": "Anyone??",
+        "createdAt": "2026-07-16T18:49:26Z",
+        "chatMessageId": 27792604,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      },
+      {
+        "id": "community:27794216",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "The war room is always the same link https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1#success",
+        "createdAt": "2026-07-16T20:23:50Z",
+        "chatMessageId": 27794216,
+        "threadId": 1506806,
+        "replyToChatMessageId": 27792597,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Authored by the configured manager/bot user."
+      }
+    ],
+    "candidates": [
+      {
+        "id": "community:27792604",
+        "source": "community",
+        "username": "inqa-coder0146",
+        "message": "Anyone??",
+        "createdAt": "2026-07-16T18:49:26Z",
+        "chatMessageId": 27792604,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      }
+    ],
+    "decisions": [
+      {
+        "itemId": "community:27792604",
+        "source": "community",
+        "username": "inqa-coder0146",
+        "message": "Anyone??",
+        "posted": false,
+        "needsHuman": false,
+        "action": "ignore",
+        "confidence": 0.95,
+        "reason": "This is a follow-up message from the same user after Tomas already provided the War Room link. The question has been answered in the chat context, so no additional reply is needed.",
+        "reply": "",
+        "guidelineSnippets": [
+          "Stargazer Axiom Guidelines\nWelcome! This document outlines the process and structure for creating issues for the\nStargazer Axiom project, including code base preparation, issue creation, solution\ndevelopment, test writing, and setting up Docker files and execution scripts.\nTable of Contents TOC\nProject Overview 2\nTask Overview 3\nStep 0 Onboarding & Installations (return to TOC 3\nProject Onboarding (return to TOC 3\nEnvironment Setup (return to TOC 4\nProject Structure (return to TOC 4\nComponent Descriptions (return to TOC 5\nStep 1 Setup and Analysis (return to TOC 6\n1.1 Environment Setup (return to TOC 6\nStep 2 Issue Creation and Solution (return to TOC 7\n2.1 Write Issue Statement (return to TOC 7\n2.2 Rate the difficulty of your issue (return to TOC 9\n2.3 Create the Issue (return to TOC 9\n2.4 Test the Issue Message (return to TOC 10\n2.5 Generate the Solution and Gold Patch (return to TOC 10\nStep 3 Testing (return to TOC 11\nExpected Test Behavior (return to TOC 12\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO",
+          "-- 1 of 23 --"
+        ]
+      }
+    ]
+  }
+}

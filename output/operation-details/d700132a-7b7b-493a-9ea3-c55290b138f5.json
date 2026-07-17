@@ -1,0 +1,80 @@
+{
+  "entry": {
+    "id": "d700132a-7b7b-493a-9ea3-c55290b138f5",
+    "at": "2026-07-16T14:30:25.627Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-16",
+        "argentinaDate": "2026-07-16",
+        "startUtc": "2026-07-16T00:00:00.000Z",
+        "endUtc": "2026-07-17T00:00:00.000Z",
+        "operatingHours": "Agent scans the current UTC day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": true,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": true,
+      "skipProcessed": true,
+      "markProcessed": true,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "post",
+      "checked": 1,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": false,
+      "window": {
+        "utcDate": "2026-07-16",
+        "argentinaDate": "2026-07-16",
+        "startUtc": "2026-07-16T00:00:00.000Z",
+        "endUtc": "2026-07-17T00:00:00.000Z",
+        "operatingHours": "Agent scans the current UTC day. Live-support hours come from project guidelines or project memory."
+      },
+      "items": [
+        {
+          "id": "community:27788214",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-16/2904771) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Prompt Quality**, with a reminder about **Bug Injection = fix. New Feature = add. Migration = migrate. Don't mix them.**.\n\nQuick rule: Bug fix language in a New Feature prompt = automatic rejection.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-16T13:00:30Z",
+          "chatMessageId": 27788214,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+        }
+      ],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27788214",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-16/2904771) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Prompt Quality**, with a reminder about **Bug Injection = fix. New Feature = add. Migration = migrate. Don't mix them.**.\n\nQuick rule: Bug fix language in a New Feature prompt = automatic rejection.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-16T13:00:30Z",
+        "chatMessageId": 27788214,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+      }
+    ],
+    "candidates": [],
+    "decisions": []
+  }
+}
