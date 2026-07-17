@@ -1,6 +1,20 @@
 {
   "events": [
     {
+      "id": "32674625-9da5-4d91-a35a-320fa62eb272",
+      "at": "2026-07-17T14:01:58.064Z",
+      "utcDate": "2026-07-17",
+      "argentinaDate": "2026-07-17",
+      "projectId": "69cd3d3788bf65e1468428b1",
+      "ownerId": "b6f44318-a33e-4d01-958c-5d591d9267bc",
+      "feature": "support_evaluation",
+      "model": "claude-haiku-4-5",
+      "inputTokens": 5387,
+      "outputTokens": 75,
+      "totalTokens": 5462,
+      "status": "success"
+    },
+    {
       "id": "bdd46f47-9531-4e4c-9540-d8c1ecc46e9c",
       "at": "2026-07-16T20:31:57.679Z",
       "utcDate": "2026-07-16",
