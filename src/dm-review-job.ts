@@ -639,15 +639,16 @@ async function evaluateDirectMessageThread(
     warRoomLink,
     Boolean(warRoomLink),
   );
+  const action = deterministicDecision.action === 'react' ? 'ignore' : deterministicDecision.action;
 
   if (logDraft) {
     await appendOperationLog({
       action: 'dm_draft',
-      status: deterministicDecision.action === 'reply' ? 'success' : deterministicDecision.action === 'human' ? 'skipped' : 'success',
+      status: action === 'reply' ? 'success' : action === 'human' ? 'skipped' : 'success',
       message: `Claude DM draft evaluated channel ${channelId}.`,
       metadata: {
         channelId,
-        action: deterministicDecision.action,
+        action,
         confidence: deterministicDecision.confidence,
         pendingIncomingMessages: pendingIncoming.length,
         lastIncomingMessageId: lastIncoming.messageId,
@@ -657,11 +658,13 @@ async function evaluateDirectMessageThread(
 
   return {
     channelId,
-    action: deterministicDecision.action,
+    action,
     confidence: deterministicDecision.confidence,
-    reason: deterministicDecision.reason,
-    reply: deterministicDecision.action === 'reply' ? deterministicDecision.reply : '',
-    needsHuman: deterministicDecision.action === 'human',
+    reason: action === 'ignore' && deterministicDecision.action === 'react'
+      ? 'Claude suggested a reaction, but DM reactions are not supported by this workflow.'
+      : deterministicDecision.reason,
+    reply: action === 'reply' ? deterministicDecision.reply : '',
+    needsHuman: action === 'human',
     guidelineSnippets: deterministicDecision.guidelineSnippets,
     lastIncomingMessageId: lastIncoming.messageId,
     pendingIncomingMessages: pendingIncoming.length,

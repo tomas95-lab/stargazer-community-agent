@@ -226,6 +226,21 @@ export class DiscourseClient {
     });
   }
 
+  async reactToChatMessage(
+    channelId: string,
+    messageId: number,
+    emoji: string,
+    action: 'add' | 'remove' = 'add'
+  ): Promise<{ success?: string }> {
+    return this.request<{ success?: string }>(`/chat/${channelId}/react/${messageId}.json`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        emoji,
+        react_action: action,
+      }),
+    });
+  }
+
   private chatMessageQuery(params: DiscourseChatMessageQuery): string {
     const query = new URLSearchParams();
     query.set('page_size', String(Math.max(1, Math.floor(params.pageSize || 20))));

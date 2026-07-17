@@ -12,7 +12,7 @@ function datetimeLocal(date = new Date()): string {
 }
 
 function statusClass(action: string): string {
-  if (action === 'reply') return 'sg-status-success';
+  if (action === 'reply' || action === 'react') return 'sg-status-success';
   if (action === 'human') return 'sg-status-warning';
   return 'border-border bg-secondary text-secondary-foreground';
 }
@@ -159,6 +159,8 @@ export default function TestingSandbox() {
                     <div className="prose prose-sm max-w-none text-foreground">
                       <ReactMarkdown>{result.decision.reply}</ReactMarkdown>
                     </div>
+                  ) : result.decision.action === 'react' ? (
+                    <p className="text-sm text-foreground">React with {result.decision.reaction || '+1'}.</p>
                   ) : (
                     <p className="text-sm text-muted-foreground">No reply generated.</p>
                   )}

@@ -41,6 +41,7 @@ router.post('/run', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const result = await runCommunityAgent({
       post: req.body?.post === true,
+      react: req.body?.react === true,
       maxAnswers: clampNumber(req.body?.maxAnswers, 3, 1, 10),
       messageCount: clampNumber(req.body?.messageCount, 50, 1, 100),
       includeCommunity: req.body?.includeCommunity !== false,

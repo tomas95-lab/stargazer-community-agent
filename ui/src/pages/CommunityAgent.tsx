@@ -65,9 +65,11 @@ function DecisionCard({ decision }: { decision: CommunityAgentDecision }) {
     ? 'red'
     : decision.action === 'reply'
       ? 'green'
-      : decision.action === 'human'
-        ? 'yellow'
-        : 'gray';
+      : decision.action === 'react'
+        ? 'blue'
+        : decision.action === 'human'
+          ? 'yellow'
+          : 'gray';
 
   return (
     <div className="sg-panel space-y-3 p-5">
@@ -77,6 +79,7 @@ function DecisionCard({ decision }: { decision: CommunityAgentDecision }) {
             <Badge tone="blue">Community</Badge>
             <Badge tone={tone}>{decision.error ? 'Error' : decision.action}</Badge>
             {decision.posted && <Badge tone="green">Posted</Badge>}
+            {decision.reacted && <Badge tone="green">Reacted</Badge>}
           </div>
           <p className="mt-2 font-semibold text-foreground">{decision.username}</p>
         </div>
@@ -89,6 +92,13 @@ function DecisionCard({ decision }: { decision: CommunityAgentDecision }) {
         <div className="sg-panel-muted p-3">
           <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Agent reply</p>
           <p className="whitespace-pre-wrap text-sm text-foreground">{decision.reply}</p>
+        </div>
+      )}
+
+      {decision.action === 'react' && (
+        <div className="sg-panel-muted p-3">
+          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Reaction</p>
+          <p className="text-sm text-foreground">{decision.reaction || '+1'}</p>
         </div>
       )}
 
@@ -106,6 +116,7 @@ export default function CommunityAgent() {
   const [includeCommunity, setIncludeCommunity] = useState(true);
   const [skipProcessed, setSkipProcessed] = useState(true);
   const [post, setPost] = useState(false);
+  const [react, setReact] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -134,9 +145,10 @@ export default function CommunityAgent() {
     try {
       const next = await api.runCommunityAgent({
         post,
+        react,
         includeCommunity,
         skipProcessed,
-        markProcessed: post,
+        markProcessed: post || react,
         maxAnswers: 4,
         messageCount: 50,
       });
@@ -186,6 +198,10 @@ export default function CommunityAgent() {
             <input type="checkbox" checked={post} onChange={(e) => setPost(e.target.checked)} className="accent-primary" />
             Post safe replies
           </label>
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <input type="checkbox" checked={react} onChange={(e) => setReact(e.target.checked)} className="accent-primary" />
+            React to useful messages
+          </label>
         </div>
 
         <button
@@ -204,7 +220,7 @@ export default function CommunityAgent() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Claude Decisions</h2>
             <p className="text-xs text-muted-foreground">
-              {result.handled} handled · {result.posted} posted · {result.needsHuman} human
+              {result.handled} handled · {result.posted} posted · {result.reacted} reacted · {result.needsHuman} human
             </p>
           </div>
           {result.decisions.length === 0 ? (

@@ -47,6 +47,37 @@ test('DiscourseClient can send a chat message as a threaded reply', async () => 
   }
 });
 
+test('DiscourseClient can add a reaction to a chat message', async () => {
+  const previousFetch = global.fetch;
+  const calls = [];
+  global.fetch = async (url, init) => {
+    calls.push({ url, init });
+    return {
+      ok: true,
+      json: async () => ({ success: 'OK' }),
+    };
+  };
+
+  try {
+    const client = new DiscourseClient({
+      baseUrl: 'https://community.example/',
+      apiKey: 'key',
+      apiClientId: 'client',
+    });
+
+    await client.reactToChatMessage('42', 123, '+1');
+
+    assert.equal(calls[0].url, 'https://community.example/chat/42/react/123.json');
+    assert.equal(calls[0].init.method, 'PUT');
+    assert.deepEqual(JSON.parse(calls[0].init.body), {
+      emoji: '+1',
+      react_action: 'add',
+    });
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
 test('DiscourseClient reads direct-message channels from the current user chat endpoint', async () => {
   const previousFetch = global.fetch;
   const calls = [];

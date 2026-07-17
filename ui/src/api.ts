@@ -177,7 +177,7 @@ export interface CommunityAgentSuggestion {
 }
 
 export type CommunityAgentSource = 'community';
-export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
+export type CommunityAgentAction = 'reply' | 'react' | 'human' | 'ignore';
 
 export interface CommunityAgentReplyEvidence {
   id: string;
@@ -212,6 +212,8 @@ export interface CommunityAgentDecision {
   reason: string;
   reply: string;
   posted: boolean;
+  reacted: boolean;
+  reaction?: string;
   needsHuman: boolean;
   guidelineSnippets: string[];
   error?: string;
@@ -223,6 +225,7 @@ export interface CommunityAgentResult {
   candidates: number;
   handled: number;
   posted: number;
+  reacted: number;
   needsHuman: number;
   ignored: number;
   withinSchedule: boolean;
@@ -456,6 +459,7 @@ export interface SandboxResult {
     confidence: number;
     reason: string;
     reply: string;
+    reaction?: string;
     guidelineSnippets: string[];
   };
 }
@@ -673,6 +677,7 @@ export const api = {
     includeCommunity?: boolean;
     skipProcessed?: boolean;
     markProcessed?: boolean;
+    react?: boolean;
   }) =>
     request<CommunityAgentResult>('/community-agent/run', {
       method: 'POST',

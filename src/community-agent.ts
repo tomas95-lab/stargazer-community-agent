@@ -20,10 +20,11 @@ const MIN_CONFIDENCE = Number(process.env.AGENT_MIN_CONFIDENCE || '0.50');
 const REPLY_LOOKAHEAD_MINUTES = 45;
 const THREAD_SCAN_LIMIT = parseInt(process.env.AGENT_THREAD_SCAN_LIMIT || '6', 10);
 const THREAD_MESSAGE_COUNT = parseInt(process.env.AGENT_THREAD_MESSAGE_COUNT || '30', 10);
+const DEFAULT_REACTION_EMOJI = process.env.AGENT_REACTION_EMOJI || '+1';
 const STATE_FILE = 'output/community-agent-state.json';
 
 export type CommunityAgentSource = 'community';
-export type CommunityAgentAction = 'reply' | 'human' | 'ignore';
+export type CommunityAgentAction = 'reply' | 'react' | 'human' | 'ignore';
 
 export interface CommunityAgentOptions {
   post?: boolean;
@@ -32,6 +33,7 @@ export interface CommunityAgentOptions {
   respectSchedule?: boolean;
   skipProcessed?: boolean;
   markProcessed?: boolean;
+  react?: boolean;
   maxAnswers?: number;
   messageCount?: number;
 }
@@ -69,6 +71,8 @@ export interface CommunityAgentDecision {
   reason: string;
   reply: string;
   posted: boolean;
+  reacted: boolean;
+  reaction?: string;
   needsHuman: boolean;
   guidelineSnippets: string[];
   error?: string;
@@ -80,6 +84,7 @@ export interface CommunityAgentResult {
   candidates: number;
   handled: number;
   posted: number;
+  reacted: number;
   needsHuman: number;
   ignored: number;
   withinSchedule: boolean;
@@ -96,7 +101,7 @@ export interface CommunityAgentResult {
 }
 
 interface AgentState {
-  processed: Record<string, { at: string; action: CommunityAgentAction; posted: boolean }>;
+  processed: Record<string, { at: string; action: CommunityAgentAction; posted: boolean; reacted?: boolean }>;
 }
 
 interface ClaudeDecision {
@@ -104,6 +109,7 @@ interface ClaudeDecision {
   confidence?: number;
   reason?: string;
   reply?: string;
+  reaction?: string;
 }
 
 function createClient(): { client: DiscourseClient; channelId: string } {
@@ -220,6 +226,39 @@ function isQuestionOrSupportRequest(text: string): boolean {
   ];
 
   return supportSignals.some((signal) => lower.includes(signal));
+}
+
+function isPotentiallyUsefulContribution(text: string): boolean {
+  const lower = normalizeText(text).trim();
+  if (lower.length < 24) return false;
+
+  const usefulSignals = [
+    'i fixed',
+    'fixed it',
+    'solved',
+    'solution',
+    'worked for me',
+    'it works',
+    'this worked',
+    'i found',
+    'for anyone',
+    'heads up',
+    'update',
+    'context',
+    'thanks for',
+    'thank you for',
+    'sharing',
+    'resolved',
+    'done',
+    'got access',
+    'access is working',
+    'ya funciona',
+    'lo pude resolver',
+    'me funciono',
+    'listo',
+  ];
+
+  return usefulSignals.some((signal) => lower.includes(signal));
 }
 
 function isWarRoomAvailabilityQuestion(text: string): boolean {
@@ -400,7 +439,9 @@ function baseIgnoreReason(item: CommunityAgentItem): string | null {
   if (shouldIgnoreAuthor(item.username)) return 'Authored by the configured manager/bot user.';
   if (item.message.trim().length < 8) return 'Message is too short to evaluate safely.';
   if ((item.probableReplies || []).length > 0) return 'Already has a probable reply in the chat or thread.';
-  if (!isQuestionOrSupportRequest(item.message)) return 'No question or support signal detected.';
+  if (!isQuestionOrSupportRequest(item.message) && !isPotentiallyUsefulContribution(item.message)) {
+    return 'No question, support, or useful contribution signal detected.';
+  }
   return null;
 }
 
@@ -503,8 +544,12 @@ function relevantItems(items: CommunityAgentItem[]): CommunityAgentItem[] {
     if (shouldIgnoreAuthor(item.username)) return false;
     if (shouldIgnoreMessage(item.message)) return false;
     if ((item.probableReplies || []).length > 0) return false;
-    return isQuestionOrSupportRequest(item.message);
+    return isQuestionOrSupportRequest(item.message) || isPotentiallyUsefulContribution(item.message);
   });
+}
+
+function candidatePriority(item: CommunityAgentItem): number {
+  return isQuestionOrSupportRequest(item.message) ? 0 : 1;
 }
 
 async function readState(): Promise<AgentState> {
@@ -579,11 +624,17 @@ function withWarRoomSupportInfo(reply: string, warRoomLink: string, canUseWarRoo
   return trimmed;
 }
 
+function cleanReactionEmoji(value: string): string {
+  const trimmed = value.trim().replace(/^:+|:+$/g, '');
+  if (!trimmed || trimmed.length > 32) return DEFAULT_REACTION_EMOJI;
+  return /^[a-z0-9_+\-]+$/i.test(trimmed) ? trimmed : DEFAULT_REACTION_EMOJI;
+}
+
 export function warRoomAvailabilityDecision(
   message: string,
   warRoomLink: string,
   now = new Date(),
-): Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'needsHuman'> | null {
+): Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'reacted' | 'needsHuman'> | null {
   void message;
   void warRoomLink;
   void now;
@@ -596,7 +647,7 @@ export async function evaluateSupportMessage(
   context: string,
   warRoomLink: string,
   canUseWarRoomLink: boolean,
-): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'needsHuman'>> {
+): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'reacted' | 'needsHuman'>> {
   const snippets = await findProjectGuidelineSnippets(message, 4);
   const memory = await projectMemoryText(25);
   const anthropicRuntime = resolveAnthropicRuntime();
@@ -612,11 +663,13 @@ export async function evaluateSupportMessage(
     'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
     'Use the provided project memory, project guideline excerpts, and recent chat context as the source of truth.',
     'You may answer only when the answer is clearly supported by the provided project memory, project guideline excerpts, or by the recent chat context.',
+    'Use action "react" only when the incoming contributor message is useful, constructive, or confirms a resolution, and no text reply is needed.',
+    `For action "react", use reaction "${DEFAULT_REACTION_EMOJI}" unless there is a clearly better positive reaction. Do not put reaction-only acknowledgements in the reply field.`,
     'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
     'Keep replies under 4 short sentences.',
     'Do not add a footer, attribution, or assistant name.',
     warRoomInstruction,
-    'Return only valid JSON with keys: action ("reply", "human", or "ignore"), confidence (0 to 1), reason, reply.',
+    'Return only valid JSON with keys: action ("reply", "react", "human", or "ignore"), confidence (0 to 1), reason, reply, reaction.',
   ].filter(Boolean).join(' ');
   const userPrompt = [
     `Today/context:\n${context || 'No recent context.'}`,
@@ -651,7 +704,9 @@ export async function evaluateSupportMessage(
 
   const parsed = extractJson(rawResponseText);
   const action: CommunityAgentAction =
-    parsed.action === 'reply' || parsed.action === 'human' || parsed.action === 'ignore' ? parsed.action : 'human';
+    parsed.action === 'reply' || parsed.action === 'react' || parsed.action === 'human' || parsed.action === 'ignore'
+      ? parsed.action
+      : 'human';
   const confidence = typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0;
   const rawReply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
   const nonEnglishReply = action === 'reply' && looksNonEnglish(rawReply);
@@ -659,7 +714,10 @@ export async function evaluateSupportMessage(
   const finalAction =
     action === 'reply' && (!rawReply || confidence < MIN_CONFIDENCE || !hasKnowledgeSupport || nonEnglishReply)
       ? 'human'
+      : action === 'react' && confidence < MIN_CONFIDENCE
+        ? 'ignore'
       : action;
+  const rawReaction = typeof parsed.reaction === 'string' ? parsed.reaction.trim() : '';
   const reply = finalAction === 'reply'
     ? cleanGeneratedReply(withWarRoomSupportInfo(rawReply, warRoomLink, canUseWarRoomLink))
     : cleanGeneratedReply(rawReply);
@@ -673,6 +731,7 @@ export async function evaluateSupportMessage(
         ? parsed.reason
         : 'No reason returned',
     reply,
+    reaction: finalAction === 'react' ? cleanReactionEmoji(rawReaction || DEFAULT_REACTION_EMOJI) : undefined,
     guidelineSnippets: snippets,
   };
 }
@@ -682,6 +741,17 @@ async function postDecision(client: DiscourseClient, channelId: string, reply: s
     inReplyToId: item.chatMessageId,
     threadId: item.threadId,
   });
+  return true;
+}
+
+async function reactToDecision(
+  client: DiscourseClient,
+  channelId: string,
+  item: CommunityAgentItem,
+  emoji: string,
+): Promise<boolean> {
+  if (!item.chatMessageId) return false;
+  await client.reactToChatMessage(channelId, item.chatMessageId, cleanReactionEmoji(emoji || DEFAULT_REACTION_EMOJI), 'add');
   return true;
 }
 
@@ -714,11 +784,12 @@ export async function fetchCommunityAgentItems(options: CommunityAgentOptions = 
 
 export async function runCommunityAgent(options: CommunityAgentOptions = {}): Promise<CommunityAgentResult> {
   const post = options.post === true;
+  const react = options.react === true;
   const includeCommunity = options.includeCommunity ?? true;
   const onlyToday = options.onlyToday ?? true;
   const respectSchedule = options.respectSchedule ?? false;
   const skipProcessed = options.skipProcessed ?? true;
-  const markProcessed = options.markProcessed ?? (post || respectSchedule);
+  const markProcessed = options.markProcessed ?? (post || react || respectSchedule);
   const maxAnswers = options.maxAnswers ?? MAX_ANSWERS;
   const messageCount = options.messageCount ?? MESSAGE_COUNT;
   const withinSchedule = isWithinOperatingHours();
@@ -735,11 +806,12 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
 
   if (respectSchedule && !withinSchedule) {
     const result: CommunityAgentResult = {
-      mode: post ? 'post' : 'suggestion',
+      mode: post || react ? 'post' : 'suggestion',
       checked: fetched.items.length,
       candidates: 0,
       handled: 0,
       posted: 0,
+      reacted: 0,
       needsHuman: 0,
       ignored: 0,
       withinSchedule,
@@ -755,7 +827,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       metadata: { window },
     }, {
       type: 'community_agent',
-      options: { post, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount },
+      options: { post, react, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount },
       result,
       items: fetched.items,
       candidates: [],
@@ -767,7 +839,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
   const state = await readState();
   const candidates = relevantItems(fetched.items)
     .filter((item) => !skipProcessed || !state.processed[item.id])
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .sort((a, b) => candidatePriority(a) - candidatePriority(b) || a.createdAt.localeCompare(b.createdAt))
     .slice(0, maxAnswers);
 
   const context = fetched.items
@@ -784,8 +856,12 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       const decision = warRoomAvailabilityDecision(item.message, warRoomLink) ||
         await evaluateSupportMessage(item.username, item.message, context, warRoomLink, canUseWarRoomLink);
       let posted = false;
+      let reacted = false;
       if (post && decision.action === 'reply') {
         posted = await postDecision(client, channelId, decision.reply, item);
+      }
+      if (react && decision.action === 'react') {
+        reacted = await reactToDecision(client, channelId, item, decision.reaction || DEFAULT_REACTION_EMOJI);
       }
 
       decisions.push({
@@ -794,12 +870,13 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
         username: item.username,
         message: item.message,
         posted,
+        reacted,
         needsHuman: decision.action === 'human',
         ...decision,
       });
 
       if (markProcessed && decision.action !== 'ignore') {
-        state.processed[item.id] = { at: new Date().toISOString(), action: decision.action, posted };
+        state.processed[item.id] = { at: new Date().toISOString(), action: decision.action, posted, reacted };
       }
     } catch (err) {
       decisions.push({
@@ -812,6 +889,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
         reason: 'Agent failed while analyzing this message',
         reply: '',
         posted: false,
+        reacted: false,
         needsHuman: true,
         guidelineSnippets: [],
         error: err instanceof Error ? err.message : String(err),
@@ -826,14 +904,16 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
   }
 
   const posted = decisions.filter((decision) => decision.posted).length;
+  const reacted = decisions.filter((decision) => decision.reacted).length;
   const needsHuman = decisions.filter((decision) => decision.needsHuman).length;
   const ignored = decisions.filter((decision) => decision.action === 'ignore').length;
   const result: CommunityAgentResult = {
-    mode: post ? 'post' : 'suggestion',
+    mode: post || react ? 'post' : 'suggestion',
     checked: fetched.items.length,
     candidates: candidates.length,
     handled: decisions.length,
     posted,
+    reacted,
     needsHuman,
     ignored,
     withinSchedule,
@@ -851,15 +931,17 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       checked: fetched.items.length,
       candidates: candidates.length,
       posted,
+      reacted,
       needsHuman,
       candidateUsers: candidates.map((item) => item.username),
       postedUsers: decisions.filter((decision) => decision.posted).map((decision) => decision.username),
+      reactedUsers: decisions.filter((decision) => decision.reacted).map((decision) => decision.username),
       humanUsers: decisions.filter((decision) => decision.needsHuman).map((decision) => decision.username),
       errors: fetched.errors,
     },
   }, {
     type: 'community_agent',
-    options: { post, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount },
+    options: { post, react, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount },
     result,
     items: fetched.items,
     candidates,

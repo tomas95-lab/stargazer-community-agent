@@ -51,15 +51,25 @@ function notificationFor(entry: OperationLogEntry): NotificationPayload | null {
   if (entry.action === "community_agent") {
     const candidates = asNumber(metadata.candidates)
     const posted = asNumber(metadata.posted)
+    const reacted = asNumber(metadata.reacted)
     const needsHuman = asNumber(metadata.needsHuman)
-    if (candidates <= 0 && posted <= 0) return null
+    if (candidates <= 0 && posted <= 0 && reacted <= 0) return null
 
     if (posted > 0) {
       const users = userList(asStrings(metadata.postedUsers))
       return {
         title: "Bot replied in Community",
-        body: `${posted} ${posted === 1 ? "reply" : "replies"} posted for ${users}. ${needsHuman} need human review.`,
+        body: `${posted} ${posted === 1 ? "reply" : "replies"} posted for ${users}. ${reacted} reacted. ${needsHuman} need human review.`,
         tag: `community-posted:${entry.id}`,
+      }
+    }
+
+    if (reacted > 0) {
+      const users = userList(asStrings(metadata.reactedUsers))
+      return {
+        title: "Bot reacted in Community",
+        body: `${reacted} useful ${reacted === 1 ? "message" : "messages"} acknowledged for ${users}. ${needsHuman} need human review.`,
+        tag: `community-reacted:${entry.id}`,
       }
     }
 

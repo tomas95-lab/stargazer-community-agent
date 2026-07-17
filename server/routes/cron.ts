@@ -166,6 +166,7 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
         slot(req),
         () => runCommunityAgent({
           post: process.env.AGENT_AUTO_POST === 'true',
+          react: process.env.AGENT_AUTO_REACT === 'true',
           includeCommunity: true,
           onlyToday: true,
           respectSchedule: true,
@@ -184,6 +185,7 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
     }
 
     const posted = runs.reduce((sum, run) => sum + (run.result?.posted || 0), 0);
+    const reacted = runs.reduce((sum, run) => sum + (run.result?.reacted || 0), 0);
     const checked = runs.reduce((sum, run) => sum + (run.result?.checked || 0), 0);
     const candidates = runs.reduce((sum, run) => sum + (run.result?.candidates || 0), 0);
     const needsHuman = runs.reduce((sum, run) => sum + (run.result?.needsHuman || 0), 0);
@@ -197,6 +199,7 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
       checked,
       candidates,
       posted,
+      reacted,
       needsHuman,
       skipped,
     });

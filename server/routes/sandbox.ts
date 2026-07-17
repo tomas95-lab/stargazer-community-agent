@@ -55,7 +55,7 @@ router.post('/evaluate', requireAdminToken, async (req: Request, res: Response) 
 
     await appendOperationLog({
       action: 'sandbox_evaluation',
-      status: decision.action === 'reply' ? 'success' : 'skipped',
+      status: decision.action === 'reply' || decision.action === 'react' ? 'success' : 'skipped',
       message: `Sandbox evaluated ${channel} message from ${username}.`,
       metadata: {
         action: decision.action,

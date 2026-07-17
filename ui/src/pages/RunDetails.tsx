@@ -106,6 +106,7 @@ function CommunityDetail({ detail }: { detail: DetailRecord }) {
         candidates: result.candidates,
         handled: result.handled,
         posted: result.posted,
+        reacted: result.reacted,
         needsHuman: result.needsHuman,
         ignored: result.ignored,
       }} />
@@ -177,10 +178,11 @@ function CommunityDetail({ detail }: { detail: DetailRecord }) {
           <div key={`${asString(decision.itemId)}-${index}`} className="sg-panel p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass(asString(decision.action) === 'reply' ? 'success' : asString(decision.action) === 'human' ? 'skipped' : 'skipped')}`}>
+                <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass(asString(decision.action) === 'reply' || asString(decision.action) === 'react' ? 'success' : asString(decision.action) === 'human' ? 'skipped' : 'skipped')}`}>
                   {asString(decision.action)}
                 </span>
                 {decision.posted === true && <Badge variant="secondary">posted</Badge>}
+                {decision.reacted === true && <Badge variant="secondary">reacted</Badge>}
               </div>
               <span className="text-xs text-muted-foreground">{Math.round(asNumber(decision.confidence) * 100)}%</span>
             </div>
@@ -190,6 +192,12 @@ function CommunityDetail({ detail }: { detail: DetailRecord }) {
               <div className="mt-3 rounded-md border border-border bg-surface p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Reply</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{asString(decision.reply)}</p>
+              </div>
+            )}
+            {asString(decision.action) === 'react' && (
+              <div className="mt-3 rounded-md border border-border bg-surface p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Reaction</p>
+                <p className="mt-1 text-sm text-foreground">{asString(decision.reaction, '+1')}</p>
               </div>
             )}
             <p className="mt-3 text-xs text-muted-foreground">{asString(decision.error) || asString(decision.reason)}</p>
