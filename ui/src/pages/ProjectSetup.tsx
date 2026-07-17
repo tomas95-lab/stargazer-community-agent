@@ -152,11 +152,12 @@ function clearDraft(key: string): void {
   window.localStorage.removeItem(key)
 }
 
-export default function ProjectSetup() {
+export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, signOut } = useAuth()
   const { currentProject, refreshProjects } = usePlatform()
+  const activeProject = forceNew ? null : currentProject
   const [form, setForm] = useState<ProjectFormState>(DEFAULT_FORM)
   const [pending, setPending] = useState(false)
   const [connectingDiscourse, setConnectingDiscourse] = useState(false)
@@ -173,14 +174,14 @@ export default function ProjectSetup() {
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
 
-  const editing = Boolean(currentProject)
+  const editing = Boolean(activeProject)
 
   useEffect(() => {
     if (!user) return
 
-    const key = draftKey(user.id, currentProject?.id)
-    const fallback = currentProject
-      ? projectToForm(currentProject)
+    const key = draftKey(user.id, activeProject?.id)
+    const fallback = activeProject
+      ? projectToForm(activeProject)
       : {
         ...DEFAULT_FORM,
         ownerName: user.user_metadata?.name || user.email?.split("@")[0] || "",
@@ -190,7 +191,7 @@ export default function ProjectSetup() {
     setForm(draft.form)
     setDiscourseAuth(draft.discourseAuth)
     setActiveDraftKey(key)
-  }, [currentProject, user])
+  }, [activeProject, user])
 
   useEffect(() => {
     if (!activeDraftKey) return
@@ -222,17 +223,17 @@ export default function ProjectSetup() {
   const apiKeyLabel = useMemo(() => {
     if (!editing && discourseStatus?.connected) return "Discourse API key (connected, no manual key needed)"
     if (!editing) return "Discourse API key"
-    return currentProject?.discourseApiKeyConfigured
+    return activeProject?.discourseApiKeyConfigured
       ? "Discourse API key (leave blank to keep current key)"
       : "Discourse API key"
-  }, [editing, currentProject, discourseStatus])
+  }, [editing, activeProject, discourseStatus])
 
   const anthropicApiKeyLabel = useMemo(() => {
     if (!editing) return "Your Anthropic API key"
-    return currentProject?.anthropicApiKeyConfigured
+    return activeProject?.anthropicApiKeyConfigured
       ? "Your Anthropic API key (leave blank to keep current key)"
       : "Your Anthropic API key"
-  }, [editing, currentProject])
+  }, [editing, activeProject])
 
   function update<K extends keyof ProjectFormState>(key: K, value: ProjectFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -294,7 +295,7 @@ export default function ProjectSetup() {
     setMessage("")
     try {
       const result = await api.startDiscourseAuth({
-        projectId: currentProject?.id,
+        projectId: activeProject?.id,
         returnTo: location.pathname,
       })
       setDiscourseAuth({
@@ -380,8 +381,8 @@ export default function ProjectSetup() {
     }
 
     try {
-      const result = currentProject
-        ? await api.updateProject(currentProject.id, payload)
+      const result = activeProject
+        ? await api.updateProject(activeProject.id, payload)
         : await api.createProject(payload)
       if (activeDraftKey) clearDraft(activeDraftKey)
       projectSelection.setProjectId(result.project.id)
@@ -424,7 +425,7 @@ export default function ProjectSetup() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">
-                      {discourseStatus?.connected || currentProject?.discourseApiKeyConfigured
+                      {discourseStatus?.connected || activeProject?.discourseApiKeyConfigured
                         ? "Discourse is connected"
                         : "Connect Discourse"}
                     </p>

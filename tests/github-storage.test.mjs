@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFile, writeJSON } from '../dist/github-storage.js';
+import { deletePath, writeFile, writeJSON } from '../dist/github-storage.js';
 
 function jsonResponse(body, ok = true, status = 200) {
   return {
@@ -150,6 +150,65 @@ test('writeFile also retries GitHub 409 conflicts', async () => {
   } finally {
     global.fetch = previousFetch;
     global.setTimeout = previousSetTimeout;
+    if (previousToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = previousToken;
+    if (previousOwner === undefined) delete process.env.GITHUB_OWNER;
+    else process.env.GITHUB_OWNER = previousOwner;
+    if (previousRepo === undefined) delete process.env.GITHUB_REPO;
+    else process.env.GITHUB_REPO = previousRepo;
+  }
+});
+
+test('deletePath recursively removes files from GitHub storage', async () => {
+  const previousFetch = global.fetch;
+  const previousToken = process.env.GITHUB_TOKEN;
+  const previousOwner = process.env.GITHUB_OWNER;
+  const previousRepo = process.env.GITHUB_REPO;
+  const calls = [];
+
+  process.env.GITHUB_TOKEN = 'token';
+  process.env.GITHUB_OWNER = 'owner';
+  process.env.GITHUB_REPO = 'repo';
+
+  global.fetch = async (url, init = {}) => {
+    calls.push({ url, init, body: init.body ? JSON.parse(init.body) : undefined });
+
+    if (calls.length === 1) {
+      return jsonResponse([
+        {
+          type: 'file',
+          name: 'topics.json',
+          path: 'data/projects/alpha/topics.json',
+          sha: 'topic-sha',
+          size: 2,
+        },
+      ]);
+    }
+
+    if (calls.length === 2 || calls.length === 3) {
+      return jsonResponse({
+        type: 'file',
+        name: 'topics.json',
+        sha: 'topic-sha',
+        size: 2,
+        content: 'W10=',
+      });
+    }
+
+    if (calls.length === 4) return jsonResponse({});
+
+    throw new Error(`Unexpected fetch call ${calls.length}`);
+  };
+
+  try {
+    await deletePath('data/projects/alpha', 'delete alpha project data');
+
+    assert.equal(calls.length, 4);
+    assert.equal(calls[3].init.method, 'DELETE');
+    assert.equal(calls[3].body.sha, 'topic-sha');
+    assert.equal(calls[3].body.message, 'delete alpha project data');
+  } finally {
+    global.fetch = previousFetch;
     if (previousToken === undefined) delete process.env.GITHUB_TOKEN;
     else process.env.GITHUB_TOKEN = previousToken;
     if (previousOwner === undefined) delete process.env.GITHUB_OWNER;

@@ -3,6 +3,7 @@ import * as path from 'path';
 import { PATHS } from './paths';
 import {
   listDirectory as listGitHubDirectory,
+  deletePath as deleteGitHubPath,
   readFile as readGitHubFile,
   readJSON as readGitHubJSON,
   writeFile as writeGitHubFile,
@@ -92,6 +93,16 @@ export async function writeDataText(filePath: string, text: string, message: str
   const target = resolveLocalPath(filePath);
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, text.endsWith('\n') ? text : `${text}\n`, 'utf-8');
+}
+
+export async function deleteDataPath(filePath: string, message: string): Promise<void> {
+  const pathInStore = scopedPath(filePath);
+  if (activeDataStore() === 'github') {
+    await deleteGitHubPath(pathInStore, message);
+    return;
+  }
+
+  await fs.rm(resolveLocalPath(filePath), { recursive: true, force: true });
 }
 
 export async function listDataDirectory(dirPath: string): Promise<DataFileInfo[]> {

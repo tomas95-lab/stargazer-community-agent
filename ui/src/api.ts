@@ -832,6 +832,14 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(project),
     }),
+  deleteProject: (id: string) =>
+    request<{
+      ok: boolean;
+      deletedProject: QmProject;
+      projectKey: string;
+      removedProjectData: boolean;
+      remainingProjectConnections: number;
+    }>(`/platform/projects/${id}`, { method: 'DELETE' }),
   startDiscourseAuth: (opts: { projectId?: string; returnTo?: string } = {}) =>
     request<DiscourseAuthStartResult>('/discourse-auth/start', {
       method: 'POST',

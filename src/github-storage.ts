@@ -9,6 +9,7 @@ interface GitHubContentFile {
 interface GitHubContentDirectoryItem {
   type: 'file' | 'dir' | string;
   name: string;
+  path?: string;
   sha: string;
   size: number;
 }
@@ -151,4 +152,41 @@ export async function listDirectory(dirPath: string): Promise<Array<{ name: stri
 export async function readFile(filePath: string): Promise<string> {
   const file = await githubRequest<GitHubContentFile>(contentPath(filePath));
   return Buffer.from(file.content, 'base64').toString('utf-8');
+}
+
+async function readContent(filePath: string): Promise<GitHubContentFile | GitHubContentDirectoryItem[] | null> {
+  try {
+    return await githubRequest<GitHubContentFile | GitHubContentDirectoryItem[]>(contentPath(filePath));
+  } catch (err) {
+    if (err instanceof GitHubApiError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+export async function deleteFile(filePath: string, message: string): Promise<void> {
+  const sha = await currentSha(filePath);
+  if (!sha) return;
+
+  await githubRequest(contentPath(filePath), {
+    method: 'DELETE',
+    body: JSON.stringify({
+      message,
+      sha,
+    }),
+  });
+}
+
+export async function deletePath(filePath: string, message: string): Promise<void> {
+  const content = await readContent(filePath);
+  if (!content) return;
+
+  if (Array.isArray(content)) {
+    for (const item of content) {
+      const childPath = item.path || `${filePath.replace(/\/+$/, '')}/${item.name}`;
+      await deletePath(childPath, message);
+    }
+    return;
+  }
+
+  await deleteFile(filePath, message);
 }

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { AuthenticatedRequest, requirePlatformUser } from '../auth';
 import {
   createUserProject,
+  deleteUserProject,
   getActiveUserProject,
   getUserAiKey,
   isPlatformConfigured,
@@ -146,6 +147,22 @@ router.put('/projects/:id', requirePlatformUser, async (req: Request, res: Respo
     const project = await updateUserProject(authReq.authUser!, routeParam(req.params.id), input);
     const aiKey = await saveUserAiKey(authReq.authUser!.id, input);
     res.json({ project: toPublicProject(project, aiKey) });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.delete('/projects/:id', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const result = await deleteUserProject(authReq.authUser!.id, routeParam(req.params.id));
+    res.json({
+      ok: true,
+      deletedProject: toPublicProject(result.project),
+      projectKey: result.projectKey,
+      removedProjectData: result.removedProjectData,
+      remainingProjectConnections: result.remainingProjectConnections,
+    });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
   }

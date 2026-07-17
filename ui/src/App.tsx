@@ -17,6 +17,7 @@ import History from "@/pages/History"
 import LinkManager from "@/pages/LinkManager"
 import Login from "@/pages/Login"
 import MessageComposer from "@/pages/MessageComposer"
+import Projects from "@/pages/Projects"
 import ProjectSetup from "@/pages/ProjectSetup"
 import ProjectMemoryPage from "@/pages/ProjectMemory"
 import ReviewQueue from "@/pages/ReviewQueue"
@@ -92,6 +93,8 @@ function WorkspaceRoutes() {
                 <Route path="/summary" element={<DailySummary />} />
                 <Route path="/sandbox" element={<TestingSandbox />} />
                 <Route path="/memory" element={<ProjectMemoryPage />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/new" element={<ProjectSetup forceNew />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/project" element={<ProjectSetup />} />

@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { BotConfig } from '../src/config';
-import { readDataJSON, writeDataJSON } from '../src/data-store';
+import { deleteDataPath, readDataJSON, writeDataJSON } from '../src/data-store';
 import {
   canonicalProjectId,
   isLegacyProjectId,
@@ -183,6 +183,13 @@ export function adminTokenMatches(value: string): boolean {
 
 function userName(user: User): string {
   return text(user.user_metadata?.name) || text(user.user_metadata?.full_name) || text(user.email).split('@')[0] || 'QM';
+}
+
+export interface DeletedProjectResult {
+  project: QmProjectRow;
+  projectKey: string;
+  removedProjectData: boolean;
+  remainingProjectConnections: number;
 }
 
 function positiveIntOrNull(value: unknown, fallback: number | null = null): number | null {
@@ -579,6 +586,61 @@ export async function updateUserProject(user: AuthenticatedUser, projectId: stri
   await initializeProjectFiles(project);
   await syncSharedProjectFields(project).catch(() => undefined);
   return project;
+}
+
+async function countProjectConnections(projectKey: string): Promise<number> {
+  const key = canonicalProjectId(projectKey);
+  if (!key) return 0;
+
+  try {
+    const { count, error } = await getSupabaseAdmin()
+      .from(TABLE)
+      .select('id', { count: 'exact', head: true })
+      .in('project_key', projectKeyLookupValues(key));
+
+    if (error) throw new Error(error.message);
+    return count || 0;
+  } catch (err) {
+    if (missingProjectKeyColumn(err)) return 1;
+    throw err;
+  }
+}
+
+async function deleteProjectFiles(projectKey: string, projectName: string): Promise<boolean> {
+  const key = canonicalProjectId(projectKey);
+  if (!key || isLegacyProjectId(key)) return false;
+
+  await Promise.all([
+    deleteDataPath(`data/projects/${key}`, `delete ${projectName} project data`),
+    deleteDataPath(`output/projects/${key}`, `delete ${projectName} project output`),
+  ]);
+  return true;
+}
+
+export async function deleteUserProject(userId: string, projectId: string): Promise<DeletedProjectResult> {
+  const existing = await getUserProject(userId, projectId);
+  if (!existing) throw new Error('Project not found.');
+
+  const projectKey = projectKeyFromRow(existing);
+  const { error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .delete()
+    .eq('owner_id', userId)
+    .eq('id', existing.id);
+
+  if (error) throw new Error(error.message);
+
+  const remainingProjectConnections = await countProjectConnections(projectKey);
+  const removedProjectData = remainingProjectConnections === 0
+    ? await deleteProjectFiles(projectKey, existing.project_name)
+    : false;
+
+  return {
+    project: existing,
+    projectKey,
+    removedProjectData,
+    remainingProjectConnections,
+  };
 }
 
 async function writeDataJSONIfMissing<T>(filePath: string, data: T, message: string): Promise<void> {

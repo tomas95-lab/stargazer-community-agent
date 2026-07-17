@@ -6,6 +6,7 @@ import {
   IconDatabase,
   IconDashboard,
   IconFlask,
+  IconFolder,
   IconHelpCircle,
   IconHistory,
   IconInbox,
@@ -66,6 +67,11 @@ const data = {
       title: "DM Review",
       url: "/dms",
       icon: IconInbox,
+    },
+    {
+      title: "Projects",
+      url: "/projects",
+      icon: IconFolder,
     },
     {
       title: "Review Queue",
