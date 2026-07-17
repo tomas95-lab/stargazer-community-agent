@@ -1,0 +1,23 @@
+[
+  {
+    "id": "cc7b3485-3156-4341-b28e-95e128a91bdf",
+    "at": "2026-07-17T19:44:01.935Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 6,
+      "candidates": 1,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "jesus.israel"
+      ],
+      "postedUsers": [],
+      "reactedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  }
+]
