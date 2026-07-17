@@ -1,6 +1,6 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
-import { Link, Navigate, useNavigate } from "react-router-dom"
+import { Link, Navigate } from "react-router-dom"
 import { IconLoader2, IconUserPlus } from "@tabler/icons-react"
 
 import { useAuth } from "@/auth"
@@ -18,7 +18,6 @@ import { supabase } from "@/lib/supabase"
 
 export default function Signup() {
   const { configured, session } = useAuth()
-  const navigate = useNavigate()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -28,6 +27,10 @@ export default function Signup() {
 
   if (session) return <Navigate to="/onboarding" replace />
 
+  function enterOnboarding() {
+    window.location.replace("/onboarding")
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!supabase) return
@@ -35,26 +38,42 @@ export default function Signup() {
     setPending(true)
     setError("")
     setMessage("")
+    const cleanEmail = email.trim()
+    const cleanName = name.trim()
+    const emailRedirectTo = `${window.location.origin}/onboarding`
+
     const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
+      email: cleanEmail,
       password,
       options: {
-        data: { name },
+        data: { name: cleanName },
+        emailRedirectTo,
       },
     })
-    setPending(false)
 
     if (signUpError) {
       setError(signUpError.message)
+      setPending(false)
       return
     }
 
     if (data.session) {
-      navigate("/onboarding", { replace: true })
+      enterOnboarding()
       return
     }
 
-    setMessage("Account created. Confirm your email, then sign in to finish your project setup.")
+    const { data: signInData } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    })
+
+    if (signInData.session) {
+      enterOnboarding()
+      return
+    }
+
+    setPending(false)
+    setMessage("Account created. Confirm your email and the confirmation link will bring you back to onboarding.")
   }
 
   return (

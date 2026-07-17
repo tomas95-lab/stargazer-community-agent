@@ -4,6 +4,7 @@ import { isAuthorizedCronRequest } from '../../src/cron-auth';
 import { runDailyPublishJob } from '../../src/daily-publish-job';
 import { runDmReviewJob } from '../../src/dm-review-job';
 import { appendOperationLog, OperationStatus } from '../../src/operations-log';
+import { processDueScheduledMessages } from '../../src/scheduled-messages';
 import { canonicalProjectId, defaultProjectId, isLegacyProjectId, ProjectContext, runWithProjectContext } from '../../src/project-context';
 import { withCronRunLock } from '../../src/cron-locks';
 import {
@@ -337,11 +338,73 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
   }
 }
 
+async function handleScheduledMessagesCron(req: Request, res: Response): Promise<void> {
+  if (!process.env.CRON_SECRET) {
+    await logCronRequest(req, 'error', 'CRON_SECRET is not configured', { authorized: false, httpStatus: 503 });
+    res.status(503).json({ error: 'CRON_SECRET is not configured' });
+    return;
+  }
+
+  if (!isCronAuthorized(req)) {
+    await logCronRequest(req, 'error', 'Unauthorized cron request', { authorized: false, httpStatus: 401 });
+    res.status(401).json({ error: 'Unauthorized cron request' });
+    return;
+  }
+
+  try {
+    const targets = await projectCronTargets(req);
+    const runs = [];
+
+    for (const context of targets) {
+      const locked = await runInContext(context, () => withCronRunLock(
+        'scheduled-messages',
+        context.projectId,
+        slot(req),
+        () => processDueScheduledMessages()
+      ));
+      runs.push({
+        projectId: context.projectId,
+        skipped: locked.skipped,
+        reason: locked.reason,
+        result: locked.result,
+      });
+    }
+
+    const sent = runs.reduce((sum, run) => sum + (run.result?.sent || 0), 0);
+    const failed = runs.reduce((sum, run) => sum + (run.result?.failed || 0), 0);
+    const due = runs.reduce((sum, run) => sum + (run.result?.due || 0), 0);
+    const checked = runs.reduce((sum, run) => sum + (run.result?.checked || 0), 0);
+    const skipped = runs.filter((run) => run.skipped).length;
+
+    await logCronRequest(req, failed > 0 ? 'error' : sent > 0 ? 'success' : 'skipped', 'Scheduled messages cron completed', {
+      authorized: true,
+      httpStatus: 200,
+      job: 'scheduled_messages',
+      targets: runs.map((run) => run.projectId),
+      checked,
+      due,
+      sent,
+      failed,
+      skipped,
+    });
+    res.json({ ok: true, targets: runs });
+  } catch (err) {
+    await logCronRequest(req, 'error', err instanceof Error ? err.message : String(err), {
+      authorized: true,
+      httpStatus: 500,
+      job: 'scheduled_messages',
+    });
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
 router.get('/daily-thread', handleDailyThreadCron);
 router.get('/daily-thread/:slot', handleDailyThreadCron);
 router.get('/community-agent', handleCommunityAgentCron);
 router.get('/community-agent/:slot', handleCommunityAgentCron);
 router.get('/dm-review', handleDmReviewCron);
 router.get('/dm-review/:slot', handleDmReviewCron);
+router.get('/scheduled-messages', handleScheduledMessagesCron);
+router.get('/scheduled-messages/:slot', handleScheduledMessagesCron);
 
 export default router;

@@ -161,6 +161,35 @@ export interface CommsTemplate {
   body: string;
 }
 
+export type ScheduledMessageStatus = 'pending' | 'sent' | 'cancelled' | 'error';
+
+export interface ScheduledMessage {
+  id: string;
+  message: string;
+  channelId?: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  scheduledFor: string;
+  status: ScheduledMessageStatus;
+  createdAt: string;
+  updatedAt: string;
+  sentAt?: string;
+  messageId?: number;
+  error?: string;
+}
+
+export interface ScheduledMessagesRunResult {
+  mode: 'scheduled-messages';
+  generatedAt: string;
+  checked: number;
+  due: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  messages: ScheduledMessage[];
+  errors: string[];
+}
+
 export interface CommunityMessage {
   id: number;
   message: string;
@@ -715,6 +744,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ message, channelId }),
     }),
+  getScheduledMessages: () => request<{ messages: ScheduledMessage[] }>('/comms/scheduled'),
+  scheduleMessage: (input: { message: string; scheduledDate: string; scheduledTime: string; channelId?: string }) =>
+    request<{ message: ScheduledMessage }>('/comms/scheduled', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  runScheduledMessages: () =>
+    request<ScheduledMessagesRunResult>('/comms/scheduled/run', { method: 'POST' }),
+  cancelScheduledMessage: (id: string) =>
+    request<{ message: ScheduledMessage }>(`/comms/scheduled/${id}/cancel`, { method: 'POST' }),
+  deleteScheduledMessage: (id: string) =>
+    request<{ ok: boolean }>(`/comms/scheduled/${id}`, { method: 'DELETE' }),
   getWebinars: () => request<Webinar[]>('/webinars'),
   createWebinar: (w: Omit<Webinar, 'id'>) => request<Webinar>('/webinars', { method: 'POST', body: JSON.stringify(w) }),
   updateWebinar: (id: string, w: Partial<Webinar>) => request<Webinar>(`/webinars/${id}`, { method: 'PUT', body: JSON.stringify(w) }),

@@ -11,6 +11,13 @@ import { loadBotConfig } from '../../src/config';
 import { DiscourseClient } from '../../src/discourse-client';
 import { readDataJSON, writeDataJSON } from '../../src/data-store';
 import { appendOperationLog } from '../../src/operations-log';
+import {
+  cancelScheduledMessage,
+  createScheduledMessage,
+  deleteScheduledMessage,
+  listScheduledMessages,
+  processDueScheduledMessages,
+} from '../../src/scheduled-messages';
 
 const router = Router();
 const LINKS_FILE = 'data/links.json';
@@ -158,6 +165,50 @@ router.post('/send', requireAdminToken, async (req: Request, res: Response) => {
       metadata: { channelId, messageLength: message.length },
     });
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/scheduled', requireAdminToken, async (_req: Request, res: Response) => {
+  try {
+    res.json({ messages: await listScheduledMessages() });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/scheduled', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const message = await createScheduledMessage(req.body || {});
+    res.status(201).json({ message });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/scheduled/run', requireAdminToken, async (_req: Request, res: Response) => {
+  try {
+    res.json(await processDueScheduledMessages());
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/scheduled/:id/cancel', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    res.json({ message: await cancelScheduledMessage(routeParam(req.params.id)) });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(message.includes('not found') ? 404 : 400).json({ error: message });
+  }
+});
+
+router.delete('/scheduled/:id', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    await deleteScheduledMessage(routeParam(req.params.id));
+    res.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(message.includes('not found') ? 404 : 400).json({ error: message });
   }
 });
 

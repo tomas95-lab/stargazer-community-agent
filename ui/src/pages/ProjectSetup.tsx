@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import type { ChangeEvent, FormEvent } from "react"
+import type { ChangeEvent, FormEvent, ReactNode } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { IconCheck, IconExternalLink, IconFileText, IconLoader2, IconRefresh, IconShieldCheck } from "@tabler/icons-react"
 
@@ -43,16 +43,9 @@ interface ProjectFormState {
 
 type PersistedProjectFormState = Omit<ProjectFormState, "discourseApiKey" | "anthropicApiKey">
 
-interface DiscourseAuthDraft {
-  authorizationUrl: string
-  nonce: string
-  expiresAt: string
-}
-
 interface ProjectSetupDraft {
   version: 1
   form: PersistedProjectFormState
-  discourseAuth: DiscourseAuthDraft | null
   savedAt: string
 }
 
@@ -111,34 +104,30 @@ function persistedForm(form: ProjectFormState): PersistedProjectFormState {
   return rest
 }
 
-function readDraft(key: string, fallback: ProjectFormState): { form: ProjectFormState; discourseAuth: DiscourseAuthDraft | null } {
-  if (typeof window === "undefined") return { form: fallback, discourseAuth: null }
+function readDraft(key: string, fallback: ProjectFormState): ProjectFormState {
+  if (typeof window === "undefined") return fallback
   try {
     const raw = window.localStorage.getItem(key)
-    if (!raw) return { form: fallback, discourseAuth: null }
+    if (!raw) return fallback
     const parsed = JSON.parse(raw) as Partial<ProjectSetupDraft>
-    if (parsed.version !== 1 || !parsed.form) return { form: fallback, discourseAuth: null }
+    if (parsed.version !== 1 || !parsed.form) return fallback
     return {
-      form: {
-        ...fallback,
-        ...parsed.form,
-        discourseApiKey: "",
-        anthropicApiKey: "",
-      },
-      discourseAuth: parsed.discourseAuth || null,
+      ...fallback,
+      ...parsed.form,
+      discourseApiKey: "",
+      anthropicApiKey: "",
     }
   } catch {
-    return { form: fallback, discourseAuth: null }
+    return fallback
   }
 }
 
-function writeDraft(key: string, form: ProjectFormState, discourseAuth: DiscourseAuthDraft | null): void {
+function writeDraft(key: string, form: ProjectFormState): void {
   if (typeof window === "undefined") return
   try {
     const draft: ProjectSetupDraft = {
       version: 1,
       form: persistedForm(form),
-      discourseAuth,
       savedAt: new Date().toISOString(),
     }
     window.localStorage.setItem(key, JSON.stringify(draft))
@@ -152,6 +141,51 @@ function clearDraft(key: string): void {
   window.localStorage.removeItem(key)
 }
 
+function GuideItem({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border bg-background">
+        {icon}
+      </div>
+      <div className="grid gap-1">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{children}</p>
+      </div>
+    </div>
+  )
+}
+
+function OnboardingGuide() {
+  return (
+    <Card className="rounded-lg">
+      <CardHeader>
+        <CardTitle>Onboarding guide</CardTitle>
+        <CardDescription>Use this checklist to find each value before saving the project.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <GuideItem icon={<IconCheck className="size-4" />} title="Project ID and name">
+          Use the shared Project ID from your team. Every QM on the same project should enter the exact same ID.
+        </GuideItem>
+        <GuideItem icon={<IconExternalLink className="size-4" />} title="Category ID and slug">
+          Open the category in Outlier Community. URLs usually look like /c/category-slug/123: 123 is the ID and category-slug is the slug.
+        </GuideItem>
+        <GuideItem icon={<IconExternalLink className="size-4" />} title="Community channel ID">
+          Open the project chat or channel and copy its numeric channel ID from the URL or channel settings.
+        </GuideItem>
+        <GuideItem icon={<IconShieldCheck className="size-4" />} title="Discourse username">
+          Use your Outlier Community username from your profile or one of your posts, without the @ symbol.
+        </GuideItem>
+        <GuideItem icon={<IconShieldCheck className="size-4" />} title="API keys">
+          Connect Discourse in the new tab or paste a User API Key manually. Claude uses your own QM Anthropic key.
+        </GuideItem>
+        <GuideItem icon={<IconFileText className="size-4" />} title="Project guidelines">
+          Upload the project PDF or paste the current instructions, examples, policies and escalation rules.
+        </GuideItem>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -161,15 +195,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   const [form, setForm] = useState<ProjectFormState>(DEFAULT_FORM)
   const [pending, setPending] = useState(false)
   const [connectingDiscourse, setConnectingDiscourse] = useState(false)
-  const [savingDiscoursePayload, setSavingDiscoursePayload] = useState(false)
   const [extractingGuidelines, setExtractingGuidelines] = useState(false)
   const [discourseStatus, setDiscourseStatus] = useState<DiscourseAuthStatus | null>(null)
-  const [discourseAuth, setDiscourseAuth] = useState<{
-    authorizationUrl: string
-    nonce: string
-    expiresAt: string
-  } | null>(null)
-  const [discoursePayload, setDiscoursePayload] = useState("")
   const [activeDraftKey, setActiveDraftKey] = useState("")
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
@@ -188,15 +215,14 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       }
     const draft = readDraft(key, fallback)
 
-    setForm(draft.form)
-    setDiscourseAuth(draft.discourseAuth)
+    setForm(draft)
     setActiveDraftKey(key)
   }, [activeProject, user])
 
   useEffect(() => {
     if (!activeDraftKey) return
-    writeDraft(activeDraftKey, form, discourseAuth)
-  }, [activeDraftKey, form, discourseAuth])
+    writeDraft(activeDraftKey, form)
+  }, [activeDraftKey, form])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -221,11 +247,11 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     : "Connect your Outlier community project before using the agent."
 
   const apiKeyLabel = useMemo(() => {
-    if (!editing && discourseStatus?.connected) return "Discourse API key (connected, no manual key needed)"
-    if (!editing) return "Discourse API key"
+    if (!editing && discourseStatus?.connected) return "Discourse User API key (connected, no manual key needed)"
+    if (!editing) return "Discourse User API key"
     return activeProject?.discourseApiKeyConfigured
-      ? "Discourse API key (leave blank to keep current key)"
-      : "Discourse API key"
+      ? "Discourse User API key (leave blank to keep current key)"
+      : "Discourse User API key"
   }, [editing, activeProject, discourseStatus])
 
   const anthropicApiKeyLabel = useMemo(() => {
@@ -298,13 +324,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         projectId: activeProject?.id,
         returnTo: location.pathname,
       })
-      setDiscourseAuth({
-        authorizationUrl: result.authorizationUrl,
-        nonce: result.nonce,
-        expiresAt: result.expiresAt,
-      })
-      setDiscoursePayload("")
-      setMessage("Authorize DailyThreadBot in Outlier Community, then paste the encrypted payload here.")
+      setMessage("Authorization opened in a new tab. If it does not connect automatically, paste your User API Key below.")
       if (authWindow) {
         authWindow.location.href = result.authorizationUrl
       } else {
@@ -315,35 +335,6 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setConnectingDiscourse(false)
-    }
-  }
-
-  async function completeDiscourseConnection() {
-    if (!discourseAuth) return
-    setSavingDiscoursePayload(true)
-    setError("")
-    setMessage("")
-
-    try {
-      const result = await api.completeDiscourseAuth({
-        nonce: discourseAuth.nonce,
-        payload: discoursePayload,
-      })
-      const status = await api.getDiscourseAuthStatus()
-      setDiscourseStatus(status)
-      if (result.username || status.username) {
-        setForm((current) => ({
-          ...current,
-          discourseUsername: current.discourseUsername || result.username || status.username,
-        }))
-      }
-      setDiscourseAuth(null)
-      setDiscoursePayload("")
-      setMessage("Discourse connected. You can save the project now.")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setSavingDiscoursePayload(false)
     }
   }
 
@@ -398,7 +389,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
 
   return (
     <div className={editing ? "bg-background px-4 md:px-6" : "min-h-screen bg-background px-4 py-8 md:px-8"}>
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
@@ -409,6 +400,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
           </Button>
         </div>
 
+        <div className={editing ? "grid gap-6" : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]"}>
         <Card className="rounded-lg">
           <CardHeader>
             <CardTitle>Community connection</CardTitle>
@@ -432,7 +424,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     <p className="mt-1 text-sm text-muted-foreground">
                       {discourseStatus?.username
                         ? `Authorized as ${discourseStatus.username}. The raw User API Key is stored server-side only.`
-                        : "Authorize DailyThreadBot in Outlier Community so the agent can use your own User API Key."}
+                        : "Authorize DailyThreadBot in Outlier Community, or paste your User API Key manually below."}
                     </p>
                   </div>
                 </div>
@@ -441,42 +433,6 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                   Connect Discourse
                 </Button>
               </div>
-
-              {discourseAuth ? (
-                <div className="grid gap-3 rounded-md border bg-background p-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="grid gap-1">
-                      <Label htmlFor="discoursePayload">Authorization payload</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Nonce: {discourseAuth.nonce}
-                      </p>
-                    </div>
-                    <Button type="button" variant="outline" asChild>
-                      <a href={discourseAuth.authorizationUrl} target="_blank" rel="noreferrer">
-                        <IconExternalLink className="size-4" />
-                        Open authorization
-                      </a>
-                    </Button>
-                  </div>
-                  <Textarea
-                    id="discoursePayload"
-                    className="min-h-28 font-mono text-sm"
-                    value={discoursePayload}
-                    onChange={(event) => setDiscoursePayload(event.target.value)}
-                    placeholder="Paste the encrypted payload from Outlier Community"
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      onClick={completeDiscourseConnection}
-                      disabled={savingDiscoursePayload || !discoursePayload.trim()}
-                    >
-                      {savingDiscoursePayload ? <IconLoader2 className="size-4 animate-spin" /> : <IconCheck className="size-4" />}
-                      Complete connection
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
@@ -503,7 +459,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     id="projectKey"
                     value={form.projectKey}
                     onChange={(event) => update("projectKey", event.target.value)}
-                    placeholder="69cd3d3788bf65e1468428b1"
+                    placeholder="project-id-from-your-team"
                     required
                   />
                   <p className="text-xs text-muted-foreground">
@@ -518,6 +474,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     onChange={(event) => update("communityBaseUrl", event.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Keep the default unless your project uses a different Community host.
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="categoryId">Category ID</Label>
@@ -527,6 +486,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     onChange={(event) => update("categoryId", event.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    From the category URL, usually the final number after /c/category-slug/.
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="categorySlug">Category slug</Label>
@@ -535,6 +497,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     value={form.categorySlug}
                     onChange={(event) => update("categorySlug", event.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    From the same category URL, usually the text after /c/.
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="channelId">Community channel ID</Label>
@@ -544,6 +509,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     onChange={(event) => update("channelId", event.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Open the project chat or channel and copy the numeric ID from the URL or settings.
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="discourseUsername">Discourse username</Label>
@@ -553,6 +521,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     onChange={(event) => update("discourseUsername", event.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Your Outlier Community username, without the @ symbol.
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="discourseApiClientId">Discourse API client ID</Label>
@@ -562,6 +533,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     onChange={(event) => update("discourseApiClientId", event.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Usually daily-thread-bot unless your team configured a different client ID.
+                  </p>
                 </div>
                 <div className="grid gap-2 md:col-span-2">
                   <Label htmlFor="discourseApiKey">{apiKeyLabel}</Label>
@@ -572,6 +546,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     onChange={(event) => update("discourseApiKey", event.target.value)}
                     required={!editing && !discourseStatus?.connected}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Only needed if Connect Discourse is not already connected. Stored encrypted server-side.
+                  </p>
                 </div>
                 <div className="grid gap-2 md:col-span-2">
                   <Label htmlFor="anthropicApiKey">{anthropicApiKeyLabel}</Label>
@@ -708,6 +685,12 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
             </form>
           </CardContent>
         </Card>
+        {!editing ? (
+          <aside className="lg:sticky lg:top-6 lg:self-start">
+            <OnboardingGuide />
+          </aside>
+        ) : null}
+        </div>
       </div>
     </div>
   )

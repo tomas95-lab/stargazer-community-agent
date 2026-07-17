@@ -209,10 +209,14 @@ GET  /api/dm-review
 POST /api/dm-review/run
 POST /api/dm-review/draft
 POST /api/dm-review/reply
+GET  /api/comms/scheduled
+POST /api/comms/scheduled
+POST /api/comms/scheduled/run
 GET  /api/operations
 GET  /api/cron/daily-thread
 GET  /api/cron/community-agent
 GET  /api/cron/dm-review
+GET  /api/cron/scheduled-messages
 ```
 
 `POST /api/community-agent/run` accepts `{ "post": false }` for suggestions and `{ "post": true }` for auto-posting. Community-agent routes require `X-Admin-Token`.

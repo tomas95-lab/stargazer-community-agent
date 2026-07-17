@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ComponentType } from 'react';
 import {
   AlertTriangle,
+  CalendarClock,
   ClipboardCheck,
   GraduationCap,
   Headphones,
@@ -17,7 +18,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { api, type CommsTemplate, type TemplateVariable } from '../api';
+import { api, type CommsTemplate, type ScheduledMessage, type TemplateVariable } from '../api';
 import CommsForm from '../components/CommsForm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { APP_TIME_ZONE_LABEL, formatAppDateTime } from '@/lib/timezone';
 
 const CATEGORIES = [
   { id: 'urgent_alert', label: 'Urgent Alert' },
@@ -366,11 +368,124 @@ function TemplateEditor({
   );
 }
 
+function statusTone(status: ScheduledMessage['status']): 'default' | 'secondary' | 'outline' | 'destructive' {
+  if (status === 'sent') return 'secondary';
+  if (status === 'error') return 'destructive';
+  if (status === 'cancelled') return 'outline';
+  return 'default';
+}
+
+function ScheduledMessagesPanel({
+  messages,
+  loading,
+  error,
+  running,
+  actingId,
+  onRefresh,
+  onRunDue,
+  onCancel,
+  onDelete,
+}: {
+  messages: ScheduledMessage[];
+  loading: boolean;
+  error: string;
+  running: boolean;
+  actingId: string;
+  onRefresh: () => void;
+  onRunDue: () => void;
+  onCancel: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <Card className="p-5">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <CalendarClock className="size-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Scheduled sends</h2>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">Queued messages are sent when their {APP_TIME_ZONE_LABEL} schedule is due.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={onRefresh} disabled={loading || running}>
+            Refresh
+          </Button>
+          <Button type="button" size="sm" onClick={onRunDue} disabled={loading || running}>
+            {running ? 'Checking...' : 'Run due now'}
+          </Button>
+        </div>
+      </div>
+
+      {error ? <p className="mb-3 text-sm text-destructive">{error}</p> : null}
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading scheduled sends...</p>
+      ) : messages.length === 0 ? (
+        <div className="rounded-md border border-dashed p-5 text-sm text-muted-foreground">
+          No scheduled messages yet.
+        </div>
+      ) : (
+        <div className="divide-y divide-border">
+          {messages.map((item) => (
+            <div key={item.id} className="grid gap-3 py-4 first:pt-0 last:pb-0 lg:grid-cols-[1fr_auto]">
+              <div className="min-w-0">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <Badge variant={statusTone(item.status)}>{item.status}</Badge>
+                  <span className="text-sm font-medium text-foreground">
+                    {item.scheduledDate} {item.scheduledTime} {APP_TIME_ZONE_LABEL}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Runs at {formatAppDateTime(item.scheduledFor)} {APP_TIME_ZONE_LABEL}
+                  </span>
+                </div>
+                <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm text-muted-foreground">{item.message}</p>
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  <span>Channel: {item.channelId || 'project default'}</span>
+                  {item.sentAt ? <span>Sent: {formatAppDateTime(item.sentAt)} {APP_TIME_ZONE_LABEL}</span> : null}
+                  {item.error ? <span className="text-destructive">{item.error}</span> : null}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-start gap-2 lg:justify-end">
+                {item.status === 'pending' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onCancel(item.id)}
+                    disabled={actingId === item.id || running}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDelete(item.id)}
+                  disabled={actingId === item.id || running}
+                >
+                  <Trash2 className="size-4" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function CommsAutomator() {
   const [activeCategory, setActiveCategory] = useState('urgent_alert');
   const [templates, setTemplates] = useState<CommsTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<CommsTemplate | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<CommsTemplate | null | undefined>(undefined);
+  const [scheduledMessages, setScheduledMessages] = useState<ScheduledMessage[]>([]);
+  const [scheduledLoading, setScheduledLoading] = useState(false);
+  const [scheduledRunning, setScheduledRunning] = useState(false);
+  const [scheduledActingId, setScheduledActingId] = useState('');
+  const [scheduledError, setScheduledError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -387,6 +502,59 @@ export default function CommsAutomator() {
   useEffect(() => {
     load();
   }, [activeCategory]);
+
+  const loadScheduled = () => {
+    setScheduledLoading(true);
+    setScheduledError('');
+    api.getScheduledMessages()
+      .then((result) => setScheduledMessages(result.messages))
+      .catch((err) => setScheduledError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setScheduledLoading(false));
+  };
+
+  useEffect(() => {
+    loadScheduled();
+  }, []);
+
+  const runDueScheduled = async () => {
+    setScheduledRunning(true);
+    setScheduledError('');
+    try {
+      const result = await api.runScheduledMessages();
+      setScheduledMessages(result.messages);
+    } catch (err) {
+      setScheduledError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setScheduledRunning(false);
+    }
+  };
+
+  const cancelScheduled = async (id: string) => {
+    setScheduledActingId(id);
+    setScheduledError('');
+    try {
+      await api.cancelScheduledMessage(id);
+      loadScheduled();
+    } catch (err) {
+      setScheduledError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setScheduledActingId('');
+    }
+  };
+
+  const deleteScheduled = async (id: string) => {
+    if (!confirm('Delete this scheduled message?')) return;
+    setScheduledActingId(id);
+    setScheduledError('');
+    try {
+      await api.deleteScheduledMessage(id);
+      loadScheduled();
+    } catch (err) {
+      setScheduledError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setScheduledActingId('');
+    }
+  };
 
   const deleteTemplate = async (template: CommsTemplate) => {
     if (!confirm(`Delete ${template.name}?`)) return;
@@ -436,10 +604,24 @@ export default function CommsAutomator() {
 
       <div className="min-w-0 flex-1">
         {selectedTemplate ? (
-          <CommsForm
-            template={selectedTemplate}
-            onBack={() => setSelectedTemplate(null)}
-          />
+          <div className="space-y-6">
+            <CommsForm
+              template={selectedTemplate}
+              onBack={() => setSelectedTemplate(null)}
+              onScheduled={loadScheduled}
+            />
+            <ScheduledMessagesPanel
+              messages={scheduledMessages}
+              loading={scheduledLoading}
+              error={scheduledError}
+              running={scheduledRunning}
+              actingId={scheduledActingId}
+              onRefresh={loadScheduled}
+              onRunDue={() => void runDueScheduled()}
+              onCancel={(id) => void cancelScheduled(id)}
+              onDelete={(id) => void deleteScheduled(id)}
+            />
+          </div>
         ) : editingTemplate !== undefined ? (
           <TemplateEditor
             initialTemplate={editingTemplate}
@@ -525,6 +707,17 @@ export default function CommsAutomator() {
                 ))}
               </div>
             )}
+            <ScheduledMessagesPanel
+              messages={scheduledMessages}
+              loading={scheduledLoading}
+              error={scheduledError}
+              running={scheduledRunning}
+              actingId={scheduledActingId}
+              onRefresh={loadScheduled}
+              onRunDue={() => void runDueScheduled()}
+              onCancel={(id) => void cancelScheduled(id)}
+              onDelete={(id) => void deleteScheduled(id)}
+            />
           </div>
         )}
       </div>

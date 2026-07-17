@@ -10,11 +10,15 @@ export function getTemplate(id: string): CommsTemplate | undefined {
 }
 
 function interpolate(template: string, vars: Record<string, string>): string {
-  let result = template;
+  let result = normalizeLineEndings(template);
   for (const [key, value] of Object.entries(vars)) {
-    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), normalizeLineEndings(value));
   }
   return result;
+}
+
+function normalizeLineEndings(value: string): string {
+  return value.replace(/\r\n?/g, '\n');
 }
 
 export interface RenderResult {

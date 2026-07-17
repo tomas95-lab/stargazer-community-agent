@@ -1,13 +1,37 @@
 import { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { api, type CommsTemplate } from '../api';
+import { APP_TIME_ZONE_LABEL, todayAppDate } from '@/lib/timezone';
 
 interface Props {
   template: CommsTemplate;
   onBack: () => void;
+  onScheduled?: () => void;
 }
 
-export default function CommsForm({ template, onBack }: Props) {
+const MULTILINE_VARIABLE_KEYS = new Set([
+  'announcement',
+  'body',
+  'content',
+  'details',
+  'inviteeList',
+  'keyPoints',
+  'message',
+  'notes',
+  'recap',
+  'summary',
+  'text',
+]);
+
+function isMultilineVariable(template: CommsTemplate, key: string, placeholder?: string, defaultValue?: string): boolean {
+  return (
+    template.category === 'custom' ||
+    MULTILINE_VARIABLE_KEYS.has(key) ||
+    Boolean(placeholder?.includes('\n') || defaultValue?.includes('\n'))
+  );
+}
+
+export default function CommsForm({ template, onBack, onScheduled }: Props) {
   const [vars, setVars] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     for (const v of template.variables) {
@@ -21,6 +45,12 @@ export default function CommsForm({ template, onBack }: Props) {
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState<'idle' | 'ok' | 'error'>('idle');
   const [sendError, setSendError] = useState('');
+  const [scheduleDate, setScheduleDate] = useState(todayAppDate());
+  const [scheduleTime, setScheduleTime] = useState('09:00');
+  const [scheduleChannelId, setScheduleChannelId] = useState('');
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleStatus, setScheduleStatus] = useState<'idle' | 'ok' | 'error'>('idle');
+  const [scheduleError, setScheduleError] = useState('');
 
   useEffect(() => {
     const init: Record<string, string> = {};
@@ -71,6 +101,29 @@ export default function CommsForm({ template, onBack }: Props) {
     }
   };
 
+  const scheduleMessage = async () => {
+    if (!preview) return;
+    setScheduling(true);
+    setScheduleStatus('idle');
+    setScheduleError('');
+    try {
+      await api.scheduleMessage({
+        message: preview,
+        scheduledDate: scheduleDate,
+        scheduledTime: scheduleTime,
+        channelId: scheduleChannelId.trim() || undefined,
+      });
+      setScheduleStatus('ok');
+      onScheduled?.();
+      setTimeout(() => setScheduleStatus('idle'), 3000);
+    } catch (err) {
+      setScheduleStatus('error');
+      setScheduleError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setScheduling(false);
+    }
+  };
+
   const exportMd = () => {
     if (!preview) return;
     const blob = new Blob([preview], { type: 'text/markdown' });
@@ -106,12 +159,12 @@ export default function CommsForm({ template, onBack }: Props) {
                   {v.label}
                   {v.required && <span className="ml-1 text-danger">*</span>}
                 </label>
-                {v.placeholder?.includes('\n') ? (
+                {isMultilineVariable(template, v.key, v.placeholder, v.defaultValue) ? (
                   <textarea
                     value={vars[v.key] ?? ''}
                     onChange={(e) => setVars((p) => ({ ...p, [v.key]: e.target.value }))}
                     className={inputCls}
-                    rows={3}
+                    rows={template.category === 'custom' ? 12 : 4}
                     placeholder={v.placeholder}
                   />
                 ) : (
@@ -131,6 +184,12 @@ export default function CommsForm({ template, onBack }: Props) {
           {sendStatus === 'error' && (
             <div className="sg-status-danger rounded-lg border p-3 text-sm">
               Failed to send: {sendError}
+            </div>
+          )}
+
+          {scheduleStatus === 'error' && (
+            <div className="sg-status-danger rounded-lg border p-3 text-sm">
+              Failed to schedule: {scheduleError}
             </div>
           )}
 
@@ -171,10 +230,57 @@ export default function CommsForm({ template, onBack }: Props) {
             </div>
             <div className="prose prose-sm min-h-48 max-w-none p-5 text-foreground">
               {preview ? (
-                <ReactMarkdown>{preview}</ReactMarkdown>
+                template.category === 'custom' ? (
+                  <div className="whitespace-pre-wrap break-words text-sm leading-6">{preview}</div>
+                ) : (
+                  <ReactMarkdown>{preview}</ReactMarkdown>
+                )
               ) : (
                 <p className="italic text-muted-foreground">Fill in the required fields to generate a preview.</p>
               )}
+            </div>
+          </div>
+
+          <div className="sg-panel p-4">
+            <div className="mb-3 flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase text-muted-foreground">Schedule send</span>
+              <span className="text-xs text-muted-foreground">The scheduled job will post this preview when the selected {APP_TIME_ZONE_LABEL} time is due.</span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-[1fr_1fr_1.2fr_auto] md:items-end">
+              <div>
+                <label className={labelCls}>Date</label>
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={(event) => setScheduleDate(event.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Time ({APP_TIME_ZONE_LABEL})</label>
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  onChange={(event) => setScheduleTime(event.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Channel ID</label>
+                <input
+                  value={scheduleChannelId}
+                  onChange={(event) => setScheduleChannelId(event.target.value)}
+                  className={inputCls}
+                  placeholder="Default project channel"
+                />
+              </div>
+              <button
+                onClick={scheduleMessage}
+                disabled={!preview || scheduling}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                {scheduling ? 'Scheduling...' : scheduleStatus === 'ok' ? 'Scheduled!' : 'Schedule'}
+              </button>
             </div>
           </div>
 
