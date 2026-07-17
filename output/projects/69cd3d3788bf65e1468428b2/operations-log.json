@@ -1,5 +1,15 @@
 [
   {
+    "id": "3485c9bc-c4b7-44bd-ad03-332a5ab0ab05",
+    "at": "2026-07-17T18:07:29.375Z",
+    "action": "delete_topic",
+    "status": "success",
+    "message": "Deleted topic for 2026-07-20",
+    "metadata": {
+      "date": "2026-07-20"
+    }
+  },
+  {
     "id": "417bc5c3-8680-43ad-a775-f69a432b10b1",
     "at": "2026-07-16T13:02:18.534Z",
     "action": "community_agent",
