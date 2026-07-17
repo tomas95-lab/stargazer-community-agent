@@ -1,5 +1,199 @@
 [
   {
+    "id": "6050d2d1-a3d5-457a-8540-c216308881e0",
+    "at": "2026-07-17T17:30:14.067Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1430",
+      "slot": "1430",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "targets": [
+        "69cd3d3788bf65e1468428b1"
+      ],
+      "checked": 3,
+      "candidates": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "id": "21376458-dcdc-4583-b702-4cbe9b89bd00",
+    "at": "2026-07-17T17:30:11.639Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-17",
+        "argentinaDate": "2026-07-17",
+        "startUtc": "2026-07-17T00:00:00.000Z",
+        "endUtc": "2026-07-18T00:00:00.000Z",
+        "operatingHours": "Agent scans the current UTC day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  {
+    "id": "5bb41a4e-a1c7-4368-9dcf-85c858ed478e",
+    "at": "2026-07-17T16:00:17.129Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1300",
+      "slot": "1300",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "targets": [
+        "69cd3d3788bf65e1468428b1"
+      ],
+      "checked": 3,
+      "candidates": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "id": "e169ec9b-e272-4b46-b55e-4067da53321d",
+    "at": "2026-07-17T16:00:14.023Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-17",
+        "argentinaDate": "2026-07-17",
+        "startUtc": "2026-07-17T00:00:00.000Z",
+        "endUtc": "2026-07-18T00:00:00.000Z",
+        "operatingHours": "Agent scans the current UTC day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  {
+    "id": "6685af75-fae0-4013-bce2-0e8a0807c416",
+    "at": "2026-07-17T14:46:11.342Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "react",
+      "confidence": 0.95,
+      "deterministic": false
+    }
+  },
+  {
+    "id": "8711a0b4-ca85-44b0-8879-2ee188e421b2",
+    "at": "2026-07-17T14:31:14.517Z",
+    "action": "cron_request",
+    "status": "skipped",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1130",
+      "slot": "1130",
+      "source": "vercel-cron",
+      "schedule": "30 14 * * *",
+      "userAgent": "vercel-cron/1.0",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "targets": [
+        "69cd3d3788bf65e1468428b1"
+      ],
+      "checked": 0,
+      "candidates": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "skipped": 1
+    }
+  },
+  {
+    "id": "a151b862-eccb-4561-9454-f0778880a2b5",
+    "at": "2026-07-17T14:30:13.297Z",
+    "action": "cron_request",
+    "status": "success",
+    "message": "Community agent cron completed",
+    "metadata": {
+      "endpoint": "/api/cron/community-agent/1130",
+      "slot": "1130",
+      "source": "cron-job-org",
+      "userAgent": "Mozilla/4.0 (compatible; cron-job.org; http://cron-job.org/abuse/)",
+      "authorized": true,
+      "httpStatus": 200,
+      "job": "community_agent",
+      "targets": [
+        "69cd3d3788bf65e1468428b1"
+      ],
+      "checked": 3,
+      "candidates": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "id": "0a55f3e5-7947-4f02-8ca1-ae6d7155de3c",
+    "at": "2026-07-17T14:30:11.032Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-17",
+        "argentinaDate": "2026-07-17",
+        "startUtc": "2026-07-17T00:00:00.000Z",
+        "endUtc": "2026-07-18T00:00:00.000Z",
+        "operatingHours": "Agent scans the current UTC day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  {
+    "id": "d71bf40a-3ca5-4371-8c8f-0b6252a72144",
+    "at": "2026-07-17T14:27:18.501Z",
+    "action": "sandbox_evaluation",
+    "status": "success",
+    "message": "Sandbox evaluated community message from sandbox.user.",
+    "metadata": {
+      "action": "reply",
+      "confidence": 0.95,
+      "deterministic": false
+    }
+  },
+  {
+    "id": "d2d6e2f4-b880-4f94-9cbb-89d652b5eda3",
+    "at": "2026-07-17T14:26:26.618Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 2,
+      "candidates": 1,
+      "posted": 0,
+      "needsHuman": 1,
+      "candidateUsers": [
+        "latam.coder2324"
+      ],
+      "postedUsers": [],
+      "humanUsers": [
+        "latam.coder2324"
+      ],
+      "errors": []
+    }
+  },
+  {
     "id": "f3fb13a6-e633-4277-ace3-126b7fb3d865",
     "at": "2026-07-17T14:01:59.224Z",
     "action": "sandbox_evaluation",
