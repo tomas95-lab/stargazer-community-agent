@@ -1,5 +1,16 @@
 [
   {
+    "id": "37a7899d-6efd-4f92-9af1-651710f80ed6",
+    "at": "2026-07-17T20:58:05.776Z",
+    "action": "cancel_scheduled_chat_message",
+    "status": "success",
+    "message": "Cancelled scheduled chat message 9b84b7a7-949d-428b-b222-a60474c306e3",
+    "metadata": {
+      "id": "9b84b7a7-949d-428b-b222-a60474c306e3",
+      "scheduledFor": "2026-07-20T17:00:00.000Z"
+    }
+  },
+  {
     "id": "40715b1d-6e46-4f27-8745-ec4452306cef",
     "at": "2026-07-17T20:48:21.430Z",
     "action": "schedule_chat_message",
