@@ -1,8 +1,9 @@
-import { readDataJSON } from './data-store';
+import { readDataJSON, writeDataJSON } from './data-store';
 import { OperationDetailRecord, OperationLogEntry, readOperationLog } from './operations-log';
 
 export type ReviewQueueSource = 'community' | 'dm';
 export type ReviewQueuePriority = 'high' | 'medium' | 'low';
+export type ReviewQueueStatus = 'open' | 'resolved' | 'dismissed';
 
 export interface ReviewQueueItem {
   id: string;
@@ -18,6 +19,9 @@ export interface ReviewQueueItem {
   channelId?: number;
   messageId?: number;
   createdAt?: string;
+  status: ReviewQueueStatus;
+  statusUpdatedAt?: string;
+  statusNote?: string;
 }
 
 export interface ReviewQueueResult {
@@ -25,6 +29,9 @@ export interface ReviewQueueResult {
   items: ReviewQueueItem[];
   totals: {
     all: number;
+    open: number;
+    resolved: number;
+    dismissed: number;
     high: number;
     medium: number;
     low: number;
@@ -35,6 +42,28 @@ export interface ReviewQueueResult {
 
 const DETAIL_LOOKUP_LIMIT = 50;
 const DETAIL_DIR = 'output/operation-details';
+const STATE_FILE = 'output/review-queue-state.json';
+
+interface ReviewQueueStateRecord {
+  status: ReviewQueueStatus;
+  updatedAt: string;
+  note?: string;
+}
+
+interface ReviewQueueState {
+  items: Record<string, ReviewQueueStateRecord>;
+}
+
+export interface ReviewQueueOptions {
+  includeResolved?: boolean;
+}
+
+export interface ReviewQueueStatusUpdate {
+  id: string;
+  status: ReviewQueueStatus;
+  note?: string;
+  updatedAt: string;
+}
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? value as Record<string, unknown> : {};
@@ -69,6 +98,52 @@ function keyFor(item: ReviewQueueItem): string {
     item.createdAt || '',
     item.reason,
   ].join(':');
+}
+
+function isQueueStatus(value: unknown): value is ReviewQueueStatus {
+  return value === 'open' || value === 'resolved' || value === 'dismissed';
+}
+
+function normalizeStatusRecord(value: unknown): ReviewQueueStateRecord | null {
+  const record = asRecord(value);
+  const status = record.status;
+  if (!isQueueStatus(status)) return null;
+  return {
+    status,
+    updatedAt: text(record.updatedAt) || new Date(0).toISOString(),
+    note: text(record.note) || undefined,
+  };
+}
+
+async function readReviewQueueState(): Promise<ReviewQueueState> {
+  try {
+    const raw = await readDataJSON<ReviewQueueState>(STATE_FILE);
+    const items = Object.entries(asRecord(raw.items)).reduce<Record<string, ReviewQueueStateRecord>>((acc, [id, value]) => {
+      const record = normalizeStatusRecord(value);
+      if (record) acc[id] = record;
+      return acc;
+    }, {});
+    return { items };
+  } catch {
+    return { items: {} };
+  }
+}
+
+async function writeReviewQueueState(state: ReviewQueueState): Promise<void> {
+  const entries = Object.entries(state.items)
+    .sort(([, left], [, right]) => right.updatedAt.localeCompare(left.updatedAt))
+    .slice(0, 1000);
+  await writeDataJSON(STATE_FILE, { items: Object.fromEntries(entries) }, 'update review queue state');
+}
+
+function withStatus(item: ReviewQueueItem, state: ReviewQueueState): ReviewQueueItem {
+  const record = state.items[item.id];
+  return {
+    ...item,
+    status: record?.status || 'open',
+    statusUpdatedAt: record?.updatedAt,
+    statusNote: record?.note,
+  };
 }
 
 async function readDetailFast(entry: OperationLogEntry): Promise<unknown | undefined> {
@@ -113,6 +188,7 @@ function communityItems(entry: OperationLogEntry, detail: unknown): ReviewQueueI
       confidence,
       messageId,
       createdAt: text(original?.createdAt) || undefined,
+      status: 'open',
     }];
   });
 }
@@ -162,6 +238,7 @@ function dmReviewItems(entry: OperationLogEntry, detail: unknown): ReviewQueueIt
       channelId,
       messageId: numberValue(latest.messageId),
       createdAt: text(latest.createdAt) || undefined,
+      status: 'open',
     });
   }
 
@@ -196,6 +273,7 @@ function dmAutoReplyItems(entry: OperationLogEntry, detail: unknown): ReviewQueu
       confidence,
       channelId,
       messageId,
+      status: 'open',
     }];
   });
 }
@@ -213,11 +291,47 @@ function metadataFallbackItems(entry: OperationLogEntry): ReviewQueueItem[] {
     message: 'Run metadata did not include the original message.',
     reason: 'Needs human review from automation metadata.',
     action: 'human',
+    status: 'open',
   }));
 }
 
-export async function getReviewQueue(limit = 150): Promise<ReviewQueueResult> {
-  const entries = await readOperationLog(limit);
+export async function updateReviewQueueItemStatus(
+  id: string,
+  status: ReviewQueueStatus,
+  note = '',
+): Promise<ReviewQueueStatusUpdate> {
+  const trimmedId = text(id);
+  if (!trimmedId || trimmedId.length > 260) throw new Error('Review queue item id is required.');
+  if (!isQueueStatus(status)) throw new Error('Invalid review queue status.');
+
+  const state = await readReviewQueueState();
+  const updatedAt = new Date().toISOString();
+
+  if (status === 'open') {
+    delete state.items[trimmedId];
+  } else {
+    state.items[trimmedId] = {
+      status,
+      updatedAt,
+      note: text(note) || undefined,
+    };
+  }
+
+  await writeReviewQueueState(state);
+
+  return {
+    id: trimmedId,
+    status,
+    note: text(note) || undefined,
+    updatedAt,
+  };
+}
+
+export async function getReviewQueue(limit = 150, options: ReviewQueueOptions = {}): Promise<ReviewQueueResult> {
+  const [entries, state] = await Promise.all([
+    readOperationLog(limit),
+    readReviewQueueState(),
+  ]);
   const byKey = new Map<string, ReviewQueueItem>();
   const relevantEntries = entries
     .filter((entry) => ['community_agent', 'dm_review', 'dm_auto_reply'].includes(entry.action))
@@ -240,11 +354,15 @@ export async function getReviewQueue(limit = 150): Promise<ReviewQueueResult> {
     }
   }
 
-  const items = Array.from(byKey.values())
+  const allItems = Array.from(byKey.values())
+    .map((item) => withStatus(item, state))
     .sort((left, right) => {
       const priorityOrder: Record<ReviewQueuePriority, number> = { high: 0, medium: 1, low: 2 };
+      if (left.status !== right.status) return left.status === 'open' ? -1 : right.status === 'open' ? 1 : 0;
       return priorityOrder[left.priority] - priorityOrder[right.priority] || right.runAt.localeCompare(left.runAt);
-    })
+    });
+  const items = allItems
+    .filter((item) => options.includeResolved || item.status === 'open')
     .slice(0, limit);
 
   return {
@@ -252,6 +370,9 @@ export async function getReviewQueue(limit = 150): Promise<ReviewQueueResult> {
     items,
     totals: {
       all: items.length,
+      open: allItems.filter((item) => item.status === 'open').length,
+      resolved: allItems.filter((item) => item.status === 'resolved').length,
+      dismissed: allItems.filter((item) => item.status === 'dismissed').length,
       high: items.filter((item) => item.priority === 'high').length,
       medium: items.filter((item) => item.priority === 'medium').length,
       low: items.filter((item) => item.priority === 'low').length,

@@ -424,10 +424,13 @@ export interface ReviewQueueItem {
   message: string;
   reason: string;
   action: 'human' | 'error' | 'pending';
+  status: 'open' | 'resolved' | 'dismissed';
   confidence?: number;
   channelId?: number;
   messageId?: number;
   createdAt?: string;
+  statusUpdatedAt?: string;
+  statusNote?: string;
 }
 
 export interface ReviewQueueResult {
@@ -435,6 +438,9 @@ export interface ReviewQueueResult {
   items: ReviewQueueItem[];
   totals: {
     all: number;
+    open: number;
+    resolved: number;
+    dismissed: number;
     high: number;
     medium: number;
     low: number;
@@ -777,7 +783,16 @@ export const api = {
   getAutomationHealth: () => request<AutomationHealthResult>('/automation/health'),
   getOperations: (limit = 50) => request<{ entries: OperationLogEntry[] }>(`/operations?limit=${limit}`),
   getOperationDetail: (id: string) => request<OperationDetailResult>(`/operations/${id}`),
-  getReviewQueue: (limit = 150) => request<ReviewQueueResult>(`/review-queue?limit=${limit}`),
+  getReviewQueue: (limit = 150, opts: { includeResolved?: boolean } = {}) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (opts.includeResolved) params.set('includeResolved', 'true');
+    return request<ReviewQueueResult>(`/review-queue?${params.toString()}`);
+  },
+  updateReviewQueueStatus: (id: string, status: ReviewQueueItem['status'], note = '') =>
+    request<{ ok: boolean; update: { id: string; status: ReviewQueueItem['status']; note?: string; updatedAt: string } }>('/review-queue/status', {
+      method: 'PATCH',
+      body: JSON.stringify({ id, status, note }),
+    }),
   getDailySummary: (date?: string) =>
     request<DailySummaryResult>(`/daily-summary${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   evaluateSandboxMessage: (opts: {
