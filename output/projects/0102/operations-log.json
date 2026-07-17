@@ -1,5 +1,26 @@
 [
   {
+    "id": "c71760e9-01f7-4646-96c2-3c6c1d4372a6",
+    "at": "2026-07-17T19:44:41.262Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 6,
+      "candidates": 1,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [
+        "jesus.israel"
+      ],
+      "postedUsers": [],
+      "reactedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  {
     "id": "cc7b3485-3156-4341-b28e-95e128a91bdf",
     "at": "2026-07-17T19:44:01.935Z",
     "action": "community_agent",
