@@ -1,4 +1,5 @@
 import { readOperationDetail, readOperationLog, type OperationLogEntry } from './operations-log';
+import { appDayWindow, APP_TIME_ZONE_LABEL } from './timezone';
 
 export interface DailySummaryStat {
   label: string;
@@ -58,17 +59,12 @@ export interface DailySummaryResult {
   errors: DailySummaryError[];
 }
 
-function utcDateLabel(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 function dayWindow(date = new Date()): { utcDate: string; start: Date; end: Date } {
-  const utcDate = utcDateLabel(date);
-  const start = new Date(`${utcDate}T00:00:00.000Z`);
+  const window = appDayWindow(date);
   return {
-    utcDate,
-    start,
-    end: new Date(start.getTime() + 24 * 60 * 60 * 1000),
+    utcDate: window.date,
+    start: window.start,
+    end: window.end,
   };
 }
 
@@ -264,7 +260,7 @@ export async function getDailySummary(date = new Date()): Promise<DailySummaryRe
     ? `${dedupedAttention.length + errors.length} item(s) need attention today.`
     : status === 'healthy'
       ? 'Automation ran today with no pending human review found.'
-      : 'No automation activity has been recorded for this UTC day yet.';
+      : `No automation activity has been recorded for this ${APP_TIME_ZONE_LABEL} day yet.`;
 
   return {
     mode: 'daily-summary',

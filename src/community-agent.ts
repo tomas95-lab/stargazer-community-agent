@@ -13,6 +13,7 @@ import { getProjectContext } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 import { resolveAnthropicRuntime } from './anthropic-runtime';
+import { appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
 
 const MAX_ANSWERS = parseInt(process.env.RESPONDER_MAX_ANSWERS || process.env.AGENT_MAX_ANSWERS || '4', 10);
 const MESSAGE_COUNT = parseInt(process.env.AGENT_MESSAGE_COUNT || '50', 10);
@@ -20,6 +21,7 @@ const MIN_CONFIDENCE = Number(process.env.AGENT_MIN_CONFIDENCE || '0.50');
 const REPLY_LOOKAHEAD_MINUTES = 45;
 const THREAD_SCAN_LIMIT = parseInt(process.env.AGENT_THREAD_SCAN_LIMIT || '6', 10);
 const THREAD_MESSAGE_COUNT = parseInt(process.env.AGENT_THREAD_MESSAGE_COUNT || '30', 10);
+const DAY_SCAN_MESSAGE_LIMIT = parseInt(process.env.AGENT_DAY_SCAN_MESSAGE_LIMIT || '300', 10);
 const DEFAULT_REACTION_EMOJI = process.env.AGENT_REACTION_EMOJI || '+1';
 const STATE_FILE = 'output/community-agent-state.json';
 
@@ -129,22 +131,16 @@ export async function fetchRecentCommunityMessages(count = 20): Promise<Discours
   return client.readChatMessages(channelId, count);
 }
 
-function utcDateLabel(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 function todayWindow(now = new Date()): CommunityAgentResult['window'] & { start: Date; end: Date } {
-  const label = utcDateLabel(now);
-  const start = new Date(`${label}T00:00:00.000Z`);
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  const window = appDayWindow(now);
   return {
-    utcDate: label,
-    argentinaDate: label,
-    start,
-    end,
-    startUtc: start.toISOString(),
-    endUtc: end.toISOString(),
-    operatingHours: 'Agent scans the current UTC day. Live-support hours come from project guidelines or project memory.',
+    utcDate: window.date,
+    argentinaDate: window.date,
+    start: window.start,
+    end: window.end,
+    startUtc: window.start.toISOString(),
+    endUtc: window.end.toISOString(),
+    operatingHours: `Agent scans the current ${APP_TIME_ZONE_LABEL} day. Live-support hours come from project guidelines or project memory.`,
   };
 }
 
@@ -154,10 +150,14 @@ export function warRoomIsOpenDay(now = new Date()): boolean {
 }
 
 export function isWithinOperatingHours(now = new Date()): boolean {
-  const startHour = Number(process.env.AGENT_UTC_START_HOUR || '');
-  const endHour = Number(process.env.AGENT_UTC_END_HOUR || '');
+  const startHour = Number(process.env.AGENT_PST_START_HOUR || process.env.AGENT_UTC_START_HOUR || '');
+  const endHour = Number(process.env.AGENT_PST_END_HOUR || process.env.AGENT_UTC_END_HOUR || '');
   if (!Number.isFinite(startHour) || !Number.isFinite(endHour)) return true;
-  const hour = now.getUTCHours();
+  const hour = Number(new Intl.DateTimeFormat('en-US', {
+    timeZone: APP_TIME_ZONE,
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).format(now));
   return startHour <= endHour
     ? hour >= startHour && hour <= endHour
     : hour >= startHour || hour <= endHour;
@@ -226,6 +226,48 @@ function isQuestionOrSupportRequest(text: string): boolean {
   ];
 
   return supportSignals.some((signal) => lower.includes(signal));
+}
+
+function isAnnouncementMessage(text: string): boolean {
+  const trimmed = text.trim();
+  const lower = normalizeText(trimmed);
+
+  if (trimmed.length < 8) return true;
+  if (trimmed.startsWith('🚨')) return true;
+  if (/^-{20,}/.test(trimmed)) return true;
+  if (/^>\*\*/.test(trimmed) && lower.includes('war room') && lower.includes('link:')) return true;
+  if (lower.includes('meeting registration - zoom') && lower.includes('war room')) return true;
+
+  const announcementSignals = [
+    'war rooms thread',
+    'these are the available war rooms',
+    'list in thread',
+    'these cbs have',
+    'to proceed, you will need to join the war room',
+    'we wanted to reach out ahead of time',
+    'no need to open a ticket',
+    'gracias / obrigado',
+    'abrazo / abraco',
+  ];
+
+  if (announcementSignals.some((signal) => lower.includes(signal))) return true;
+
+  const startsWithTeamGreeting = /^hey\s+team\b/i.test(trimmed) || /^hi\s+team\b/i.test(trimmed) || /^team[!,\s]/i.test(trimmed);
+  const teamAnnouncementSignals = [
+    'today',
+    'these',
+    'assigned',
+    'please note',
+    'we recommend',
+    'we wanted',
+    'we already',
+    'is up',
+    'thank you',
+    'gracias',
+    'obrigado',
+  ];
+
+  return startsWithTeamGreeting && teamAnnouncementSignals.some((signal) => lower.includes(signal));
 }
 
 function isPotentiallyUsefulContribution(text: string): boolean {
@@ -423,19 +465,20 @@ function shouldIgnoreAuthor(username: string): boolean {
 }
 
 function shouldIgnoreMessage(text: string): boolean {
-  const trimmed = text.trim();
-  return trimmed.length < 8 || trimmed.startsWith('🚨') || trimmed.startsWith('Hey team');
+  return isAnnouncementMessage(text);
 }
 
 function baseIgnoreReason(item: CommunityAgentItem): string | null {
   const isOwnAuthor = shouldIgnoreAuthor(item.username);
+  const isAnnouncement = isAnnouncementMessage(item.message);
   const isBroadcast = item.message.trim().startsWith('🚨');
-  const isTeamAnnouncement = item.message.trim().startsWith('Hey team');
-  if (isOwnAuthor && (isBroadcast || isTeamAnnouncement)) {
+  const isTeamAnnouncement = /^hey\s+team\b/i.test(item.message.trim()) || /^hi\s+team\b/i.test(item.message.trim());
+  if (isOwnAuthor && isAnnouncement) {
     return 'Manager announcement authored by the configured bot user, not a contributor support request.';
   }
   if (isBroadcast) return 'Broadcast announcement, not a contributor support request.';
-  if (isTeamAnnouncement) return 'Team announcement, not a contributor support request.';
+  if (isTeamAnnouncement && isAnnouncement) return 'Team announcement, not a contributor support request.';
+  if (isAnnouncement) return 'Announcement or thread root, not a contributor support request.';
   if (shouldIgnoreAuthor(item.username)) return 'Authored by the configured manager/bot user.';
   if (item.message.trim().length < 8) return 'Message is too short to evaluate safely.';
   if ((item.probableReplies || []).length > 0) return 'Already has a probable reply in the chat or thread.';
@@ -453,6 +496,8 @@ function withIgnoredReasons(items: CommunityAgentItem[]): CommunityAgentItem[] {
 }
 
 function threadPreviewReply(message: DiscourseChatMessage): CommunityAgentReplyEvidence | null {
+  if (shouldIgnoreMessage(message.message)) return null;
+
   const preview = message.thread?.preview;
   if (!preview?.last_reply_id || !preview.last_reply_created_at || !preview.last_reply_user?.username) return null;
   if (preview.last_reply_id === message.id) return null;
@@ -470,6 +515,51 @@ function threadPreviewReply(message: DiscourseChatMessage): CommunityAgentReplyE
   };
 }
 
+async function readCommunityMessagesForOptions(
+  client: DiscourseClient,
+  channelId: string,
+  options: Required<Pick<CommunityAgentOptions, 'onlyToday' | 'messageCount'>>,
+  window: ReturnType<typeof todayWindow>,
+): Promise<DiscourseChatMessage[]> {
+  const pageSize = Math.min(100, Math.max(1, options.messageCount));
+  if (!options.onlyToday) return client.readChatMessages(channelId, pageSize);
+
+  const maxMessages = Math.max(pageSize, DAY_SCAN_MESSAGE_LIMIT);
+  const messagesById = new Map<number, DiscourseChatMessage>();
+  let targetMessageId: number | undefined;
+
+  while (messagesById.size < maxMessages) {
+    const page = await client.readChatMessages(
+      channelId,
+      pageSize,
+      targetMessageId ? { targetMessageId, direction: 'past' } : {},
+    );
+    if (page.length === 0) break;
+
+    for (const msg of page) {
+      if (messagesById.size >= maxMessages) break;
+      messagesById.set(msg.id, msg);
+    }
+
+    const oldest = page.reduce<DiscourseChatMessage | null>((oldestMsg, msg) => {
+      if (!oldestMsg) return msg;
+      return new Date(msg.created_at).getTime() < new Date(oldestMsg.created_at).getTime() ? msg : oldestMsg;
+    }, null);
+    if (!oldest) break;
+
+    const oldestTime = new Date(oldest.created_at).getTime();
+    if (Number.isFinite(oldestTime) && oldestTime < window.start.getTime()) break;
+    if (oldest.id === targetMessageId) break;
+
+    targetMessageId = oldest.id;
+    if (page.length < pageSize) break;
+  }
+
+  return Array.from(messagesById.values())
+    .filter((msg) => isWithinWindow(msg.created_at, window))
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+}
+
 async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions, 'includeCommunity' | 'onlyToday' | 'messageCount'>>): Promise<{
   items: CommunityAgentItem[];
   errors: string[];
@@ -482,7 +572,7 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
 
   if (options.includeCommunity) {
     try {
-      const messages = await client.readChatMessages(channelId, options.messageCount);
+      const messages = await readCommunityMessagesForOptions(client, channelId, options, window);
       const seenMessageIds = new Set<number>();
       const threadRoots = new Map<number, number>();
       for (const msg of messages) {

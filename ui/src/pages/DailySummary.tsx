@@ -13,20 +13,7 @@ import { Link } from 'react-router-dom';
 import { api, type DailySummaryPerson, type DailySummaryResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-function todayUtc(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function formatUtc(value: string): string {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
+import { APP_TIME_ZONE_LABEL, formatAppDateTime, todayAppDate } from '@/lib/timezone';
 
 function statusClass(value: string): string {
   if (value === 'healthy' || value === 'success') return 'sg-status-success';
@@ -75,7 +62,7 @@ function AttentionItem({ item }: { item: DailySummaryPerson }) {
 }
 
 export default function DailySummary() {
-  const [date, setDate] = useState(todayUtc());
+  const [date, setDate] = useState(todayAppDate());
   const [summary, setSummary] = useState<DailySummaryResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -112,7 +99,7 @@ export default function DailySummary() {
             <h1 className="text-2xl font-semibold text-foreground">Daily Summary</h1>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            {summary ? `Generated ${formatUtc(summary.generatedAt)} UTC` : 'UTC day summary'}
+            {summary ? `Generated ${formatAppDateTime(summary.generatedAt)} ${APP_TIME_ZONE_LABEL}` : `${APP_TIME_ZONE_LABEL} day summary`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -138,7 +125,7 @@ export default function DailySummary() {
               <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass(status)}`}>
                 {status}
               </span>
-              <Badge variant="outline">{summary?.utcDate || date} UTC</Badge>
+              <Badge variant="outline">{summary?.utcDate || date} {APP_TIME_ZONE_LABEL}</Badge>
             </div>
             <h2 className="mt-3 text-xl font-semibold text-foreground">
               {summary?.headline || 'Loading summary...'}
@@ -195,7 +182,7 @@ export default function DailySummary() {
           ) : summary?.attentionItems.length ? (
             summary.attentionItems.map((item) => <AttentionItem key={`${item.source}-${item.username}-${item.reason}`} item={item} />)
           ) : (
-            <p className="p-5 text-sm text-muted-foreground">No human review items found for this UTC day.</p>
+            <p className="p-5 text-sm text-muted-foreground">No human review items found for this {APP_TIME_ZONE_LABEL} day.</p>
           )}
         </section>
 
@@ -216,11 +203,11 @@ export default function DailySummary() {
                       {entry.status}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatUtc(entry.at)} UTC</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatAppDateTime(entry.at)} {APP_TIME_ZONE_LABEL}</p>
                   <p className="mt-2 text-sm text-muted-foreground">{entry.message}</p>
                 </div>
               )) : (
-                <p className="p-5 text-sm text-muted-foreground">No activity recorded for this UTC day.</p>
+                <p className="p-5 text-sm text-muted-foreground">No activity recorded for this {APP_TIME_ZONE_LABEL} day.</p>
               )}
             </div>
           </div>
@@ -234,11 +221,11 @@ export default function DailySummary() {
               {summary?.errors.length ? summary.errors.map((item) => (
                 <div key={item.id} className="p-4">
                   <p className="text-sm font-semibold capitalize text-foreground">{item.action.replace(/_/g, ' ')}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatUtc(item.at)} UTC</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatAppDateTime(item.at)} {APP_TIME_ZONE_LABEL}</p>
                   <p className="mt-2 text-sm text-muted-foreground">{item.message}</p>
                 </div>
               )) : (
-                <p className="p-5 text-sm text-muted-foreground">No errors recorded for this UTC day.</p>
+                <p className="p-5 text-sm text-muted-foreground">No errors recorded for this {APP_TIME_ZONE_LABEL} day.</p>
               )}
             </div>
           </div>

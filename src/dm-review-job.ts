@@ -13,8 +13,8 @@ import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
 import { evaluateSupportMessage } from './community-agent';
 import { loadProjectLinks } from './links';
+import { appDateParts, appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
 
-const UTC_TIMEZONE = 'UTC';
 const DEFAULT_MESSAGE_COUNT = Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50);
 const DM_CHANNEL_SCAN_CAP = 5;
 const DEFAULT_MAX_CHANNELS = Math.min(Number(process.env.DM_REVIEW_MAX_CHANNELS || DM_CHANNEL_SCAN_CAP), DM_CHANNEL_SCAN_CAP);
@@ -148,37 +148,19 @@ interface DmAutoReplyState {
 }
 
 function utcDateParts(date: Date): { year: number; month: number; day: number; label: string } {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: UTC_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date);
-
-  const year = Number(parts.find((part) => part.type === 'year')?.value);
-  const month = Number(parts.find((part) => part.type === 'month')?.value);
-  const day = Number(parts.find((part) => part.type === 'day')?.value);
-
-  return {
-    year,
-    month,
-    day,
-    label: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-  };
+  return appDateParts(date);
 }
 
 export function getUtcDayWindow(now = new Date()): DmReviewWindow & { start: Date; end: Date } {
-  const { year, month, day, label } = utcDateParts(now);
-  const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  const window = appDayWindow(now);
 
   return {
-    utcDate: label,
-    argentinaDate: label,
-    start,
-    end,
-    startUtc: start.toISOString(),
-    endUtc: end.toISOString(),
+    utcDate: window.date,
+    argentinaDate: window.date,
+    start: window.start,
+    end: window.end,
+    startUtc: window.start.toISOString(),
+    endUtc: window.end.toISOString(),
   };
 }
 
@@ -545,9 +527,9 @@ export async function sendDirectMessageReply(channelId: number, message: string)
   };
 }
 
-function formatUtcTime(value: string): string {
+function formatAppTime(value: string): string {
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: UTC_TIMEZONE,
+    timeZone: APP_TIME_ZONE,
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
@@ -563,7 +545,7 @@ function buildDmContext(messages: DmReviewMessage[]): string {
     .sort((left, right) => messageTime(left) - messageTime(right))
     .map((message) => {
       const direction = message.incoming ? 'user' : 'manager';
-      return `[${formatUtcTime(message.createdAt)} UTC/${direction}/${message.username}]: ${message.text.slice(0, 700)}`;
+      return `[${formatAppTime(message.createdAt)} ${APP_TIME_ZONE_LABEL}/${direction}/${message.username}]: ${message.text.slice(0, 700)}`;
     })
     .join('\n');
 }
@@ -631,7 +613,7 @@ async function evaluateDirectMessageThread(
     .map((message) => `${message.username}: ${message.text}`)
     .join('\n\n');
   const window = getUtcDayWindow(now);
-  const context = `Private DM thread from ${window.utcDate} UTC:\n${buildDmContext(orderedMessages) || 'No messages today.'}`;
+  const context = `Private DM thread from ${window.utcDate} ${APP_TIME_ZONE_LABEL}:\n${buildDmContext(orderedMessages) || 'No messages today.'}`;
   const deterministicDecision = await evaluateSupportMessage(
     lastIncoming.username,
     pendingText,

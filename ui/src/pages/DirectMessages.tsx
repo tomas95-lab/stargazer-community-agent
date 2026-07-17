@@ -12,24 +12,7 @@ import {
 import { api, type DmDraftResult, type DmReviewMessage, type DmReviewResult, type DmReviewThreadSummary } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-function formatUtcTime(value: string): string {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
-
-function formatUtcDateTime(value: string): string {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
+import { APP_TIME_ZONE_LABEL, formatAppDateTime, formatAppTime } from '@/lib/timezone';
 
 function Stat({
   icon: Icon,
@@ -136,7 +119,7 @@ function DmThread({
               <span className="font-medium text-foreground">{message.incoming ? senderLabel(message) : 'You'}</span>
               <span className="flex items-center gap-1">
                 <IconClock className="size-3.5" />
-                {formatUtcTime(message.createdAt)} UTC
+                {formatAppTime(message.createdAt)} {APP_TIME_ZONE_LABEL}
               </span>
             </div>
             <p className="whitespace-pre-wrap text-sm leading-6">{message.text}</p>
@@ -279,7 +262,7 @@ export default function DirectMessages() {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant="outline">Today only</Badge>
             {result && <Badge variant="outline">{result.scanMode === 'full' ? 'Full scan' : 'Quick preview'}</Badge>}
-            {result && <Badge variant="secondary">{result.window.utcDate || result.window.argentinaDate} UTC</Badge>}
+            {result && <Badge variant="secondary">{result.window.utcDate || result.window.argentinaDate} {APP_TIME_ZONE_LABEL}</Badge>}
             {reportSaved && (
               <Badge className="border-transparent bg-success text-success-foreground">
                 <IconCheck />
@@ -303,7 +286,7 @@ export default function DirectMessages() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat icon={IconInbox} label="Messages" value={result?.messages.length ?? '-'} sub={`${result?.incomingMessages ?? '-'} incoming`} />
         <Stat icon={IconUser} label="Channels" value={result?.scannedChannels ?? '-'} sub={`${result?.totalDirectChannels ?? '-'} total`} />
-        <Stat icon={IconClock} label="Window" value={result?.window.utcDate || result?.window.argentinaDate || '-'} sub={result ? `${formatUtcDateTime(result.window.startUtc)} - ${formatUtcDateTime(result.window.endUtc)} UTC` : 'UTC day'} />
+        <Stat icon={IconClock} label="Window" value={result?.window.utcDate || result?.window.argentinaDate || '-'} sub={result ? `${formatAppDateTime(result.window.startUtc)} - ${formatAppDateTime(result.window.endUtc)} ${APP_TIME_ZONE_LABEL}` : `${APP_TIME_ZONE_LABEL} day`} />
         <Stat icon={IconCheck} label="Open Threads" value={result?.unresolvedChannels ?? '-'} sub={`${result?.pendingIncomingMessages ?? '-'} pending incoming`} />
       </div>
 
@@ -317,7 +300,7 @@ export default function DirectMessages() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-foreground">DM Threads</h2>
-          {result && <p className="text-xs text-muted-foreground">Updated {formatUtcDateTime(result.generatedAt)} UTC</p>}
+          {result && <p className="text-xs text-muted-foreground">Updated {formatAppDateTime(result.generatedAt)} {APP_TIME_ZONE_LABEL}</p>}
         </div>
 
         <div className="sg-panel p-5">

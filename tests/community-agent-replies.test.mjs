@@ -102,7 +102,7 @@ test('annotateProbableReplies preserves replies discovered from Discourse thread
         {
           id: 'community:31',
           username: 'ops',
-          message: 'Good morning, the War Room will be open at 14:15 UTC',
+          message: 'Good morning, the War Room will be open at 07:15 PST',
           createdAt: '2026-07-06T14:05:00.000Z',
           chatMessageId: 31,
           match: 'direct_reply',
@@ -113,4 +113,30 @@ test('annotateProbableReplies preserves replies discovered from Discourse thread
 
   assert.equal(annotated[0].probableReplies?.length, 1);
   assert.equal(annotated[0].probableReplies?.[0].id, 'community:31');
+});
+
+test('annotateProbableReplies does not mark announcement thread roots as answered', () => {
+  const annotated = annotateProbableReplies([
+    {
+      ...item({
+        id: 'community:40',
+        username: 'qm',
+        message: '---------------------------------------------------------------- Hi Team! These CBs have hil_sandbox assigned! List in thread',
+        createdAt: '2026-07-17T14:45:41.000Z',
+        chatMessageId: 40,
+      }),
+      probableReplies: [
+        {
+          id: 'community:41',
+          username: 'qm',
+          message: 'latam.coder758@remotasks.com+outlier',
+          createdAt: '2026-07-17T14:45:56.000Z',
+          chatMessageId: 41,
+          match: 'direct_reply',
+        },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(annotated[0].probableReplies, []);
 });

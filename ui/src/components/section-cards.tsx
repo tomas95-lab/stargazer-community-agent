@@ -109,7 +109,7 @@ export function SectionCards({
           <CardAction>
             <Badge variant="outline">
               <IconRobot />
-              UTC
+              PST
             </Badge>
           </CardAction>
         </CardHeader>

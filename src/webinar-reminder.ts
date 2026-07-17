@@ -3,6 +3,7 @@ import { loadBotConfig } from './config';
 import { DiscourseClient } from './discourse-client';
 import { readDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
+import { zonedTimeToUtc } from './timezone';
 
 dotenv.config();
 
@@ -30,9 +31,8 @@ async function readWebinars(): Promise<Webinar[]> {
 
 function getWebinarDateTimeUtc(webinar: Webinar): Date {
   const [hours, minutes] = webinar.timeUtc.split(':').map(Number);
-  const dt = new Date(`${webinar.date}T00:00:00Z`);
-  dt.setUTCHours(hours, minutes, 0, 0);
-  return dt;
+  const [year, month, day] = webinar.date.split('-').map(Number);
+  return zonedTimeToUtc(year, month, day, hours, minutes, 0);
 }
 
 function minutesUntil(dt: Date): number {

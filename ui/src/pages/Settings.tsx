@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { api, type AiUsageSummary, type AutomationHealthJob, type AutomationHealthResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { APP_TIME_ZONE_LABEL, formatAppDateTime } from '@/lib/timezone';
 
 const LABELS: Record<string, string> = {
   COMMUNITY_BASE_URL: 'Community Base URL',
@@ -28,17 +29,6 @@ const LABELS: Record<string, string> = {
   PLATFORM_CONFIGURED: 'Platform Configured',
   PLATFORM_ENCRYPTION_CONFIGURED: 'Platform Encryption Configured',
 };
-
-function formatUtcDate(value?: string): string {
-  if (!value) return 'Not yet';
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
 
 function healthClass(value: AutomationHealthJob['health']): string {
   if (value === 'ok') return 'sg-status-success';
@@ -176,15 +166,15 @@ export default function Settings() {
                       <p className="mt-1 font-mono text-xs text-muted-foreground">{item.endpoint}</p>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      <p>{formatUtcDate(item.provider?.lastExecution || item.lastCronRequest?.at)} UTC</p>
+                      <p>{formatAppDateTime(item.provider?.lastExecution || item.lastCronRequest?.at)} {APP_TIME_ZONE_LABEL}</p>
                       <p className="mt-1 text-xs">{item.provider?.lastStatusLabel || item.lastCronRequest?.status || '-'}</p>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      <p>{formatUtcDate(item.lastAppResult?.at)} UTC</p>
+                      <p>{formatAppDateTime(item.lastAppResult?.at)} {APP_TIME_ZONE_LABEL}</p>
                       <p className="mt-1 text-xs">{item.lastAppResult?.status || '-'}</p>
                     </td>
                     <td className="px-4 py-3 text-foreground">
-                      {formatUtcDate(item.provider?.nextExecution)} UTC
+                      {formatAppDateTime(item.provider?.nextExecution)} {APP_TIME_ZONE_LABEL}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{metricValue(item)}</td>
                     <td className="px-4 py-3 text-muted-foreground">{item.healthReason}</td>
@@ -235,7 +225,7 @@ export default function Settings() {
           <div className="rounded-md border border-border bg-background p-4">
             <p className="text-xs font-semibold uppercase text-muted-foreground">Input Tokens</p>
             <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.inputTokens)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{usage?.utcDate || usage?.argentinaDate || 'UTC day'}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{usage?.utcDate || usage?.argentinaDate || `${APP_TIME_ZONE_LABEL} day`}</p>
           </div>
           <div className="rounded-md border border-border bg-background p-4">
             <p className="text-xs font-semibold uppercase text-muted-foreground">Output Tokens</p>
@@ -269,7 +259,7 @@ export default function Settings() {
               ) : usage?.recentEvents.length ? (
                 usage.recentEvents.slice(0, 10).map((event) => (
                   <tr key={event.id} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 text-muted-foreground">{formatUtcDate(event.at)} UTC</td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatAppDateTime(event.at)} {APP_TIME_ZONE_LABEL}</td>
                     <td className="px-4 py-3 font-medium text-foreground">{event.feature}</td>
                     <td className="px-4 py-3 text-muted-foreground">{event.model}</td>
                     <td className="px-4 py-3 text-foreground">{formatNumber(event.totalTokens)}</td>
@@ -303,7 +293,7 @@ export default function Settings() {
       <div className="sg-panel overflow-hidden p-0">
         <div className="border-b border-border px-6 py-4">
           <h2 className="text-lg font-semibold text-foreground">Automation Schedule</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Automation schedule in UTC.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Automation schedule in {APP_TIME_ZONE_LABEL}.</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
@@ -311,7 +301,7 @@ export default function Settings() {
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">Job</th>
                 <th className="px-4 py-3 text-left font-semibold">Endpoint</th>
-                <th className="px-4 py-3 text-left font-semibold">UTC</th>
+                <th className="px-4 py-3 text-left font-semibold">{APP_TIME_ZONE_LABEL}</th>
                 <th className="px-4 py-3 text-left font-semibold">Purpose</th>
               </tr>
             </thead>

@@ -9,6 +9,7 @@ import { readDataText, writeDataJSON } from './data-store';
 import { loadProjectLinks } from './links';
 import { appendOperationLog } from './operations-log';
 import { formatPostTitle, getTodayTopic, isUtcBusinessDay, todayDate } from './utils';
+import { APP_TIME_ZONE_LABEL } from './timezone';
 
 export interface DailyPublishJobResult {
   status: 'published' | 'skipped';
@@ -26,13 +27,13 @@ function truthy(value: string | undefined): boolean {
   return ['1', 'true', 'yes', 'y'].includes((value || '').toLowerCase());
 }
 
-export function dailyPublishSkipReason(now = new Date(), force = false): { date: string; reason: 'weekend_utc'; message: string } | null {
+export function dailyPublishSkipReason(now = new Date(), force = false): { date: string; reason: 'weekend_pst'; message: string } | null {
   const date = todayDate(now);
   if (force || isUtcBusinessDay(now)) return null;
   return {
     date,
-    reason: 'weekend_utc',
-    message: `Daily thread for ${date} skipped because it is Saturday or Sunday in UTC.`,
+    reason: 'weekend_pst',
+    message: `Daily thread for ${date} skipped because it is Saturday or Sunday in ${APP_TIME_ZONE_LABEL}.`,
   };
 }
 

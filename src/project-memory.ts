@@ -33,7 +33,7 @@ const DEFAULT_MEMORY: ProjectMemory = {
     {
       id: 'war-room-hours',
       title: 'War Room hours',
-      body: 'The War Room is open Monday through Friday from 14:15 to 22:00 UTC. It is closed Saturdays and Sundays.',
+      body: 'The War Room is open Monday through Friday from 07:15 to 15:00 PST. It is closed Saturdays and Sundays.',
       source: 'project operations',
     },
     {

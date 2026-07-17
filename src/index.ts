@@ -4,6 +4,7 @@ import { generateAndSaveAnnouncement } from './announcement';
 import { CommunityBot } from './communityBot';
 import { todayDate, getTodayTopic, saveFile, parseArgs, askConfirmation, formatPostTitle, isUtcBusinessDay } from './utils';
 import { loadProjectLinks } from './links';
+import { APP_TIME_ZONE_LABEL } from './timezone';
 
 function truthy(value: string | undefined): boolean {
   return ['1', 'true', 'yes', 'y'].includes((value || '').toLowerCase());
@@ -14,7 +15,7 @@ async function main(): Promise<void> {
   const now = new Date();
   const date = todayDate(now);
   if (mode === 'publish' && !truthy(process.env.FORCE_DAILY_PUBLISH) && !isUtcBusinessDay(now)) {
-    console.log(`Daily thread for ${date} skipped because it is Saturday or Sunday in UTC.`);
+    console.log(`Daily thread for ${date} skipped because it is Saturday or Sunday in ${APP_TIME_ZONE_LABEL}.`);
     console.log('Set FORCE_DAILY_PUBLISH=true only if you intentionally need an emergency weekend publish.');
     return;
   }

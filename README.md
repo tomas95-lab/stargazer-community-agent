@@ -162,9 +162,9 @@ npm run job:webinars    # send webinar/onboarding reminders in the reminder wind
 npm run jobs:all        # reminders + daily publish only when DAILY_PUBLISH_ENABLED=true
 ```
 
-The Community Agent checks only today's Argentina-day messages. It reads the public community chat, retrieves relevant snippets from `data/project-guidelines.txt`, and asks Claude whether to reply, ignore, or route to a human. Claude is instructed to answer only when the guideline/context supports the reply.
+The Community Agent checks only today's PST-day messages. It reads the public community chat, retrieves relevant snippets from `data/project-guidelines.txt`, and asks Claude whether to reply, ignore, or route to a human. Claude is instructed to answer only when the guideline/context supports the reply.
 
-The DM review job checks up to 5 active direct-message channels and stores today's full DM thread timeline from the current Argentina day in `output/dm-review-YYYY-MM-DD.json`. When `DM_AUTO_REPLY=true`, it can auto-reply to safe pending DMs using the same Claude filters as the Community Agent. The UI can still ask Claude for a draft reply per DM thread and send replies manually.
+The DM review job checks up to 5 active direct-message channels and stores today's full DM thread timeline from the current PST day in `output/dm-review-YYYY-MM-DD.json`. When `DM_AUTO_REPLY=true`, it can auto-reply to safe pending DMs using the same Claude filters as the Community Agent. The UI can still ask Claude for a draft reply per DM thread and send replies manually.
 
 The header bell enables browser notifications on the current Mac. Notifications are triggered from `output/operations-log.json` when the agent finds new Community candidates, posts an automatic Community reply, or detects new DM message IDs. The dashboard must be open in the browser for this no-cost local notification mode.
 
@@ -219,31 +219,31 @@ GET  /api/cron/dm-review
 
 The cron routes are protected by `CRON_SECRET`. External schedulers send it as `X-Cron-Secret`; Vercel Cron requests are also accepted when the `vercel-cron/1.0` user agent and `x-vercel-cron-schedule` header match the exact schedule configured for that endpoint.
 
-Vercel calls `/api/cron/daily-thread` Monday-Friday at 10:00 and 11:00 Argentina time. The second run is a retry window: `runDailyPublishJob` checks `output/published-url-YYYY-MM-DD.txt` first and skips when today's thread was already published. On Hobby plans, Vercel may invoke cron jobs at any point within the configured hour, so the retry intentionally lives in the next hour.
+Vercel calls `/api/cron/daily-thread` Monday-Friday at 06:00 and 07:00 PST. The second run is a retry window: `runDailyPublishJob` checks `output/published-url-YYYY-MM-DD.txt` first and skips when today's thread was already published. On Hobby plans, Vercel may invoke cron jobs at any point within the configured hour, so the retry intentionally lives in the next hour.
 
-`runDailyPublishJob` also has a backend weekend guard. If a scheduler calls the endpoint on Saturday or Sunday in Argentina, the job skips with `reason: "weekend_argentina"`. Set `FORCE_DAILY_PUBLISH=true` only for a manual emergency publish.
+`runDailyPublishJob` also has a backend weekend guard. If a scheduler calls the endpoint on Saturday or Sunday in PST, the job skips with `reason: "weekend_pst"`. Set `FORCE_DAILY_PUBLISH=true` only for a manual emergency publish.
 
 For production cron, use `DATA_STORE=github` with `GITHUB_TOKEN` so the publish marker persists between serverless runs. The job also checks the Community category for an existing daily-thread title before publishing, which prevents duplicate posts if the marker file is missing.
 
-Vercel calls `/api/cron/community-agent` roughly every 90 minutes between 10:00 and 19:00 Argentina time using UTC schedules in `vercel.json`.
+Vercel calls `/api/cron/community-agent` roughly every 90 minutes between 06:00 and 15:00 PST.
 
-Vercel calls `/api/cron/dm-review` at 15:30 and 18:00 Argentina time. The job filters by the current Argentina day, so older DMs remain available for endpoint verification but are not included in the daily report. If `DM_AUTO_REPLY=true`, safe DMs are answered automatically with the same confidence, guideline, English-only, sensitive-topic, and signature checks used by the Community Agent. DM drafts are still available through `/api/dm-review/draft`, and manual replies are sent from the UI via `/api/dm-review/reply`.
+Vercel calls `/api/cron/dm-review` at 11:30 and 14:00 PST. The job filters by the current PST day, so older DMs remain available for endpoint verification but are not included in the daily report. If `DM_AUTO_REPLY=true`, safe DMs are answered automatically with the same confidence, guideline, English-only, sensitive-topic, and signature checks used by the Community Agent. DM drafts are still available through `/api/dm-review/draft`, and manual replies are sent from the UI via `/api/dm-review/reply`.
 
 Production cron schedule:
 
-| Job | Endpoint | UTC | ARG |
-|---|---|---:|---:|
-| Daily Thread | `/api/cron/daily-thread/1000` | 13:00 Mon-Fri | 10:00 Mon-Fri |
-| Daily Thread retry | `/api/cron/daily-thread/1100` | 14:00 Mon-Fri | 11:00 Mon-Fri |
-| Community Agent | `/api/cron/community-agent/1000` | 13:00 | 10:00 |
-| Community Agent | `/api/cron/community-agent/1130` | 14:30 | 11:30 |
-| Community Agent | `/api/cron/community-agent/1300` | 16:00 | 13:00 |
-| Community Agent | `/api/cron/community-agent/1430` | 17:30 | 14:30 |
-| Community Agent | `/api/cron/community-agent/1600` | 19:00 | 16:00 |
-| Community Agent | `/api/cron/community-agent/1730` | 20:30 | 17:30 |
-| Community Agent | `/api/cron/community-agent/1900` | 22:00 | 19:00 |
-| DM Review | `/api/cron/dm-review/1530` | 18:30 | 15:30 |
-| DM Review | `/api/cron/dm-review/1800` | 21:00 | 18:00 |
+| Job | Endpoint | PST |
+|---|---|---:|
+| Daily Thread | `/api/cron/daily-thread/1000` | 06:00 Mon-Fri |
+| Daily Thread retry | `/api/cron/daily-thread/1100` | 07:00 Mon-Fri |
+| Community Agent | `/api/cron/community-agent/1000` | 06:00 |
+| Community Agent | `/api/cron/community-agent/1130` | 07:30 |
+| Community Agent | `/api/cron/community-agent/1300` | 09:00 |
+| Community Agent | `/api/cron/community-agent/1430` | 10:30 |
+| Community Agent | `/api/cron/community-agent/1600` | 12:00 |
+| Community Agent | `/api/cron/community-agent/1730` | 13:30 |
+| Community Agent | `/api/cron/community-agent/1900` | 15:00 |
+| DM Review | `/api/cron/dm-review/1530` | 11:30 |
+| DM Review | `/api/cron/dm-review/1800` | 14:00 |
 
 External scheduler setup:
 

@@ -4,6 +4,7 @@ import {
   adminTokenMatches,
   AuthenticatedUser,
   getActiveUserProject,
+  getSharedProjectConnection,
   getUserFromAccessToken,
   isPlatformConfigured,
   projectRuntimeContextForRow,
@@ -73,6 +74,13 @@ export async function attachProjectContext(req: Request, res: Response, next: Ne
     if (user) {
       project = await getActiveUserProject(user.id, projectId || undefined);
       if (projectId && !project) {
+        res.status(404).json({ error: 'Project not found.' });
+        return;
+      }
+      (req as AuthenticatedRequest).platformProject = project;
+    } else if (projectId && adminTokenMatches(adminToken(req))) {
+      project = await getSharedProjectConnection(projectId);
+      if (!project) {
         res.status(404).json({ error: 'Project not found.' });
         return;
       }

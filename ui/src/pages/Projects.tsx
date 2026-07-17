@@ -12,16 +12,7 @@ import { api, projectSelection, type QmProject } from '@/api';
 import { usePlatform } from '@/platform';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-function formatUtc(value: string): string {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
+import { APP_TIME_ZONE_LABEL, formatAppDateTime } from '@/lib/timezone';
 
 function ProjectRow({
   project,
@@ -51,7 +42,7 @@ function ProjectRow({
             <p>Category: {project.categoryId || '-'}</p>
             <p>Channel: {project.channelId || '-'}</p>
             <p>Discourse: {project.discourseUsername || '-'}</p>
-            <p>Updated: {formatUtc(project.updatedAt)} UTC</p>
+            <p>Updated: {formatAppDateTime(project.updatedAt)} {APP_TIME_ZONE_LABEL}</p>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant={project.discourseApiKeyConfigured ? 'secondary' : 'outline'}>

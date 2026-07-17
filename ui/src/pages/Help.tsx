@@ -96,7 +96,7 @@ const modules = [
   {
     name: "Settings",
     path: "/settings",
-    purpose: "Check automation health, schedules in UTC, AI usage, and environment configuration.",
+    purpose: "Check automation health, schedules in PST, AI usage, and environment configuration.",
     Icon: Settings,
   },
 ]
@@ -121,7 +121,7 @@ const safetyRules = [
 const troubleshooting = [
   {
     issue: "Daily thread did not publish",
-    fix: "Open Settings, check Cron Health, then confirm today's topic exists and the job was not skipped by UTC date rules.",
+    fix: "Open Settings, check Cron Health, then confirm today's topic exists and the job was not skipped by PST date rules.",
   },
   {
     issue: "Agent is not replying",

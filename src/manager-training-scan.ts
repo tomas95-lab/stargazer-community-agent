@@ -208,7 +208,7 @@ function inferCategory(text: string): string {
   const lower = normalizeText(text);
   const checks: Array<[string, string[]]> = [
     ['cursor_access_step_0', ['cursor', 'access', 'acceso', 'step 0', 'eq', 'ineligible', 'unlock']],
-    ['war_room_availability', ['war room', 'zoom', 'breakout', 'open now', 'closed', '14:15']],
+    ['war_room_availability', ['war room', 'zoom', 'breakout', 'open now', 'closed', '07:15']],
     ['model_setup', ['qwen', 'sonnet', 'claude', 'model']],
     ['task_throttle', ['throttle', '24hr', '24-hour', 'one task', '1 task']],
     ['course_onboarding', ['course', 'onboarding', 'training', 'enroll']],
@@ -636,7 +636,7 @@ function buildMemoryFacts(analysis: Omit<TrainingAnalysis, 'memoryFacts'>): Proj
     {
       id: 'manager-style-war-room',
       title: 'War Room support pattern',
-      body: 'When live support is relevant during Stargazer support hours after 14:15 UTC on weekdays, tell contributors to join the War Room and then join the breakout room called Stargazer - Team. On weekends, say the War Room is closed and ask them to come back Monday between 14:15 and 22:00 UTC.',
+      body: 'When live support is relevant during Stargazer support hours after 07:15 PST on weekdays, tell contributors to join the War Room and then join the breakout room called Stargazer - Team. On weekends, say the War Room is closed and ask them to come back Monday between 07:15 and 15:00 PST.',
       source,
     },
     {

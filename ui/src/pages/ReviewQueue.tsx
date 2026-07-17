@@ -13,16 +13,7 @@ import {
 import { api, type ReviewQueueItem, type ReviewQueueResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-function formatUtcDate(value: string): string {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
+import { APP_TIME_ZONE_LABEL, formatAppDateTime } from '@/lib/timezone';
 
 function priorityClass(priority: ReviewQueueItem['priority']): string {
   if (priority === 'high') return 'sg-status-danger';
@@ -87,7 +78,7 @@ function QueueItem({
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Run {formatUtcDate(item.runAt)} UTC
+            Run {formatAppDateTime(item.runAt)} {APP_TIME_ZONE_LABEL}
             {item.channelId ? ` · Channel ${item.channelId}` : ''}
             {item.messageId ? ` · Message ${item.messageId}` : ''}
           </p>
@@ -191,7 +182,7 @@ export default function ReviewQueue() {
             <IconAlertTriangle className="size-5 text-primary" />
             <h1 className="text-2xl font-semibold text-foreground">Human Review Queue</h1>
           </div>
-          {result && <p className="mt-2 text-sm text-muted-foreground">Updated {formatUtcDate(result.generatedAt)} UTC</p>}
+          {result && <p className="mt-2 text-sm text-muted-foreground">Updated {formatAppDateTime(result.generatedAt)} {APP_TIME_ZONE_LABEL}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setShowClosed((value) => !value)} variant={showClosed ? 'secondary' : 'outline'}>

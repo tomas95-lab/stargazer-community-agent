@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { GraduationCap, Video } from 'lucide-react';
 import { api } from '../api';
 import type { Webinar } from '../api';
+import { appDateTimeToDate } from '@/lib/timezone';
 
 function SyncButton() {
 
@@ -73,7 +74,7 @@ export default function WebinarScheduler() {
 
   const save = async () => {
     if (!form.title || !form.date || !form.timeUtc || !form.link) {
-      setError('Title, date, time (UTC) and link are required.');
+      setError('Title, date, time (PST) and link are required.');
       return;
     }
     setSaving(true);
@@ -101,11 +102,11 @@ export default function WebinarScheduler() {
   };
 
   const upcoming = webinars
-    .filter((w) => new Date(`${w.date}T${w.timeUtc}:00Z`) >= new Date())
+    .filter((w) => appDateTimeToDate(w.date, w.timeUtc) >= new Date())
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const past = webinars
-    .filter((w) => new Date(`${w.date}T${w.timeUtc}:00Z`) < new Date())
+    .filter((w) => appDateTimeToDate(w.date, w.timeUtc) < new Date())
     .sort((a, b) => b.date.localeCompare(a.date));
 
   const inputCls = 'sg-input px-3 py-2 text-sm';
@@ -171,21 +172,21 @@ export default function WebinarScheduler() {
           </div>
 
           <div>
-            <label className={labelCls}>Time (UTC)</label>
+            <label className={labelCls}>Time (PST)</label>
             <input
               type="time"
               className={inputCls}
               value={form.timeUtc}
               onChange={(e) => setForm({ ...form, timeUtc: e.target.value })}
             />
-            <p className="mt-1 text-xs text-muted-foreground">Use UTC for all scheduled times.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Use PST for all scheduled times.</p>
           </div>
 
           <div className="sm:col-span-2">
             <label className={labelCls}>Time Label (display)</label>
             <input
               className={inputCls}
-              placeholder="e.g. 15:30 UTC"
+              placeholder="e.g. 08:30 PST"
               value={form.timeLabel}
               onChange={(e) => setForm({ ...form, timeLabel: e.target.value })}
             />

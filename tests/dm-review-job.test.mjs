@@ -18,22 +18,22 @@ function message(id, username, createdAt, text = 'hello') {
 
 const ownUsername = 'manager.user';
 
-test('DM review window follows the current UTC day', () => {
+test('DM review window follows the current PST day', () => {
   const window = getUtcDayWindow(new Date('2026-07-06T18:30:00.000Z'));
 
   assert.equal(window.utcDate, '2026-07-06');
-  assert.equal(window.startUtc, '2026-07-06T00:00:00.000Z');
-  assert.equal(window.endUtc, '2026-07-07T00:00:00.000Z');
+  assert.equal(window.startUtc, '2026-07-06T07:00:00.000Z');
+  assert.equal(window.endUtc, '2026-07-07T07:00:00.000Z');
 });
 
-test('DM review keeps only incoming messages from today in UTC', () => {
+test('DM review keeps only incoming messages from today in PST', () => {
   const window = getUtcDayWindow(new Date('2026-07-06T18:30:00.000Z'));
   const filtered = filterTodayIncomingDmMessages(
     [
       message(1, 'latam.coder1232', '2026-07-05T17:51:31.000Z', 'yesterday reference'),
-      message(2, 'latam.coder1232', '2026-07-06T03:01:00.000Z', 'today incoming'),
+      message(2, 'latam.coder1232', '2026-07-06T08:01:00.000Z', 'today incoming'),
       message(3, ownUsername, '2026-07-06T12:00:00.000Z', 'own response'),
-      message(4, 'latam.coder1232', '2026-07-07T03:00:00.000Z', 'next UTC day'),
+      message(4, 'latam.coder1232', '2026-07-07T08:00:00.000Z', 'next PST day'),
     ],
     ownUsername,
     window

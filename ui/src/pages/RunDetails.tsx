@@ -4,6 +4,7 @@ import { api, type OperationDetailResult, type OperationLogEntry } from '../api'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { formatAppDateTime } from '@/lib/timezone';
 
 type DetailRecord = Record<string, unknown>;
 type DetailItem = Record<string, unknown>;
@@ -26,13 +27,7 @@ function asNumber(value: unknown, fallback = 0): number {
 
 function formatTime(value?: string): string {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
+  return formatAppDateTime(value);
 }
 
 function statusClass(status: OperationLogEntry['status'] | string): string {
@@ -123,7 +118,7 @@ function CommunityDetail({ detail }: { detail: DetailRecord }) {
             const status = decision
               ? asString(decision.action)
               : probableReplies.length > 0
-                ? 'answered'
+                ? 'has replies'
                 : candidateIds.has(id)
                   ? 'candidate'
                   : 'ignored';
@@ -148,9 +143,9 @@ function CommunityDetail({ detail }: { detail: DetailRecord }) {
                     <p className="mt-1 text-sm text-foreground">{ignoredReason}</p>
                   </div>
                 )}
-                {!decision && status === 'answered' && probableReplies.length > 0 && (
+                {!decision && status === 'has replies' && probableReplies.length > 0 && (
                   <div className="mt-3 rounded-md border border-border bg-muted/40 p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Probable reply found</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Reply evidence found</p>
                     <p className="mt-1 text-sm text-foreground">
                       {asString(probableReplies[0].username, 'unknown')}: {asString(probableReplies[0].message)}
                     </p>

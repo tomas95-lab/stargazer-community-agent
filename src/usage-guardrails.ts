@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { readDataJSON, writeDataJSON } from './data-store';
 import { getProjectContext } from './project-context';
+import { appDateParts } from './timezone';
 
 const FILE = 'output/ai-usage-state.json';
 const MAX_EVENTS = 1000;
@@ -48,16 +49,7 @@ interface AiUsageState {
 }
 
 function utcDate(now = new Date()): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'UTC',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(now);
-  const year = parts.find((part) => part.type === 'year')?.value || '0000';
-  const month = parts.find((part) => part.type === 'month')?.value || '00';
-  const day = parts.find((part) => part.type === 'day')?.value || '00';
-  return `${year}-${month}-${day}`;
+  return appDateParts(now).label;
 }
 
 function numericEnv(key: string): number | null {

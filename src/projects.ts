@@ -187,7 +187,7 @@ export function defaultProjectConfig(): ProjectConfig {
       minConfidence: 0.5,
     },
     support: {
-      timezone: 'UTC',
+      timezone: 'PST',
       weekdays: [1, 2, 3, 4, 5],
       warRoomOpenTime: '',
       startTime: '00:00',
