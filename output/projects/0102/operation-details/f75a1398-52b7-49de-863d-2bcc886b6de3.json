@@ -1,0 +1,211 @@
+{
+  "entry": {
+    "id": "f75a1398-52b7-49de-863d-2bcc886b6de3",
+    "at": "2026-07-17T19:55:24.140Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 6,
+      "candidates": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "candidateUsers": [],
+      "postedUsers": [],
+      "reactedUsers": [],
+      "humanUsers": [],
+      "errors": []
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": false,
+      "react": false,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": false,
+      "skipProcessed": false,
+      "markProcessed": false,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "suggestion",
+      "checked": 6,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": false,
+      "window": {
+        "utcDate": "2026-07-17",
+        "argentinaDate": "2026-07-17",
+        "startUtc": "2026-07-17T00:00:00.000Z",
+        "endUtc": "2026-07-18T00:00:00.000Z",
+        "operatingHours": "Agent scans the current UTC day. Live-support hours come from project guidelines or project memory."
+      },
+      "items": [
+        {
+          "id": "community:27801063",
+          "source": "community",
+          "username": "jesus.israel",
+          "message": "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n\n:police_car_light: WAR ROOMS THREAD 07/17/2026 :police_car_light:\n\nThese are the available war rooms sessions. Please note that QMs may not always be present; however, the LC community is encouraged to support each other.\n\nWe also recommend checking the different breakout rooms during some of the calls, as this may help you connect with other contributors/QMs.\n\nIf you encounter any issues with a Zoom session, please tag @manuel.grajales, @lenny.brown, @RADamaris or @jesus.israel in the comments so we can address it promptly.\n\n--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------",
+          "createdAt": "2026-07-17T13:48:25Z",
+          "chatMessageId": 27801063,
+          "threadId": 1507249,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Announcement or thread root, not a contributor support request."
+        },
+        {
+          "id": "community:27804195",
+          "source": "community",
+          "username": "lenny.brown",
+          "message": "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n\nHi Team!\n\nThese CBs have **hil_sandbox** assigned! To proceed, you will need to join the **War Room** so you can coordinate directly with the project team and complete your onboarding.\n\nAt this time, there is no scheduled onboarding session. Instead, you may join the War Room whenever it is convenient for you and reach out to any of the available **QMs** in the Zoom. They will be able to assist you with the onboarding process!\n\n**List in thread**\n\n> War room - **hil_sandbox**\n> Link: [Meeting Registration -Zoom](https://outlier-ai.zoom.us/j/95330459410?pwd=WnkJA5JTmwg7LcoA2HiiSXUfeuu3P2.1)\n> QMs: Yamil Moreno, Carlos Vasquez\n\nGracias / Obrigado!\nAbrazo / Abraço :people_hugging:",
+          "createdAt": "2026-07-17T17:45:41Z",
+          "chatMessageId": 27804195,
+          "threadId": 1507423,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Announcement or thread root, not a contributor support request."
+        },
+        {
+          "id": "community:27805541",
+          "source": "community",
+          "username": "lucas.maiztegui",
+          "message": "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n\nTeam!\n\nAs many of you have probably noticed, several projects have been wrapping up over the past few days, and some of you may be seeing more empty-queue (EQ) time than usual.\n\nWe wanted to reach out ahead of time so you're not caught off guard: **a few of you might be temporarily without an active project** in the coming days. Please don't worry — this is just a short transition. We already have new projects lined up to start over the next days/weeks, and there's a lot of work on the way.\n\n**No need to open a ticket if you're in EQ right now.** We already know who's currently without a project, and we're actively working on the best way to reassign everyone. We'll keep you posted right here as soon as the new projects go live. 🙌\n\nAll we ask for is a little patience while things ramp back up. 🙏\n\nThank you, as always, for the effort you consistently put in. The team is stronger than ever, and we're excited to keep growing together. 💪\n\nGracias / Obrigado!\nAbrazo / Abraço :people_hugging:",
+          "createdAt": "2026-07-17T19:38:39Z",
+          "chatMessageId": 27805541,
+          "threadId": 1507521,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Announcement or thread root, not a contributor support request."
+        },
+        {
+          "id": "community:27801153",
+          "source": "community",
+          "username": "jesus.israel",
+          "message": ">**meridian_finance**\n>**War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/94343599152?pwd=IP9JxRhjcG1e20Rub539OqMqjQHVw8.1)\n> STO: Ivan Seira\n>**Onboarding**\n>Time: Friday Jul 17, 2026 1:00PM CST \n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/98110487860?pwd=Wt5fsorsaVK39acvKaLik1c6bhAKZM.1)\n\n\n>**mime_orchard**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/92101558941?pwd=im1NHoyRr9eGglTQRPJJReSuPLjAAl.1)\n>Channel: mime_orchard_attempters\n> STO: Pablo Caneva\n\n>**terminal_bench**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/96496579374?pwd=99n2AXPmRBKMImSvMshETGWRIl1Mqn.1)\n> STO: Paavnee Chauhan\n\n>**outcome_ladybug**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/95415309058?pwd=FYnSrp8bLoIZH5v91hjZOuHk46Qwqq.1)\n> STO: Aldo Vergara\n\n>**rangutan_encyclopedia**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/93565125716?pwd=TyJPbBaNzYmS6qb9v67Ppdy6YcWxMs.1)\n> STO: Oluwasegun Madarikan\n\n>**stargazer_axiom**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1)\n>Time: The war room runs every day from 10:30am - 18:30  arg time\n> STO: Sebastian Ariel Toranzo\n\n>**mj_blue_shell**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/99182767235?pwd=4qgWUgrc5FhO9jswOhxEAWVW64IMrz.1)\n> STO: Daniela Ortiz\n\n> **opposite_classic**\n> **War Room**\n> Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/92838497516?pwd=AbecZ1sG92l8JA7DAMZhKa6HMi0dxj.1)\n> STO: Gautam Anand\n\n>**mailbox_ring**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1)\n> STO: Sebastian Ariel Toranzo\n\n>**deep_repo**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/93310491744?pwd=OUm2aFsN4wv0pZdJczbHYbZdOkNHg9.1)\n> STO: Ezequiel Manoukian\n\n>**test_writing_cae**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/97692495552?pwd=pizhUWqzTWpGK8FaYvPpDDa7csb2pa.1)\n> STO: ignacio.ramet\n\n>**stellar_protocol_droid**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/91662020768?pwd=aq2hpmb344Q4pVvNhHQyMTV6SeflMf.1)\n> STO: Johannes Mols\n\n\n>**guard_bench**\n> **War Room**\n>Time: The war room runs every day from 1:00 PM to 11:00 PM (ARGENTINA TIME)\n>Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/95665404264?pwd=d65Vf7XcF6iDMXb33C6aUVHIH2kmxT.1)\n> STO: Ernesto Hernandez\n\n>**openclaw_atlas**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/95803541392?pwd=gmOgvxILtNpZ9EGIbhe9NTaNhlKSEt.1)\n> STO: Mila Avagimova",
+          "createdAt": "2026-07-17T13:57:58Z",
+          "chatMessageId": 27801153,
+          "threadId": 1507249,
+          "replyToChatMessageId": 27801063,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Announcement or thread root, not a contributor support request."
+        },
+        {
+          "id": "community:27804196",
+          "source": "community",
+          "username": "lenny.brown",
+          "message": "[latam.coder758@remotasks.com](mailto:latam.coder758@remotasks.com)+outlier\n\n[pilots-coder373@remotasks.com](mailto:pilots-coder373@remotasks.com)+outlier\n\n[pilots-coder609@remotasks.com](mailto:pilots-coder609@remotasks.com)+outlier\n\n[pilots-coder307@remotasks.com](mailto:pilots-coder307@remotasks.com)+outlier\n\n[pilots-coder378@remotasks.com](mailto:pilots-coder378@remotasks.com)+outlier\n\n[latam.coder2195@outlier.ai](mailto:latam.coder2195@outlier.ai)+outlier\n\n[latam.coder847@remotasks.com](mailto:latam.coder847@remotasks.com)+outlier\n\n[latam.coder1558@remotasks.com](mailto:latam.coder1558@remotasks.com)+outlier\n\n[latam.coder2018@outlier.ai](mailto:latam.coder2018@outlier.ai)+outlier\n\n[latam.coder1034@remotasks.com](mailto:latam.coder1034@remotasks.com)+outlier\n\n[pilots-coder354@remotasks.com](mailto:pilots-coder354@remotasks.com)+outlier\n\n[latam.coder1160@remotasks.com](mailto:latam.coder1160@remotasks.com)+outlier\n\n[latam.coder1820@remotasks.com](mailto:latam.coder1820@remotasks.com)+outlier\n\n[latam.coder2224@outlier.ai](mailto:latam.coder2224@outlier.ai)+outlier\n\n[pilots-coder088@remotasks.com](mailto:pilots-coder088@remotasks.com)+outlier",
+          "createdAt": "2026-07-17T17:45:56Z",
+          "chatMessageId": 27804196,
+          "threadId": 1507423,
+          "replyToChatMessageId": 27804195,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "No question, support, or useful contribution signal detected."
+        },
+        {
+          "id": "community:27805568",
+          "source": "community",
+          "username": "pilots-coder623",
+          "message": "Thank you very much for letting us know, and especially for all the support! Cheers to all the support team! 🫡",
+          "createdAt": "2026-07-17T19:41:32Z",
+          "chatMessageId": 27805568,
+          "threadId": 1507521,
+          "replyToChatMessageId": 27805541,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "No question, support, or useful contribution signal detected."
+        }
+      ],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27801063",
+        "source": "community",
+        "username": "jesus.israel",
+        "message": "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n\n:police_car_light: WAR ROOMS THREAD 07/17/2026 :police_car_light:\n\nThese are the available war rooms sessions. Please note that QMs may not always be present; however, the LC community is encouraged to support each other.\n\nWe also recommend checking the different breakout rooms during some of the calls, as this may help you connect with other contributors/QMs.\n\nIf you encounter any issues with a Zoom session, please tag @manuel.grajales, @lenny.brown, @RADamaris or @jesus.israel in the comments so we can address it promptly.\n\n--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------",
+        "createdAt": "2026-07-17T13:48:25Z",
+        "chatMessageId": 27801063,
+        "threadId": 1507249,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Announcement or thread root, not a contributor support request."
+      },
+      {
+        "id": "community:27804195",
+        "source": "community",
+        "username": "lenny.brown",
+        "message": "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n\nHi Team!\n\nThese CBs have **hil_sandbox** assigned! To proceed, you will need to join the **War Room** so you can coordinate directly with the project team and complete your onboarding.\n\nAt this time, there is no scheduled onboarding session. Instead, you may join the War Room whenever it is convenient for you and reach out to any of the available **QMs** in the Zoom. They will be able to assist you with the onboarding process!\n\n**List in thread**\n\n> War room - **hil_sandbox**\n> Link: [Meeting Registration -Zoom](https://outlier-ai.zoom.us/j/95330459410?pwd=WnkJA5JTmwg7LcoA2HiiSXUfeuu3P2.1)\n> QMs: Yamil Moreno, Carlos Vasquez\n\nGracias / Obrigado!\nAbrazo / Abraço :people_hugging:",
+        "createdAt": "2026-07-17T17:45:41Z",
+        "chatMessageId": 27804195,
+        "threadId": 1507423,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Announcement or thread root, not a contributor support request."
+      },
+      {
+        "id": "community:27805541",
+        "source": "community",
+        "username": "lucas.maiztegui",
+        "message": "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n\nTeam!\n\nAs many of you have probably noticed, several projects have been wrapping up over the past few days, and some of you may be seeing more empty-queue (EQ) time than usual.\n\nWe wanted to reach out ahead of time so you're not caught off guard: **a few of you might be temporarily without an active project** in the coming days. Please don't worry — this is just a short transition. We already have new projects lined up to start over the next days/weeks, and there's a lot of work on the way.\n\n**No need to open a ticket if you're in EQ right now.** We already know who's currently without a project, and we're actively working on the best way to reassign everyone. We'll keep you posted right here as soon as the new projects go live. 🙌\n\nAll we ask for is a little patience while things ramp back up. 🙏\n\nThank you, as always, for the effort you consistently put in. The team is stronger than ever, and we're excited to keep growing together. 💪\n\nGracias / Obrigado!\nAbrazo / Abraço :people_hugging:",
+        "createdAt": "2026-07-17T19:38:39Z",
+        "chatMessageId": 27805541,
+        "threadId": 1507521,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Announcement or thread root, not a contributor support request."
+      },
+      {
+        "id": "community:27801153",
+        "source": "community",
+        "username": "jesus.israel",
+        "message": ">**meridian_finance**\n>**War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/94343599152?pwd=IP9JxRhjcG1e20Rub539OqMqjQHVw8.1)\n> STO: Ivan Seira\n>**Onboarding**\n>Time: Friday Jul 17, 2026 1:00PM CST \n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/98110487860?pwd=Wt5fsorsaVK39acvKaLik1c6bhAKZM.1)\n\n\n>**mime_orchard**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/92101558941?pwd=im1NHoyRr9eGglTQRPJJReSuPLjAAl.1)\n>Channel: mime_orchard_attempters\n> STO: Pablo Caneva\n\n>**terminal_bench**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/96496579374?pwd=99n2AXPmRBKMImSvMshETGWRIl1Mqn.1)\n> STO: Paavnee Chauhan\n\n>**outcome_ladybug**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/95415309058?pwd=FYnSrp8bLoIZH5v91hjZOuHk46Qwqq.1)\n> STO: Aldo Vergara\n\n>**rangutan_encyclopedia**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/93565125716?pwd=TyJPbBaNzYmS6qb9v67Ppdy6YcWxMs.1)\n> STO: Oluwasegun Madarikan\n\n>**stargazer_axiom**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1)\n>Time: The war room runs every day from 10:30am - 18:30  arg time\n> STO: Sebastian Ariel Toranzo\n\n>**mj_blue_shell**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/99182767235?pwd=4qgWUgrc5FhO9jswOhxEAWVW64IMrz.1)\n> STO: Daniela Ortiz\n\n> **opposite_classic**\n> **War Room**\n> Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/92838497516?pwd=AbecZ1sG92l8JA7DAMZhKa6HMi0dxj.1)\n> STO: Gautam Anand\n\n>**mailbox_ring**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/91510346485?pwd=IEPPxvhcHt1W25AXq01eMC3Ynn5SsO.1)\n> STO: Sebastian Ariel Toranzo\n\n>**deep_repo**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/93310491744?pwd=OUm2aFsN4wv0pZdJczbHYbZdOkNHg9.1)\n> STO: Ezequiel Manoukian\n\n>**test_writing_cae**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/97692495552?pwd=pizhUWqzTWpGK8FaYvPpDDa7csb2pa.1)\n> STO: ignacio.ramet\n\n>**stellar_protocol_droid**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/91662020768?pwd=aq2hpmb344Q4pVvNhHQyMTV6SeflMf.1)\n> STO: Johannes Mols\n\n\n>**guard_bench**\n> **War Room**\n>Time: The war room runs every day from 1:00 PM to 11:00 PM (ARGENTINA TIME)\n>Link: [Meeting Registration - Zoom](https://scale.zoom.us/j/95665404264?pwd=d65Vf7XcF6iDMXb33C6aUVHIH2kmxT.1)\n> STO: Ernesto Hernandez\n\n>**openclaw_atlas**\n> **War Room**\n>Link: [Meeting Registration - Zoom](https://outlier-ai.zoom.us/j/95803541392?pwd=gmOgvxILtNpZ9EGIbhe9NTaNhlKSEt.1)\n> STO: Mila Avagimova",
+        "createdAt": "2026-07-17T13:57:58Z",
+        "chatMessageId": 27801153,
+        "threadId": 1507249,
+        "replyToChatMessageId": 27801063,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Announcement or thread root, not a contributor support request."
+      },
+      {
+        "id": "community:27804196",
+        "source": "community",
+        "username": "lenny.brown",
+        "message": "[latam.coder758@remotasks.com](mailto:latam.coder758@remotasks.com)+outlier\n\n[pilots-coder373@remotasks.com](mailto:pilots-coder373@remotasks.com)+outlier\n\n[pilots-coder609@remotasks.com](mailto:pilots-coder609@remotasks.com)+outlier\n\n[pilots-coder307@remotasks.com](mailto:pilots-coder307@remotasks.com)+outlier\n\n[pilots-coder378@remotasks.com](mailto:pilots-coder378@remotasks.com)+outlier\n\n[latam.coder2195@outlier.ai](mailto:latam.coder2195@outlier.ai)+outlier\n\n[latam.coder847@remotasks.com](mailto:latam.coder847@remotasks.com)+outlier\n\n[latam.coder1558@remotasks.com](mailto:latam.coder1558@remotasks.com)+outlier\n\n[latam.coder2018@outlier.ai](mailto:latam.coder2018@outlier.ai)+outlier\n\n[latam.coder1034@remotasks.com](mailto:latam.coder1034@remotasks.com)+outlier\n\n[pilots-coder354@remotasks.com](mailto:pilots-coder354@remotasks.com)+outlier\n\n[latam.coder1160@remotasks.com](mailto:latam.coder1160@remotasks.com)+outlier\n\n[latam.coder1820@remotasks.com](mailto:latam.coder1820@remotasks.com)+outlier\n\n[latam.coder2224@outlier.ai](mailto:latam.coder2224@outlier.ai)+outlier\n\n[pilots-coder088@remotasks.com](mailto:pilots-coder088@remotasks.com)+outlier",
+        "createdAt": "2026-07-17T17:45:56Z",
+        "chatMessageId": 27804196,
+        "threadId": 1507423,
+        "replyToChatMessageId": 27804195,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "No question, support, or useful contribution signal detected."
+      },
+      {
+        "id": "community:27805568",
+        "source": "community",
+        "username": "pilots-coder623",
+        "message": "Thank you very much for letting us know, and especially for all the support! Cheers to all the support team! 🫡",
+        "createdAt": "2026-07-17T19:41:32Z",
+        "chatMessageId": 27805568,
+        "threadId": 1507521,
+        "replyToChatMessageId": 27805541,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "No question, support, or useful contribution signal detected."
+      }
+    ],
+    "candidates": [],
+    "decisions": []
+  }
+}

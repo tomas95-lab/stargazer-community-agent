@@ -1,0 +1,23 @@
+{
+  "updatedAt": "2026-07-17T19:43:26.681Z",
+  "facts": [
+    {
+      "id": "language",
+      "title": "Support language",
+      "body": "All user-facing community and DM replies must be written in English.",
+      "source": "platform default"
+    },
+    {
+      "id": "style",
+      "title": "Writing style",
+      "body": "Do not use the em dash character. Use commas, parentheses, or a regular hyphen instead.",
+      "source": "platform default"
+    },
+    {
+      "id": "project-name",
+      "title": "Project name",
+      "body": "The active project is Latam coders.",
+      "source": "project settings"
+    }
+  ]
+}
