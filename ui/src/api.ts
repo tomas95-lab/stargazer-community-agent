@@ -443,6 +443,59 @@ export interface ReviewQueueResult {
   };
 }
 
+export interface DailySummaryActivity {
+  id: string;
+  at: string;
+  action: string;
+  status: 'success' | 'error' | 'skipped';
+  message: string;
+}
+
+export interface DailySummaryPerson {
+  username: string;
+  source: 'community' | 'dm';
+  reason: string;
+  message?: string;
+  confidence?: number;
+}
+
+export interface DailySummaryError {
+  id: string;
+  at: string;
+  action: string;
+  message: string;
+}
+
+export interface DailySummaryResult {
+  mode: 'daily-summary';
+  generatedAt: string;
+  utcDate: string;
+  window: {
+    startUtc: string;
+    endUtc: string;
+  };
+  totals: {
+    runs: number;
+    errors: number;
+    dailyThreadsPublished: number;
+    communityMessagesChecked: number;
+    communityCandidates: number;
+    communityRepliesPosted: number;
+    communityReactions: number;
+    communityNeedsHuman: number;
+    dmIncomingMessages: number;
+    dmPendingMessages: number;
+    dmAutoReplies: number;
+    dmNeedsHuman: number;
+  };
+  status: 'quiet' | 'healthy' | 'attention';
+  headline: string;
+  highlights: string[];
+  attentionItems: DailySummaryPerson[];
+  recentActivity: DailySummaryActivity[];
+  errors: DailySummaryError[];
+}
+
 export interface SandboxResult {
   mode: 'sandbox';
   generatedAt: string;
@@ -725,6 +778,8 @@ export const api = {
   getOperations: (limit = 50) => request<{ entries: OperationLogEntry[] }>(`/operations?limit=${limit}`),
   getOperationDetail: (id: string) => request<OperationDetailResult>(`/operations/${id}`),
   getReviewQueue: (limit = 150) => request<ReviewQueueResult>(`/review-queue?limit=${limit}`),
+  getDailySummary: (date?: string) =>
+    request<DailySummaryResult>(`/daily-summary${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   evaluateSandboxMessage: (opts: {
     username?: string;
     channel?: string;

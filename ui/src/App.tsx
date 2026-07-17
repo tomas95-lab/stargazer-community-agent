@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { PlatformProvider, usePlatform } from "@/platform"
 import CommsAutomator from "@/pages/CommsAutomator"
 import CommunityAgent from "@/pages/CommunityAgent"
+import DailySummary from "@/pages/DailySummary"
 import Dashboard from "@/pages/Dashboard"
 import DirectMessages from "@/pages/DirectMessages"
 import Help from "@/pages/Help"
@@ -88,6 +89,7 @@ function WorkspaceRoutes() {
                 <Route path="/history" element={<History />} />
                 <Route path="/runs" element={<RunDetails />} />
                 <Route path="/review" element={<ReviewQueue />} />
+                <Route path="/summary" element={<DailySummary />} />
                 <Route path="/sandbox" element={<TestingSandbox />} />
                 <Route path="/memory" element={<ProjectMemoryPage />} />
                 <Route path="/help" element={<Help />} />

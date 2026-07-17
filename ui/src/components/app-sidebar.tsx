@@ -15,6 +15,7 @@ import {
   IconLogs,
   IconMessage,
   IconPencil,
+  IconReportAnalytics,
   IconRobot,
   IconSettings,
 } from "@tabler/icons-react"
@@ -70,6 +71,11 @@ const data = {
       title: "Review Queue",
       url: "/review",
       icon: IconAlertTriangle,
+    },
+    {
+      title: "Daily Summary",
+      url: "/summary",
+      icon: IconReportAnalytics,
     },
     {
       title: "Sessions",
