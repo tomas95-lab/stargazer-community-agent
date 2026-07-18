@@ -1,0 +1,56 @@
+{
+  "entry": {
+    "id": "677a950a-0f79-4f54-b405-c08460b5c108",
+    "at": "2026-07-18T19:00:08.821Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-18",
+        "argentinaDate": "2026-07-18",
+        "startUtc": "2026-07-18T07:00:00.000Z",
+        "endUtc": "2026-07-19T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": true,
+      "react": false,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": true,
+      "skipProcessed": true,
+      "markProcessed": true,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "post",
+      "checked": 0,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": false,
+      "window": {
+        "utcDate": "2026-07-18",
+        "argentinaDate": "2026-07-18",
+        "startUtc": "2026-07-18T07:00:00.000Z",
+        "endUtc": "2026-07-19T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      },
+      "items": [],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [],
+    "candidates": [],
+    "decisions": []
+  }
+}
