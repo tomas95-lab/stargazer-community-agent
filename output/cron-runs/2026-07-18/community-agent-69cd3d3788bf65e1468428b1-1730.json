@@ -4,6 +4,7 @@
   "slot": "1730",
   "utcDate": "2026-07-18",
   "argentinaDate": "2026-07-18",
-  "status": "running",
-  "startedAt": "2026-07-18T20:30:06.464Z"
+  "status": "completed",
+  "startedAt": "2026-07-18T20:30:06.464Z",
+  "completedAt": "2026-07-18T20:30:09.434Z"
 }
