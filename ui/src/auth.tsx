@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 
+import { AUTH_SESSION_INVALID_EVENT } from "@/auth-events"
 import { supabase, supabaseConfigured } from "@/lib/supabase"
 
 interface AuthContextValue {
@@ -24,20 +25,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    const client = supabase
     let mounted = true
-    supabase.auth.getSession().then(({ data }) => {
+    const clearLocalWorkspace = () => {
+      window.localStorage.removeItem("qm_active_project_id")
+    }
+    const handleInvalidSession = () => {
+      clearLocalWorkspace()
+      setSession(null)
+      setLoading(false)
+      void client.auth.signOut({ scope: "local" }).catch(() => undefined)
+    }
+
+    window.addEventListener(AUTH_SESSION_INVALID_EVENT, handleInvalidSession)
+
+    client.auth.getSession().then(({ data }) => {
       if (!mounted) return
       setSession(data.session)
       setLoading(false)
     })
 
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       setLoading(false)
     })
 
     return () => {
       mounted = false
+      window.removeEventListener(AUTH_SESSION_INVALID_EVENT, handleInvalidSession)
       data.subscription.unsubscribe()
     }
   }, [])
@@ -49,6 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user || null,
       signOut: async () => {
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem("qm_active_project_id")
+        }
         if (supabase) {
           await supabase.auth.signOut()
         }

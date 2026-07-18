@@ -225,6 +225,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   }, [activeDraftKey, form])
 
   useEffect(() => {
+    if (!user) return
+
     const params = new URLSearchParams(location.search)
     const discourse = params.get("discourse")
     const callbackMessage = params.get("message")
@@ -239,7 +241,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         }
       })
       .catch(() => undefined)
-  }, [location.search])
+  }, [location.search, user])
 
   const title = editing ? "Project settings" : "Set up your project"
   const description = editing

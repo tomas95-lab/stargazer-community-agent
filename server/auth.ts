@@ -41,6 +41,13 @@ function requestedProjectId(req: Request): string {
   return (header || query).trim();
 }
 
+function shouldResolveProjectContext(req: Request): boolean {
+  return !(
+    req.originalUrl.startsWith('/api/platform') ||
+    req.originalUrl.startsWith('/api/discourse-auth')
+  );
+}
+
 export function isAdminAuthConfigured(): boolean {
   return Boolean(process.env.ADMIN_TOKEN || isPlatformConfigured());
 }
@@ -69,7 +76,7 @@ export async function attachProjectContext(req: Request, res: Response, next: Ne
 
     const user = await getRequestUser(req);
     let project: QmProjectRow | null = null;
-    const projectId = requestedProjectId(req);
+    const projectId = shouldResolveProjectContext(req) ? requestedProjectId(req) : '';
 
     if (user) {
       project = await getActiveUserProject(user.id, projectId || undefined);

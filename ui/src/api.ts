@@ -1,4 +1,5 @@
 import { getSupabaseAccessToken } from "@/lib/supabase";
+import { AUTH_SESSION_INVALID_EVENT } from "@/auth-events";
 
 const BASE = '/api';
 const ADMIN_TOKEN_KEY = 'stargazer_admin_token';
@@ -34,7 +35,17 @@ function setStoredProjectId(projectId: string): void {
   }
 }
 
-async function request<T>(path: string, opts?: RequestInit): Promise<T> {
+function isAuthSessionError(message: string): boolean {
+  return /auth session missing|authentication required|invalid supabase session|jwt|token/i.test(message);
+}
+
+function notifyInvalidAuthSession(message: string): void {
+  if (typeof window === 'undefined') return;
+  projectSelection.clearProjectId();
+  window.dispatchEvent(new CustomEvent(AUTH_SESSION_INVALID_EVENT, { detail: { message } }));
+}
+
+async function request<T>(path: string, opts?: RequestInit, retryStaleProject = true): Promise<T> {
   const token = getStoredAdminToken();
   const accessToken = await getSupabaseAccessToken();
   const projectId = getStoredProjectId();
@@ -52,7 +63,15 @@ async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || res.statusText);
+    const message = body.error || res.statusText;
+    if (res.status === 404 && projectId && message === 'Project not found.' && retryStaleProject) {
+      projectSelection.clearProjectId();
+      return request<T>(path, opts, false);
+    }
+    if (res.status === 401 && isAuthSessionError(message)) {
+      notifyInvalidAuthSession(message);
+    }
+    throw new Error(message);
   }
   return res.json();
 }
