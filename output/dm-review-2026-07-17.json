@@ -1,12 +1,12 @@
 {
   "mode": "dm-review",
   "scanMode": "full",
-  "generatedAt": "2026-07-17T18:30:18.098Z",
+  "generatedAt": "2026-07-17T21:00:20.896Z",
   "window": {
     "utcDate": "2026-07-17",
     "argentinaDate": "2026-07-17",
-    "startUtc": "2026-07-17T00:00:00.000Z",
-    "endUtc": "2026-07-18T00:00:00.000Z"
+    "startUtc": "2026-07-17T07:00:00.000Z",
+    "endUtc": "2026-07-18T07:00:00.000Z"
   },
   "totalDirectChannels": 59,
   "scannedChannels": 5,
