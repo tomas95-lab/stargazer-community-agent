@@ -1,5 +1,21 @@
 [
   {
+    "id": "936cc4a1-92ee-4a8d-90da-e74f86d5bcf8",
+    "at": "2026-07-19T19:00:07.677Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-19",
+        "argentinaDate": "2026-07-19",
+        "startUtc": "2026-07-19T07:00:00.000Z",
+        "endUtc": "2026-07-20T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  {
     "id": "4941e062-70e4-4ad3-86af-09c9b5646205",
     "at": "2026-07-19T18:30:21.914Z",
     "action": "cron_request",
