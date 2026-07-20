@@ -1,0 +1,163 @@
+{
+  "entry": {
+    "id": "739aeefb-ff04-46d2-ac90-7d86db604d86",
+    "at": "2026-07-20T19:54:55.627Z",
+    "action": "community_agent",
+    "status": "success",
+    "message": "Community agent run in suggestion mode",
+    "metadata": {
+      "checked": 2,
+      "candidates": 1,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 1,
+      "candidateUsers": [
+        "latam.coder2306"
+      ],
+      "postedUsers": [],
+      "reactedUsers": [],
+      "humanUsers": [
+        "latam.coder2306"
+      ],
+      "errors": []
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": false,
+      "react": false,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": false,
+      "skipProcessed": false,
+      "markProcessed": false,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "suggestion",
+      "checked": 2,
+      "candidates": 1,
+      "handled": 1,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 1,
+      "ignored": 0,
+      "withinSchedule": false,
+      "window": {
+        "utcDate": "2026-07-20",
+        "argentinaDate": "2026-07-20",
+        "startUtc": "2026-07-20T07:00:00.000Z",
+        "endUtc": "2026-07-21T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      },
+      "items": [
+        {
+          "id": "community:27819320",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-20/2905263) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Docker & Scripts**, with a reminder about **instance.Dockerfile must never define ENTRYPOINT or CMD.**.\n\nQuick rule: ENTRYPOINT in instance.Dockerfile = instant template violation.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-20T13:00:11Z",
+          "chatMessageId": 27819320,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+        },
+        {
+          "id": "community:27819824",
+          "source": "community",
+          "username": "latam.coder2306",
+          "message": "@tomas.ruiz_OBIC can it be my priority project? I'd like a second try at the project getting the insights from the last feedback",
+          "createdAt": "2026-07-20T14:01:43Z",
+          "chatMessageId": 27819824,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": []
+        }
+      ],
+      "decisions": [
+        {
+          "itemId": "community:27819824",
+          "source": "community",
+          "username": "latam.coder2306",
+          "message": "@tomas.ruiz_OBIC can it be my priority project? I'd like a second try at the project getting the insights from the last feedback",
+          "posted": false,
+          "reacted": false,
+          "needsHuman": true,
+          "action": "human",
+          "confidence": 0.3,
+          "reason": "The request involves account policy, project assignment eligibility, and personal status decisions that are not covered in project memory or guidelines. This requires a manager or team lead decision about prioritization and retry eligibility.",
+          "reply": "",
+          "guidelineSnippets": [
+            "None\nIt is important to organize the project with a clear and consistent structure from the start.\nThis will make it easier to manage the repository, track the issue and fix, and ensure that\neverything runs correctly.\n(MANDATORY) The file structure for this project must look like this:\nproject/\n├── App/\n├── dockerfiles/\n│ ├── base.Dockerfile\n│ ├── instance.Dockerfile\n├── scripts/\n│ ├── run_script.sh\n│ └── parse_results.sh\n└── patches/\n├── gold_patch.patch\n├── test_patch.patch\n└── basetoinstance.patch\n├── test_results.json\nComponent Descriptions (return to TOC\n1. App\n● The project assumes a single repository, cloned directly from GitHub. You can use\nthis folder to clone the repo in your local environment to design issues, create failing\ntests, and generate solution patches.\n2. Dockerfiles\n5\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO",
+            "● Should challenge models like Sonnet 4.6 and Qwen 3.5 27b.\n● Simple and clear, then add complexity if the model succeeds\nPrompt and Rubric Alignment:\nAt the end of the task, you will write a rubric that can be used to grade at a granular level\nhow well the model did in solving your issue. The prompt and the rubric need to be\naligned on their level of specificity. This means:\n● Prompts must explicitly mention filenames, paths, functions, or modules if the rubric\ncriteria reference them. If the rubric lists specific paths or APIs, the prompt must also\ncontain those exact references.\n● It is acceptable to make the prompt unrealistically specific if that is necessary to\nalign with the level of granularity in the rubric and guarantee that the rubric criteria\nunambiguously evaluate the solution\nHow to build a good prompt:\nThe prompt is the foundation of the task. Its quality determines the quality of every\ncomponent built on top of it (test patch, golden patch, and rubrics). Treat this step\ncarefully.\nThe goal of the prompt is to realistically simulate an issue a developer would encounter\nwhile modifying or improving a repository. Write from that perspective: a real request,\ngrounded in the repo, phrased the way a developer would actually phrase it.\nFollow these principles:\n● Write it like a real GitHub issue. The prompt should read like something a\ndeveloper would actually open in a repo focused on one problem or request. Try\nnot to stack multiple unrelated changes, pile on extra features, or ask for several\ndifferent things in the same prompt. One issue, one ask. If you find yourself writing\n\"and also,\" stop and split the idea or cut it.\n● Be clear and concise. State the problem directly. Difficulty should come from the\nrealism of the problem, not from artificial complexity or volume.\n● Eliminate major ambiguity. Before finalizing, reread the prompt and ask whether\ntwo competent developers would interpret the requirements the same way. If not,\ntighten the wording.\n● Use explicit requirements. Every requirement must be concrete enough that it can\nbe verified by a test and satisfied by the gold path solution. Avoid vague language\n(\"make it better,\" \"improve performance\") unless the success criteria are clearly\nimplied by context.\n8\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO",
+            "JSON\n{\n\"phase_1\": [\n{\n\"name\": \"path/to/test/file.f2p.test.js | test title 1\",\n\"status\": \"FAILED\"\n},\n{\n\"name\": \"path/to/test/file.p2p.test.js | test title 2\",\n\"status\": \"PASSED\"\n}\n],\n\"phase_2\": [\n{\n\"name\": \"path/to/test/file.f2p.test.js | test title 1\",\n\"status\": \"PASSED\"\n},\n{\n\"name\": \"path/to/test/file.p2p.test.js | test title 2\",\n\"status\": \"PASSED\"\n}\n],\n\"overall_result\": \"SUCCESS\"\n}\n4.3 Create Base Dockerfile (return to TOC\n● Location: dockerfiles/base.Dockerfile\n● The base Dockerfile is responsible for setting up the original environment as it is\ngiven to you when you open the task, and cloning the repository into /app. All tasks\nmust follow the base.Dockerfile template and assume that the project root inside the\ncontainer is always /app.\nKey requirements:\n● You must not modify the /app setup section or the ENTRYPOINT line.\n● You may only change:\n○ The FROM <base-image>:<tag> line to select an appropriate base image.\n16\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO",
+            "Shell\nThe script will automatically:\n1. Validate the project structure (all required files and directories)\n2. Build the base and instance Docker images from your Dockerfiles\n3. Run the instance container (executing run_script.sh and parse_results.sh)\n4. Parse and validate the test results against the two-phase contract:\n○ Phase 1 (broken state): F2P tests must fail; P2P tests must pass\n○ Phase 2 (fixed state): All tests must pass\nA human-readable summary will be printed to the terminal at the end of the run. If the run\nsucceeds, you will see the overall SUCCESS status. If any step fails, the summary will\nindicate which step failed and why. Here is an example of what you will see after\nexecuting the validation_script:\nThis script will generate both an analysis_results.json file and a terminal output. You will\nhave to paste the table with the results in your task. The part that you will need to paste\nlooks like this:\n============================================================\n<task-name> FAILED (exit XX)\n============================================================\n18\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO"
+          ]
+        }
+      ],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27819320",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-20/2905263) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Docker & Scripts**, with a reminder about **instance.Dockerfile must never define ENTRYPOINT or CMD.**.\n\nQuick rule: ENTRYPOINT in instance.Dockerfile = instant template violation.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-20T13:00:11Z",
+        "chatMessageId": 27819320,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+      },
+      {
+        "id": "community:27819824",
+        "source": "community",
+        "username": "latam.coder2306",
+        "message": "@tomas.ruiz_OBIC can it be my priority project? I'd like a second try at the project getting the insights from the last feedback",
+        "createdAt": "2026-07-20T14:01:43Z",
+        "chatMessageId": 27819824,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      }
+    ],
+    "candidates": [
+      {
+        "id": "community:27819824",
+        "source": "community",
+        "username": "latam.coder2306",
+        "message": "@tomas.ruiz_OBIC can it be my priority project? I'd like a second try at the project getting the insights from the last feedback",
+        "createdAt": "2026-07-20T14:01:43Z",
+        "chatMessageId": 27819824,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      }
+    ],
+    "decisions": [
+      {
+        "itemId": "community:27819824",
+        "source": "community",
+        "username": "latam.coder2306",
+        "message": "@tomas.ruiz_OBIC can it be my priority project? I'd like a second try at the project getting the insights from the last feedback",
+        "posted": false,
+        "reacted": false,
+        "needsHuman": true,
+        "action": "human",
+        "confidence": 0.3,
+        "reason": "The request involves account policy, project assignment eligibility, and personal status decisions that are not covered in project memory or guidelines. This requires a manager or team lead decision about prioritization and retry eligibility.",
+        "reply": "",
+        "guidelineSnippets": [
+          "None\nIt is important to organize the project with a clear and consistent structure from the start.\nThis will make it easier to manage the repository, track the issue and fix, and ensure that\neverything runs correctly.\n(MANDATORY) The file structure for this project must look like this:\nproject/\n├── App/\n├── dockerfiles/\n│ ├── base.Dockerfile\n│ ├── instance.Dockerfile\n├── scripts/\n│ ├── run_script.sh\n│ └── parse_results.sh\n└── patches/\n├── gold_patch.patch\n├── test_patch.patch\n└── basetoinstance.patch\n├── test_results.json\nComponent Descriptions (return to TOC\n1. App\n● The project assumes a single repository, cloned directly from GitHub. You can use\nthis folder to clone the repo in your local environment to design issues, create failing\ntests, and generate solution patches.\n2. Dockerfiles\n5\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO",
+          "● Should challenge models like Sonnet 4.6 and Qwen 3.5 27b.\n● Simple and clear, then add complexity if the model succeeds\nPrompt and Rubric Alignment:\nAt the end of the task, you will write a rubric that can be used to grade at a granular level\nhow well the model did in solving your issue. The prompt and the rubric need to be\naligned on their level of specificity. This means:\n● Prompts must explicitly mention filenames, paths, functions, or modules if the rubric\ncriteria reference them. If the rubric lists specific paths or APIs, the prompt must also\ncontain those exact references.\n● It is acceptable to make the prompt unrealistically specific if that is necessary to\nalign with the level of granularity in the rubric and guarantee that the rubric criteria\nunambiguously evaluate the solution\nHow to build a good prompt:\nThe prompt is the foundation of the task. Its quality determines the quality of every\ncomponent built on top of it (test patch, golden patch, and rubrics). Treat this step\ncarefully.\nThe goal of the prompt is to realistically simulate an issue a developer would encounter\nwhile modifying or improving a repository. Write from that perspective: a real request,\ngrounded in the repo, phrased the way a developer would actually phrase it.\nFollow these principles:\n● Write it like a real GitHub issue. The prompt should read like something a\ndeveloper would actually open in a repo focused on one problem or request. Try\nnot to stack multiple unrelated changes, pile on extra features, or ask for several\ndifferent things in the same prompt. One issue, one ask. If you find yourself writing\n\"and also,\" stop and split the idea or cut it.\n● Be clear and concise. State the problem directly. Difficulty should come from the\nrealism of the problem, not from artificial complexity or volume.\n● Eliminate major ambiguity. Before finalizing, reread the prompt and ask whether\ntwo competent developers would interpret the requirements the same way. If not,\ntighten the wording.\n● Use explicit requirements. Every requirement must be concrete enough that it can\nbe verified by a test and satisfied by the gold path solution. Avoid vague language\n(\"make it better,\" \"improve performance\") unless the success criteria are clearly\nimplied by context.\n8\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO",
+          "JSON\n{\n\"phase_1\": [\n{\n\"name\": \"path/to/test/file.f2p.test.js | test title 1\",\n\"status\": \"FAILED\"\n},\n{\n\"name\": \"path/to/test/file.p2p.test.js | test title 2\",\n\"status\": \"PASSED\"\n}\n],\n\"phase_2\": [\n{\n\"name\": \"path/to/test/file.f2p.test.js | test title 1\",\n\"status\": \"PASSED\"\n},\n{\n\"name\": \"path/to/test/file.p2p.test.js | test title 2\",\n\"status\": \"PASSED\"\n}\n],\n\"overall_result\": \"SUCCESS\"\n}\n4.3 Create Base Dockerfile (return to TOC\n● Location: dockerfiles/base.Dockerfile\n● The base Dockerfile is responsible for setting up the original environment as it is\ngiven to you when you open the task, and cloning the repository into /app. All tasks\nmust follow the base.Dockerfile template and assume that the project root inside the\ncontainer is always /app.\nKey requirements:\n● You must not modify the /app setup section or the ENTRYPOINT line.\n● You may only change:\n○ The FROM <base-image>:<tag> line to select an appropriate base image.\n16\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO",
+          "Shell\nThe script will automatically:\n1. Validate the project structure (all required files and directories)\n2. Build the base and instance Docker images from your Dockerfiles\n3. Run the instance container (executing run_script.sh and parse_results.sh)\n4. Parse and validate the test results against the two-phase contract:\n○ Phase 1 (broken state): F2P tests must fail; P2P tests must pass\n○ Phase 2 (fixed state): All tests must pass\nA human-readable summary will be printed to the terminal at the end of the run. If the run\nsucceeds, you will see the overall SUCCESS status. If any step fails, the summary will\nindicate which step failed and why. Here is an example of what you will see after\nexecuting the validation_script:\nThis script will generate both an analysis_results.json file and a terminal output. You will\nhave to paste the table with the results in your task. The part that you will need to paste\nlooks like this:\n============================================================\n<task-name> FAILED (exit XX)\n============================================================\n18\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nCONFIDENTIAL | tomas.ruiz+worker@contractors.scale.com | 2026-06-30T15:53:54.247Z\nactors.scale.com | 2026-06-30T15:53:54.247Z\nC\nCO\nCO\nCO\nCO"
+        ]
+      }
+    ]
+  }
+}
