@@ -1,0 +1,32 @@
+{
+  "entry": {
+    "id": "bc3ee2b9-4d4b-408e-9a10-70770d060a08",
+    "at": "2026-07-20T21:00:16.009Z",
+    "action": "dm_auto_reply",
+    "status": "skipped",
+    "message": "No safe DM auto-replies sent.",
+    "metadata": {
+      "checked": 0,
+      "replied": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "repliedUsers": [],
+      "humanUsers": [],
+      "errors": 0
+    }
+  },
+  "detail": {
+    "type": "dm_auto_reply",
+    "result": {
+      "enabled": true,
+      "checked": 0,
+      "replied": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "skippedProcessed": 0,
+      "decisions": []
+    },
+    "decisions": []
+  }
+}
