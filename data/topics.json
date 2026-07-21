@@ -272,25 +272,6 @@
     }
   },
   {
-    "date": "2026-07-22",
-    "title": "run_script.sh Apply Patches and Run Tests. That's It.",
-    "topic": "Docker & Scripts",
-    "reminderTitle": "run_script.sh has exactly two jobs. Everything else is wrong.",
-    "reminderBody": "run_script.sh responsibilities:\n1. Apply patches (test_patch in Phase 1, gold_patch in Phase 2)\n2. Run the test command\n\nIt must NOT: parse test results, format output, generate config files, validate the environment, or call parse_results.sh.\n\nThe template structure must be preserved: config variables at top, apply_patch() helper, Phase 1 section (=== PHASE 1 START ===), Phase 2 section (=== PHASE 2 START ===). The ONLY thing you customize is the test runner command.\n\nOutput must go to $RAW_OUTPUT_FILE via tee.",
-    "badExample": "# run_script.sh ❌ parsing results inside the script\napply_patch() { ... }\n\n# Phase 1\napply_patch test_patch.patch\nnpx jest --json > /tmp/results-phase1.json\nnode -e \"const r=require('/tmp/results-phase1.json'); ...\"",
-    "goodExample": "# run_script.sh ✅ apply and run only\napply_patch() { ... }\n\necho '=== PHASE 1 START ===' | tee -a \"$RAW_OUTPUT_FILE\"\napply_patch patches/test_patch.patch\nnpx jest 2>&1 | tee -a \"$RAW_OUTPUT_FILE\"\n\necho '=== PHASE 2 START ===' | tee -a \"$RAW_OUTPUT_FILE\"\napply_patch patches/gold_patch.patch\nnpx jest 2>&1 | tee -a \"$RAW_OUTPUT_FILE\"",
-    "quickRule": "run_script.sh applies patches and runs tests. Everything else is wrong.",
-    "tags": [
-      "daily_project_announcements"
-    ],
-    "webinar": {
-      "enabled": false,
-      "mandatory": false,
-      "timeLabel": "",
-      "link": ""
-    }
-  },
-  {
     "date": "2026-07-23",
     "title": "parse_results.sh Pure Bash Only",
     "topic": "Docker & Scripts",
