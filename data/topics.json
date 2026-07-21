@@ -270,24 +270,5 @@
       "timeLabel": "",
       "link": ""
     }
-  },
-  {
-    "date": "2026-07-28",
-    "title": "Model Failure Validity Not All Failures Are Equal",
-    "topic": "Cross-Cutting",
-    "reminderTitle": "The model must be ABLE to solve the task just not reliably.",
-    "reminderBody": "A valid model failure means: a capable model attempts the task in good faith and applies a reasonable solution, but the solution is incomplete or incorrect in ways detectable by the rubric and tests.\n\nInvalid failures (task gets rejected):\n- The prompt is impossible to implement correctly\n- The codebase is broken before any patch is applied\n- The model succeeds 100% of the time (task is too easy)\n- The model fails because the prompt is too vague to act on\n- The task requires knowledge no model could have\n\nValid failures:\n- Model implements the feature but misses an edge case\n- Model implements the happy path but not the error handling\n- Model uses a correct approach but doesn't satisfy all rubric criteria",
-    "badExample": "// ❌ Invalid failure prompt is impossible\n\"Add real-time sync using our proprietary internal WebSocket protocol v3.\nThe protocol spec is only in our internal Confluence.\"\n\n// No model can succeed task is invalid",
-    "goodExample": "// ✅ Valid failure model often misses edge cases\n\"Fix the bug in CartService.addItem() where adding the same product multiple times creates duplicate entries instead of accumulating quantity.\"\n\n// Model often fixes the basic case but misses edge cases like negative quantities",
-    "quickRule": "If no model can succeed, the task is invalid. If every model always succeeds, it's too easy. Aim for the middle.",
-    "tags": [
-      "daily_project_announcements"
-    ],
-    "webinar": {
-      "enabled": false,
-      "mandatory": false,
-      "timeLabel": "",
-      "link": ""
-    }
   }
 ]
