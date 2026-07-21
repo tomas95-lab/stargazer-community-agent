@@ -272,25 +272,6 @@
     }
   },
   {
-    "date": "2026-07-23",
-    "title": "parse_results.sh Pure Bash Only",
-    "topic": "Docker & Scripts",
-    "reminderTitle": "No node -e, no python, no external tools in parse_results.sh.",
-    "reminderBody": "parse_results.sh reads the raw output file from run_script.sh and produces test_results.json. It must do this in pure bash.\n\nIt must:\n- Read $RAW_OUTPUT_FILE (the raw log from run_script.sh)\n- Use phase markers (=== PHASE 1 START ===, === PHASE 2 START ===) to split phases\n- Output test_results.json with phase_1, phase_2, and overall_result\n- Use only bash built-ins, grep, awk, sed\n\nCommon violation: adding a Node.js snippet to parse JSON test output.",
-    "badExample": "# parse_results.sh ❌ Node.js called from bash\n#!/bin/bash\nRAW=$(cat \"$RAW_OUTPUT_FILE\")\n\nRESULT=$(node -e \"\n  const raw = '$RAW';\n  const passed = (raw.match(/PASS/g) || []).length;\n  console.log(passed);\n\")",
-    "goodExample": "# parse_results.sh ✅ pure bash\n#!/bin/bash\nPHASE1=$(sed -n '/=== PHASE 1 START ===/,/=== PHASE 2 START ===/p' \"$RAW_OUTPUT_FILE\")\nPHASE2=$(sed -n '/=== PHASE 2 START ===/,$p' \"$RAW_OUTPUT_FILE\")\n\nP1_PASS=$(echo \"$PHASE1\" | grep -c 'PASS')\nP1_FAIL=$(echo \"$PHASE1\" | grep -c 'FAIL')\nP2_PASS=$(echo \"$PHASE2\" | grep -c 'PASS')\nP2_FAIL=$(echo \"$PHASE2\" | grep -c 'FAIL')",
-    "quickRule": "If parse_results.sh contains 'node' or 'python', it's a template violation.",
-    "tags": [
-      "daily_project_announcements"
-    ],
-    "webinar": {
-      "enabled": false,
-      "mandatory": false,
-      "timeLabel": "",
-      "link": ""
-    }
-  },
-  {
     "date": "2026-07-24",
     "title": "The Triangle: Prompt ↔ Rubric ↔ Tests Must Align",
     "topic": "Cross-Cutting",
