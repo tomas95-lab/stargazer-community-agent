@@ -1,5 +1,15 @@
 [
   {
+    "id": "8bfb3b5a-5675-48b7-a229-0ba7e32788dc",
+    "at": "2026-07-21T14:00:08.908Z",
+    "action": "daily_publish_job",
+    "status": "skipped",
+    "message": "Daily thread for 2026-07-21 was already published",
+    "metadata": {
+      "date": "2026-07-21"
+    }
+  },
+  {
     "id": "4ab40cab-ee2d-4b96-aa13-093c70052c4f",
     "at": "2026-07-21T13:00:16.592Z",
     "action": "cron_request",
