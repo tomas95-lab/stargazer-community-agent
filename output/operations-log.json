@@ -1,14 +1,18 @@
 [
   {
-    "id": "79898aaf-c940-4451-91bd-db14e1cf78b4",
-    "at": "2026-07-21T13:00:11.263Z",
-    "action": "daily_publish_job",
-    "status": "success",
-    "message": "Published daily thread for 2026-07-21",
+    "id": "77b8babe-4228-43b9-a8ce-4ec8bd616fee",
+    "at": "2026-07-21T13:00:10.071Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
     "metadata": {
-      "date": "2026-07-21",
-      "url": "https://community.outlier.ai/t/daily-thread-07-21/2905522",
-      "postChat": true
+      "window": {
+        "utcDate": "2026-07-21",
+        "argentinaDate": "2026-07-21",
+        "startUtc": "2026-07-21T07:00:00.000Z",
+        "endUtc": "2026-07-22T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      }
     }
   },
   {
