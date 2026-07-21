@@ -272,25 +272,6 @@
     }
   },
   {
-    "date": "2026-07-21",
-    "title": "base.Dockerfile Scope No Test Config Files",
-    "topic": "Docker & Scripts",
-    "reminderTitle": "base.Dockerfile clones the repo and installs deps. Nothing else.",
-    "reminderBody": "The base.Dockerfile has one job: set up the repo in a clean, runnable state. It must NOT:\n- Create test config files (vitest.config.ts, jest.config.js, .babelrc)\n- Inject environment variables for the app\n- Rewrite package.json or any project files\n- Install test frameworks that belong in the test patch\n\nThink of base.Dockerfile as what a developer gets after a fresh git clone and npm install. Test setup belongs in the test patch, not the Docker image.\n\nAlso: always use full clone (no --depth flag) and include the PAT in the clone URL.",
-    "badExample": "# base.Dockerfile ❌\nFROM node:20\nWORKDIR /app\nRUN git clone https://github.com/org/repo.git .\n\n# Creating test config WRONG\nRUN echo '{\"test\":{\"environment\":\"jsdom\"}}' > vitest.config.ts\nRUN npm install --save-dev jest @testing-library/react\n\nENTRYPOINT [\"/bin/bash\"]",
-    "goodExample": "# base.Dockerfile ✅\nFROM node:20\nWORKDIR /app\nRUN git clone https://$PAT@github.com/org/repo.git .\nRUN git checkout $(git rev-list -n 1 HEAD)\nRUN npm install\n\nENTRYPOINT [\"/bin/bash\"]",
-    "quickRule": "If it's not in the official template, it doesn't belong in base.Dockerfile.",
-    "tags": [
-      "daily_project_announcements"
-    ],
-    "webinar": {
-      "enabled": false,
-      "mandatory": false,
-      "timeLabel": "",
-      "link": ""
-    }
-  },
-  {
     "date": "2026-07-22",
     "title": "run_script.sh Apply Patches and Run Tests. That's It.",
     "topic": "Docker & Scripts",
