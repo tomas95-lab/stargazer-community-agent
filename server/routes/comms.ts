@@ -11,6 +11,7 @@ import { loadBotConfig } from '../../src/config';
 import { DiscourseClient } from '../../src/discourse-client';
 import { readDataJSON, writeDataJSON } from '../../src/data-store';
 import { appendOperationLog } from '../../src/operations-log';
+import { assertProjectAutomationActive } from '../../src/project-context';
 import {
   cancelScheduledMessage,
   createScheduledMessage,
@@ -143,6 +144,7 @@ router.post('/send', requireAdminToken, async (req: Request, res: Response) => {
   }
 
   try {
+    assertProjectAutomationActive();
     const config = loadBotConfig();
     const client = new DiscourseClient({
       baseUrl: config.communityBaseUrl,

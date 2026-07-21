@@ -85,13 +85,16 @@ export async function attachProjectContext(req: Request, res: Response, next: Ne
         return;
       }
       (req as AuthenticatedRequest).platformProject = project;
-    } else if (projectId && adminTokenMatches(adminToken(req))) {
-      project = await getSharedProjectConnection(projectId);
+    } else if (adminTokenMatches(adminToken(req))) {
+      project = await getSharedProjectConnection(projectId || defaultProjectId(), true);
       if (!project) {
-        res.status(404).json({ error: 'Project not found.' });
-        return;
+        if (projectId) {
+          res.status(404).json({ error: 'Project not found.' });
+          return;
+        }
+      } else {
+        (req as AuthenticatedRequest).platformProject = project;
       }
-      (req as AuthenticatedRequest).platformProject = project;
     }
 
     const context = project

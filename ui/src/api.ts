@@ -670,6 +670,7 @@ export interface QmProjectInput {
   agentMode?: ProjectAgentMode;
   autoReplyEnabled?: boolean;
   minConfidence?: number;
+  enabled?: boolean;
 }
 
 export interface PlatformStatus {
@@ -891,6 +892,11 @@ export const api = {
     request<{ project: QmProject }>(`/platform/projects/${id}`, {
       method: 'PUT',
       body: JSON.stringify(project),
+    }),
+  setProjectPaused: (id: string, paused: boolean) =>
+    request<{ project: QmProject }>(`/platform/projects/${id}/pause`, {
+      method: 'POST',
+      body: JSON.stringify({ paused }),
     }),
   deleteProject: (id: string) =>
     request<{

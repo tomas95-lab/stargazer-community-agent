@@ -4,6 +4,8 @@ import {
   IconExternalLink,
   IconFolder,
   IconPlus,
+  IconPlayerPause,
+  IconPlayerPlay,
   IconRefresh,
   IconTrash,
 } from '@tabler/icons-react';
@@ -18,13 +20,17 @@ function ProjectRow({
   project,
   active,
   deleting,
+  changingPause,
   onSelect,
+  onPause,
   onDelete,
 }: {
   project: QmProject;
   active: boolean;
   deleting: boolean;
+  changingPause: boolean;
   onSelect: (project: QmProject) => void;
+  onPause: (project: QmProject) => void;
   onDelete: (project: QmProject) => void;
 }) {
   return (
@@ -35,7 +41,7 @@ function ProjectRow({
             <IconFolder className="size-4 text-primary" />
             <h2 className="text-base font-semibold text-foreground">{project.projectName}</h2>
             {active && <Badge variant="secondary">active</Badge>}
-            <Badge variant={project.enabled ? 'outline' : 'secondary'}>{project.enabled ? 'enabled' : 'disabled'}</Badge>
+            <Badge variant={project.enabled ? 'outline' : 'secondary'}>{project.enabled ? 'active' : 'paused'}</Badge>
           </div>
           <p className="mt-2 font-mono text-xs text-muted-foreground">{project.projectKey}</p>
           <div className="mt-3 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
@@ -56,6 +62,10 @@ function ProjectRow({
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <Button onClick={() => onPause(project)} disabled={changingPause} variant="outline" size="sm">
+            {project.enabled ? <IconPlayerPause /> : <IconPlayerPlay />}
+            {project.enabled ? 'Pause project' : 'Resume project'}
+          </Button>
           {!active && (
             <Button onClick={() => onSelect(project)} variant="outline" size="sm">
               <IconCircleCheck />
@@ -81,6 +91,7 @@ function ProjectRow({
 export default function Projects() {
   const { projects, currentProject, refreshProjects, selectProject, loading } = usePlatform();
   const [deletingId, setDeletingId] = useState('');
+  const [changingPauseId, setChangingPauseId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -114,6 +125,29 @@ export default function Projects() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setDeletingId('');
+    }
+  };
+
+  const togglePause = async (project: QmProject) => {
+    const paused = project.enabled;
+    const confirmed = window.confirm(
+      paused
+        ? `Pause ${project.projectName}? This stops its agent, daily threads, announcements, scheduled messages, and automatic DM replies for every QM connected to this Project ID.`
+        : `Resume ${project.projectName}? Its automations will be allowed to run again.`
+    );
+    if (!confirmed) return;
+
+    setChangingPauseId(project.id);
+    setError('');
+    setMessage('');
+    try {
+      await api.setProjectPaused(project.id, paused);
+      await refreshProjects();
+      setMessage(`${project.projectName} is now ${paused ? 'paused' : 'active'}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setChangingPauseId('');
     }
   };
 
@@ -177,7 +211,9 @@ export default function Projects() {
               project={project}
               active={currentProject?.id === project.id}
               deleting={deletingId === project.id}
+              changingPause={changingPauseId === project.id}
               onSelect={select}
+              onPause={togglePause}
               onDelete={deleteProject}
             />
           ))

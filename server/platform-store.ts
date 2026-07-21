@@ -62,6 +62,7 @@ export interface QmProjectInput {
   agentMode?: ProjectAgentMode;
   autoReplyEnabled?: boolean;
   minConfidence?: number;
+  enabled?: boolean;
 }
 
 export interface QmProjectPublic {
@@ -230,7 +231,7 @@ function projectKeyFromInput(input: QmProjectInput, existing?: QmProjectRow): st
 function legacyStargazerDefaults(projectKey: string): Partial<QmProjectRow> {
   if (!isLegacyProjectId(projectKey)) return {};
   return {
-    project_name: 'Stargazer',
+    project_name: 'TESTING PROJECT',
     community_base_url: envFallback('COMMUNITY_BASE_URL', 'https://community.outlier.ai'),
     community_category_id: envFallback('COMMUNITY_CATEGORY_ID', '15895'),
     community_category_slug: envFallback('COMMUNITY_CATEGORY_SLUG', 'stargazer-axiom'),
@@ -423,7 +424,7 @@ function normalizeProjectInput(
     agent_mode: agentMode(input.agentMode || existing?.agent_mode),
     auto_reply_enabled: input.autoReplyEnabled ?? existing?.auto_reply_enabled ?? false,
     min_confidence: clampConfidence(input.minConfidence ?? existing?.min_confidence),
-    enabled: true,
+    enabled: existing?.enabled ?? shared?.enabled ?? true,
     updated_at: new Date().toISOString(),
   };
 }
@@ -448,6 +449,24 @@ export async function listEnabledProjectConnections(): Promise<QmProjectRow[]> {
 
   if (error) throw new Error(error.message);
   return (data || []) as QmProjectRow[];
+}
+
+export async function projectAutomationPaused(projectKey: string): Promise<boolean> {
+  const key = canonicalProjectId(projectKey);
+  if (!key) return false;
+
+  try {
+    const { data, error } = await getSupabaseAdmin()
+      .from(TABLE)
+      .select('enabled')
+      .in('project_key', projectKeyLookupValues(key));
+    if (error) throw new Error(error.message);
+    const rows = (data || []) as Pick<QmProjectRow, 'enabled'>[];
+    return rows.length > 0 && rows.every((row) => row.enabled === false);
+  } catch (err) {
+    if (missingProjectKeyColumn(err)) return false;
+    throw err;
+  }
 }
 
 export function uniqueProjectConnections(rows: QmProjectRow[]): QmProjectRow[] {
@@ -493,18 +512,19 @@ export async function getActiveUserProject(userId: string, projectId?: string): 
   return projects.find((project) => project.enabled) || projects[0] || null;
 }
 
-export async function getSharedProjectConnection(projectKey: string): Promise<QmProjectRow | null> {
+export async function getSharedProjectConnection(projectKey: string, includePaused = false): Promise<QmProjectRow | null> {
   const key = canonicalProjectId(projectKey);
   if (!key) return null;
 
   try {
-    const { data, error } = await getSupabaseAdmin()
+    let query = getSupabaseAdmin()
       .from(TABLE)
       .select('*')
       .in('project_key', projectKeyLookupValues(key))
-      .eq('enabled', true)
       .order('created_at', { ascending: true })
       .limit(1);
+    if (!includePaused) query = query.eq('enabled', true);
+    const { data, error } = await query;
 
     if (error) throw new Error(error.message);
     return (data?.[0] || null) as QmProjectRow | null;
@@ -586,6 +606,31 @@ export async function updateUserProject(user: AuthenticatedUser, projectId: stri
   await initializeProjectFiles(project);
   await syncSharedProjectFields(project).catch(() => undefined);
   return project;
+}
+
+export async function setProjectAutomationPaused(userId: string, projectId: string, paused: boolean): Promise<QmProjectRow> {
+  const existing = await getUserProject(userId, projectId);
+  if (!existing) throw new Error('Project not found.');
+
+  const patch = { enabled: !paused, updated_at: new Date().toISOString() };
+  const projectKey = projectKeyFromRow(existing);
+  try {
+    const { error } = await getSupabaseAdmin()
+      .from(TABLE)
+      .update(patch)
+      .in('project_key', projectKeyLookupValues(projectKey));
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    if (!missingProjectKeyColumn(err)) throw err;
+    const { error } = await getSupabaseAdmin()
+      .from(TABLE)
+      .update(patch)
+      .eq('owner_id', userId)
+      .eq('id', existing.id);
+    if (error) throw new Error(error.message);
+  }
+
+  return (await getUserProject(userId, existing.id)) || { ...existing, ...patch };
 }
 
 async function countProjectConnections(projectKey: string): Promise<number> {
@@ -744,6 +789,7 @@ export function projectRuntimeContext(row: QmProjectRow, aiKey?: UserAiKeyRow | 
     source: 'header',
     projectName: row.project_name,
     ownerId: row.owner_id,
+    automationPaused: row.enabled === false,
     botConfig: projectBotConfig(row),
     aiConfig: {
       anthropicApiKey,

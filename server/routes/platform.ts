@@ -9,6 +9,7 @@ import {
   listUserProjects,
   QmProjectInput,
   saveUserAiKey,
+  setProjectAutomationPaused,
   toPublicProject,
   updateUserProject,
 } from '../platform-store';
@@ -54,6 +55,7 @@ function projectInput(body: unknown): QmProjectInput {
     minConfidence: typeof raw.minConfidence === 'number' || typeof raw.minConfidence === 'string'
       ? Number(raw.minConfidence)
       : undefined,
+    enabled: typeof raw.enabled === 'boolean' ? raw.enabled : undefined,
   };
 }
 
@@ -146,6 +148,18 @@ router.put('/projects/:id', requirePlatformUser, async (req: Request, res: Respo
     const input = projectInput(req.body);
     const project = await updateUserProject(authReq.authUser!, routeParam(req.params.id), input);
     const aiKey = await saveUserAiKey(authReq.authUser!.id, input);
+    res.json({ project: toPublicProject(project, aiKey) });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/projects/:id/pause', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const paused = req.body?.paused !== false;
+    const project = await setProjectAutomationPaused(authReq.authUser!.id, routeParam(req.params.id), paused);
+    const aiKey = await getUserAiKey(authReq.authUser!.id);
     res.json({ project: toPublicProject(project, aiKey) });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });

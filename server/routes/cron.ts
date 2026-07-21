@@ -10,6 +10,7 @@ import { withCronRunLock } from '../../src/cron-locks';
 import {
   isPlatformConfigured,
   listEnabledProjectConnections,
+  projectAutomationPaused,
   projectKeyFromRow,
   projectRuntimeContextForRow,
   QmProjectRow,
@@ -55,11 +56,12 @@ function requestedCronProjectId(req: Request): string {
   return canonicalProjectId(query || header || process.env.CRON_PROJECT_ID || '');
 }
 
-function legacyContext(): ProjectContext {
+async function legacyContext(): Promise<ProjectContext> {
   return {
     projectId: defaultProjectId(),
     source: 'default',
-    projectName: 'Stargazer',
+    projectName: 'TESTING PROJECT',
+    automationPaused: await projectAutomationPaused(defaultProjectId()).catch(() => false),
   };
 }
 
@@ -86,18 +88,18 @@ async function projectCronTargets(req: Request): Promise<ProjectContext[]> {
   const legacyId = defaultProjectId();
 
   if (requested) {
-    if (isLegacyProjectId(requested) || requested === legacyId) return [legacyContext()];
+    if (isLegacyProjectId(requested) || requested === legacyId) return [await legacyContext()];
     const rows = await platformConnections();
     const row = rows.find((item) => projectKeyFromRow(item) === requested);
     if (!row) throw new Error(`Cron project not found: ${requested}`);
     return [await projectRuntimeContextForRow(row)];
   }
 
-  if (!projectCronsEnabled()) return [legacyContext()];
+  if (!projectCronsEnabled()) return [await legacyContext()];
 
   const rows = uniqueProjectConnections(await platformConnections())
     .filter((row) => !isLegacyProjectId(projectKeyFromRow(row)));
-  return [legacyContext(), ...(await Promise.all(rows.map(projectRuntimeContextForRow)))];
+  return [await legacyContext(), ...(await Promise.all(rows.map(projectRuntimeContextForRow)))];
 }
 
 async function dmCronTargets(req: Request): Promise<ProjectContext[]> {
@@ -105,17 +107,17 @@ async function dmCronTargets(req: Request): Promise<ProjectContext[]> {
   const legacyId = defaultProjectId();
 
   if (requested) {
-    if (isLegacyProjectId(requested) || requested === legacyId) return [legacyContext()];
+    if (isLegacyProjectId(requested) || requested === legacyId) return [await legacyContext()];
     const rows = await platformConnections();
     const matches = rows.filter((row) => projectKeyFromRow(row) === requested);
     if (matches.length === 0) throw new Error(`Cron project not found: ${requested}`);
     return Promise.all(matches.map(projectRuntimeContextForRow));
   }
 
-  if (!dmCronsEnabled()) return [legacyContext()];
+  if (!dmCronsEnabled()) return [await legacyContext()];
 
   const rows = (await platformConnections()).filter((row) => !isLegacyProjectId(projectKeyFromRow(row)));
-  return [legacyContext(), ...(await Promise.all(rows.map(projectRuntimeContextForRow)))];
+  return [await legacyContext(), ...(await Promise.all(rows.map(projectRuntimeContextForRow)))];
 }
 
 async function runInContext<T>(context: ProjectContext, fn: () => Promise<T>): Promise<T> {
@@ -161,6 +163,10 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
     const runs = [];
 
     for (const context of targets) {
+      if (context.automationPaused) {
+        runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused', result: undefined });
+        continue;
+      }
       const locked = await runInContext(context, () => withCronRunLock(
         'community-agent',
         context.projectId,
@@ -233,6 +239,10 @@ async function handleDailyThreadCron(req: Request, res: Response): Promise<void>
     const runs = [];
 
     for (const context of targets) {
+      if (context.automationPaused) {
+        runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused', result: undefined });
+        continue;
+      }
       const locked = await runInContext(context, () => withCronRunLock(
         'daily-thread',
         context.projectId,
@@ -287,6 +297,10 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
     const runs = [];
 
     for (const context of targets) {
+      if (context.automationPaused) {
+        runs.push({ projectId: context.projectId, ownerId: context.ownerId, skipped: true, reason: 'project_paused', result: undefined });
+        continue;
+      }
       const locked = await runInContext(context, () => withCronRunLock(
         'dm-review',
         context.ownerId || context.projectId,
@@ -356,6 +370,10 @@ async function handleScheduledMessagesCron(req: Request, res: Response): Promise
     const runs = [];
 
     for (const context of targets) {
+      if (context.automationPaused) {
+        runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused', result: undefined });
+        continue;
+      }
       const locked = await runInContext(context, () => withCronRunLock(
         'scheduled-messages',
         context.projectId,

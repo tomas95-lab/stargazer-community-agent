@@ -159,7 +159,7 @@ function defaultPaths(projectId: string): ProjectPathsConfig {
 export function defaultProjectConfig(): ProjectConfig {
   return {
     id: LEGACY_PROJECT_ID,
-    name: 'Stargazer',
+    name: 'TESTING PROJECT',
     enabled: true,
     qm: {
       name: 'Project QM',

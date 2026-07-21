@@ -1,5 +1,6 @@
 import { BotConfig } from './config';
 import { DiscourseClient } from './discourse-client';
+import { assertProjectAutomationActive } from './project-context';
 
 export class CommunityBot {
   private config: BotConfig;
@@ -17,6 +18,7 @@ export class CommunityBot {
   async launch(): Promise<void> {}
 
   async publishDailyThread(title: string, body: string, tags?: string[]): Promise<string> {
+    assertProjectAutomationActive();
     const data = await this.client.createTopic({
       title,
       raw: body,
@@ -31,6 +33,7 @@ export class CommunityBot {
 
   async postAnnouncementToChat(announcement: string): Promise<void> {
     try {
+      assertProjectAutomationActive();
       await this.client.sendChatMessage(this.config.communityChatChannelId, announcement);
       console.log('✅ Announcement posted to chat');
     } catch (err) {

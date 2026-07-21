@@ -14,6 +14,7 @@ import { appendOperationLog } from './operations-log';
 import { evaluateSupportMessage } from './community-agent';
 import { loadProjectLinks } from './links';
 import { appDateParts, appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
+import { assertProjectAutomationActive } from './project-context';
 
 const DEFAULT_MESSAGE_COUNT = Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50);
 const DM_CHANNEL_SCAN_CAP = 5;
@@ -444,6 +445,7 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
 }
 
 export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmReviewResult> {
+  if (options.autoReply === true) assertProjectAutomationActive();
   const result = await fetchTodayDmReview({ ...options, fullScan: options.fullScan ?? true });
 
   if (options.autoReply === true) {
@@ -502,6 +504,7 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
 }
 
 export async function sendDirectMessageReply(channelId: number, message: string): Promise<DmReplyResult> {
+  assertProjectAutomationActive();
   const trimmed = message.trim();
   if (!Number.isFinite(channelId) || channelId <= 0) throw new Error('Invalid DM channel ID');
   if (!trimmed) throw new Error('Reply message is required');

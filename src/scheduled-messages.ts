@@ -3,6 +3,7 @@ import { loadBotConfig } from './config';
 import { readDataJSON, writeDataJSON } from './data-store';
 import { DiscourseClient } from './discourse-client';
 import { appendOperationLog } from './operations-log';
+import { assertProjectAutomationActive } from './project-context';
 import { APP_TIME_ZONE_LABEL, zonedTimeToUtc } from './timezone';
 
 const FILE = 'data/scheduled-messages.json';
@@ -192,6 +193,7 @@ function createDiscourseClient(): { client: DiscourseClient; channelId: string }
 }
 
 export async function processDueScheduledMessages(now = new Date()): Promise<ScheduledMessagesRunResult> {
+  assertProjectAutomationActive();
   const messages = await readMessages();
   const nowMs = now.getTime();
   const pending = messages.filter((item) => item.status === 'pending');

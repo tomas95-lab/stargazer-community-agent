@@ -50,6 +50,7 @@ export interface ProjectContext {
   projectGuidelines?: string;
   projectLinks?: RuntimeProjectLinks;
   projectMemoryFacts?: RuntimeProjectMemoryFact[];
+  automationPaused?: boolean;
 }
 
 const storage = new AsyncLocalStorage<ProjectContext>();
@@ -107,6 +108,12 @@ export function getProjectContext(): ProjectContext {
 
 export function getCurrentProjectId(): string {
   return getProjectContext().projectId;
+}
+
+export function assertProjectAutomationActive(): void {
+  if (getProjectContext().automationPaused) {
+    throw new Error('This project is paused. Resume it from Projects before sending or publishing messages.');
+  }
 }
 
 export function runWithProjectContext<T>(context: ProjectContext, fn: () => T): T {

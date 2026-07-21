@@ -875,6 +875,9 @@ export async function fetchCommunityAgentItems(options: CommunityAgentOptions = 
 export async function runCommunityAgent(options: CommunityAgentOptions = {}): Promise<CommunityAgentResult> {
   const post = options.post === true;
   const react = options.react === true;
+  if ((post || react) && getProjectContext().automationPaused) {
+    throw new Error('This project is paused. Resume it from Projects before running the agent in posting mode.');
+  }
   const includeCommunity = options.includeCommunity ?? true;
   const onlyToday = options.onlyToday ?? true;
   const respectSchedule = options.respectSchedule ?? false;
