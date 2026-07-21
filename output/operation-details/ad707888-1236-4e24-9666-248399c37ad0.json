@@ -1,0 +1,82 @@
+{
+  "entry": {
+    "id": "ad707888-1236-4e24-9666-248399c37ad0",
+    "at": "2026-07-21T14:30:07.802Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-21",
+        "argentinaDate": "2026-07-21",
+        "startUtc": "2026-07-21T07:00:00.000Z",
+        "endUtc": "2026-07-22T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": true,
+      "react": false,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": true,
+      "skipProcessed": true,
+      "markProcessed": true,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "post",
+      "checked": 1,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": false,
+      "window": {
+        "utcDate": "2026-07-21",
+        "argentinaDate": "2026-07-21",
+        "startUtc": "2026-07-21T07:00:00.000Z",
+        "endUtc": "2026-07-22T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      },
+      "items": [
+        {
+          "id": "community:27827881",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-21/2905522) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Rubric Quality**, with a reminder about **One criterion = one thing. AND = split.**.\n\nQuick rule: If your criterion has AND, split it into two.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-21T13:00:10Z",
+          "chatMessageId": 27827881,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+        }
+      ],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27827881",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-21/2905522) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Rubric Quality**, with a reminder about **One criterion = one thing. AND = split.**.\n\nQuick rule: If your criterion has AND, split it into two.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-21T13:00:10Z",
+        "chatMessageId": 27827881,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+      }
+    ],
+    "candidates": [],
+    "decisions": []
+  }
+}
