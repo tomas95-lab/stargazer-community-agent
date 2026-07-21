@@ -1,0 +1,67 @@
+{
+  "entry": {
+    "id": "a3e8fc49-6a5c-4b31-a6d1-712839b13ada",
+    "at": "2026-07-18T21:00:18.536Z",
+    "action": "dm_review",
+    "status": "skipped",
+    "message": "No incoming DMs found for 2026-07-18.",
+    "metadata": {
+      "utcDate": "2026-07-18",
+      "argentinaDate": "2026-07-18",
+      "totalDirectChannels": 59,
+      "scannedChannels": 5,
+      "incomingMessages": 0,
+      "pendingIncomingMessages": 0,
+      "unresolvedChannels": 0,
+      "newIncomingMessages": 0,
+      "newIncomingMessageIds": [],
+      "newDmSenders": [],
+      "channelsWithTodayMessages": 0,
+      "autoReplyEnabled": true,
+      "autoReplied": 0,
+      "autoNeedsHuman": 0,
+      "errors": 0
+    }
+  },
+  "detail": {
+    "type": "dm_review",
+    "options": {
+      "messageCount": 50,
+      "maxChannels": 5,
+      "fullScan": true,
+      "autoReply": true,
+      "maxAutoReplies": 3
+    },
+    "result": {
+      "mode": "dm-review",
+      "scanMode": "full",
+      "generatedAt": "2026-07-18T21:00:15.999Z",
+      "window": {
+        "utcDate": "2026-07-18",
+        "argentinaDate": "2026-07-18",
+        "startUtc": "2026-07-18T07:00:00.000Z",
+        "endUtc": "2026-07-19T07:00:00.000Z"
+      },
+      "totalDirectChannels": 59,
+      "scannedChannels": 5,
+      "skippedInactiveChannels": 54,
+      "incomingMessages": 0,
+      "pendingIncomingMessages": 0,
+      "unresolvedChannels": 0,
+      "channelsWithTodayMessages": 0,
+      "threads": [],
+      "messages": [],
+      "errors": [],
+      "autoReply": {
+        "enabled": true,
+        "checked": 0,
+        "replied": 0,
+        "needsHuman": 0,
+        "ignored": 0,
+        "skippedProcessed": 0,
+        "decisions": []
+      }
+    },
+    "newIncomingMessages": []
+  }
+}

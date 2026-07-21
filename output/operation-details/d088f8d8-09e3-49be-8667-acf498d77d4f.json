@@ -1,0 +1,104 @@
+{
+  "entry": {
+    "id": "d088f8d8-09e3-49be-8667-acf498d77d4f",
+    "at": "2026-07-20T14:30:08.806Z",
+    "action": "community_agent",
+    "status": "skipped",
+    "message": "Outside operating hours",
+    "metadata": {
+      "window": {
+        "utcDate": "2026-07-20",
+        "argentinaDate": "2026-07-20",
+        "startUtc": "2026-07-20T07:00:00.000Z",
+        "endUtc": "2026-07-21T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      }
+    }
+  },
+  "detail": {
+    "type": "community_agent",
+    "options": {
+      "post": true,
+      "react": false,
+      "includeCommunity": true,
+      "onlyToday": true,
+      "respectSchedule": true,
+      "skipProcessed": true,
+      "markProcessed": true,
+      "maxAnswers": 4,
+      "messageCount": 50
+    },
+    "result": {
+      "mode": "post",
+      "checked": 2,
+      "candidates": 0,
+      "handled": 0,
+      "posted": 0,
+      "reacted": 0,
+      "needsHuman": 0,
+      "ignored": 0,
+      "withinSchedule": false,
+      "window": {
+        "utcDate": "2026-07-20",
+        "argentinaDate": "2026-07-20",
+        "startUtc": "2026-07-20T07:00:00.000Z",
+        "endUtc": "2026-07-21T07:00:00.000Z",
+        "operatingHours": "Agent scans the current PST day. Live-support hours come from project guidelines or project memory."
+      },
+      "items": [
+        {
+          "id": "community:27819320",
+          "source": "community",
+          "username": "tomas.ruiz_OBIC",
+          "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-20/2905263) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Docker & Scripts**, with a reminder about **instance.Dockerfile must never define ENTRYPOINT or CMD.**.\n\nQuick rule: ENTRYPOINT in instance.Dockerfile = instant template violation.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+          "createdAt": "2026-07-20T13:00:11Z",
+          "chatMessageId": 27819320,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": [],
+          "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+        },
+        {
+          "id": "community:27819824",
+          "source": "community",
+          "username": "latam.coder2306",
+          "message": "@tomas.ruiz_OBIC can it be my priority project? I'd like a second try at the project getting the insights from the last feedback",
+          "createdAt": "2026-07-20T14:01:43Z",
+          "chatMessageId": 27819824,
+          "threadId": null,
+          "isStaff": false,
+          "probableReplies": []
+        }
+      ],
+      "decisions": [],
+      "errors": []
+    },
+    "items": [
+      {
+        "id": "community:27819320",
+        "source": "community",
+        "username": "tomas.ruiz_OBIC",
+        "message": "Hey team! 👋\n\nToday's [**Stargazer daily thread**](https://community.outlier.ai/t/daily-thread-07-20/2905263) is up.\n\nPlease take a few minutes to read it before tasking today. The topic is **Docker & Scripts**, with a reminder about **instance.Dockerfile must never define ENTRYPOINT or CMD.**.\n\nQuick rule: ENTRYPOINT in instance.Dockerfile = instant template violation.\n\n\n\nUse the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌",
+        "createdAt": "2026-07-20T13:00:11Z",
+        "chatMessageId": 27819320,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": [],
+        "ignoredReason": "Manager announcement authored by the configured bot user, not a contributor support request."
+      },
+      {
+        "id": "community:27819824",
+        "source": "community",
+        "username": "latam.coder2306",
+        "message": "@tomas.ruiz_OBIC can it be my priority project? I'd like a second try at the project getting the insights from the last feedback",
+        "createdAt": "2026-07-20T14:01:43Z",
+        "chatMessageId": 27819824,
+        "threadId": null,
+        "isStaff": false,
+        "probableReplies": []
+      }
+    ],
+    "candidates": [],
+    "decisions": []
+  }
+}
