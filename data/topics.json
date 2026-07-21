@@ -272,25 +272,6 @@
     }
   },
   {
-    "date": "2026-07-24",
-    "title": "The Triangle: Prompt ↔ Rubric ↔ Tests Must Align",
-    "topic": "Cross-Cutting",
-    "reminderTitle": "Every requirement needs a rubric criterion AND an F2P test. Both, independently.",
-    "reminderBody": "The three core artifacts must form a closed triangle:\n- Every prompt requirement → rubric criterion + F2P test + gold patch change\n- Every rubric criterion → at least one test that would catch a violation\n- Every F2P test → a prompt requirement it traces to\n- Gold patch → implements every requirement, nothing more\n\nCommon alignment gaps:\n- Rubric has criterion for X, but no F2P test checks X → model implements wrong and still passes\n- F2P test checks X, but no rubric criterion covers X → test result doesn't affect the score\n- Gold patch implements Y, but Y isn't in the prompt → orphan implementation\n\nBefore submitting: R1 → criterion ✓ → F2P test ✓ → gold patch change ✓",
-    "badExample": "Prompt requires: (1) /api/cart endpoint, (2) 401 for unauthenticated requests\n\nRubric: endpoint exists ✅ | 401 behavior [MISSING]\nF2P tests: endpoint test ✅ | 401 test [MISSING]\n\n→ Model skips authentication and passes QC",
-    "goodExample": "Prompt requires: (1) /api/cart endpoint, (2) 401 for unauthenticated requests\n\nRubric: endpoint exists ✅ | unauthenticated returns 401 ✅\nF2P tests: GET /api/cart → 200 ✅ | GET /api/cart without token → 401 ✅\nGold patch: implements both ✅\n\n→ Full coverage, nothing slips through",
-    "quickRule": "For every requirement: rubric criterion ✓ + F2P test ✓ + gold patch change ✓. All three or it's a gap.",
-    "tags": [
-      "daily_project_announcements"
-    ],
-    "webinar": {
-      "enabled": false,
-      "mandatory": false,
-      "timeLabel": "",
-      "link": ""
-    }
-  },
-  {
     "date": "2026-07-28",
     "title": "Model Failure Validity Not All Failures Are Equal",
     "topic": "Cross-Cutting",
