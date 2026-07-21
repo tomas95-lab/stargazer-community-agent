@@ -1,5 +1,17 @@
 [
   {
+    "id": "79898aaf-c940-4451-91bd-db14e1cf78b4",
+    "at": "2026-07-21T13:00:11.263Z",
+    "action": "daily_publish_job",
+    "status": "success",
+    "message": "Published daily thread for 2026-07-21",
+    "metadata": {
+      "date": "2026-07-21",
+      "url": "https://community.outlier.ai/t/daily-thread-07-21/2905522",
+      "postChat": true
+    }
+  },
+  {
     "id": "84a17ae7-36f4-4ba9-bd4b-dd4930379ca2",
     "at": "2026-07-21T00:27:24.523Z",
     "action": "delete_topic",
