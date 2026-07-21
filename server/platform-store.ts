@@ -64,6 +64,8 @@ export interface QmProjectInput {
   aiDailyTokenLimit?: number | null;
   aiDailyCallLimit?: number | null;
   projectGuidelines?: string;
+  guidelinesSourceName?: string;
+  guidelinesChangeSummary?: string;
   warRoomLink?: string;
   agentMode?: ProjectAgentMode;
   autoReplyEnabled?: boolean;
@@ -110,6 +112,7 @@ const TABLE = 'qm_projects';
 const USER_KEYS_TABLE = 'user_discourse_keys';
 const USER_AI_KEYS_TABLE = 'user_ai_keys';
 const AUDIT_TABLE = 'platform_audit_events';
+const GUIDELINE_VERSIONS_TABLE = 'project_guideline_versions';
 let supabaseAdmin: SupabaseClient | null = null;
 
 function env(key: string): string {
@@ -211,6 +214,32 @@ function projectStatus(value: unknown, enabled = true): ProjectStatus {
 
 function canManageProject(row: QmProjectRow): boolean {
   return projectRole(row.role) !== 'viewer';
+}
+
+export interface GuidelineVersionSummary {
+  id: string;
+  projectKey: string;
+  authorName: string;
+  authorEmail: string;
+  sourceFileName: string;
+  changeSummary: string;
+  characters: number;
+  restoredFrom: string;
+  createdAt: string;
+}
+
+function guidelineVersionSummary(row: Record<string, unknown>): GuidelineVersionSummary {
+  return {
+    id: text(row.id),
+    projectKey: text(row.project_key),
+    authorName: text(row.author_name),
+    authorEmail: text(row.author_email),
+    sourceFileName: text(row.source_file_name),
+    changeSummary: text(row.change_summary),
+    characters: Number(row.characters || 0),
+    restoredFrom: text(row.restored_from),
+    createdAt: text(row.created_at),
+  };
 }
 
 export interface DeletedProjectResult {
@@ -319,6 +348,15 @@ function missingProjectKeyColumn(error: unknown): boolean {
   return /project_key/i.test(message) && /column|schema cache|could not find/i.test(message);
 }
 
+function missingGuidelineVersionsTable(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message || error || '');
+  return /project_guideline_versions/i.test(message) && /does not exist|schema cache|could not find|PGRST205|42P01/i.test(message);
+}
+
+function guidelineVersionsMigrationError(): Error {
+  return new Error('Guidelines history is unavailable until the pending Supabase database migration is applied.');
+}
+
 function projectKeyLookupValues(projectKey: string): string[] {
   const key = canonicalProjectId(projectKey);
   if (!key) return [];
@@ -397,6 +435,46 @@ export async function getUserDiscourseKey(userId: string): Promise<UserDiscourse
 
   if (error) throw new Error(error.message);
   return data as UserDiscourseKeyRow | null;
+}
+
+export async function saveUserDiscourseKey(
+  userId: string,
+  apiKey: string,
+  username = '',
+  apiVersion = '',
+  nonce = '',
+): Promise<UserDiscourseKeyRow> {
+  const key = text(apiKey);
+  if (!key) throw new Error('Discourse API key is required.');
+  const existing = await getUserDiscourseKey(userId);
+  const encryptedKey = encryptSecret(key);
+  const now = new Date().toISOString();
+  const payload = {
+    owner_id: userId,
+    discourse_api_key_ciphertext: encryptedKey,
+    discourse_username: text(username, existing?.discourse_username || ''),
+    api_version: text(apiVersion, existing?.api_version || ''),
+    nonce: text(nonce, existing?.nonce || `manual-${Date.now()}`),
+    updated_at: now,
+  };
+  const { data, error } = await getSupabaseAdmin()
+    .from(USER_KEYS_TABLE)
+    .upsert(payload, { onConflict: 'owner_id' })
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+
+  const projectPatch: Record<string, string> = {
+    discourse_api_key_ciphertext: encryptedKey,
+    updated_at: now,
+  };
+  if (payload.discourse_username) projectPatch.discourse_username = payload.discourse_username;
+  const { error: projectError } = await getSupabaseAdmin()
+    .from(TABLE)
+    .update(projectPatch)
+    .eq('owner_id', userId);
+  if (projectError) throw new Error(projectError.message);
+  return data as UserDiscourseKeyRow;
 }
 
 export interface UserAiKeyRow {
@@ -588,6 +666,103 @@ export async function getUserProject(userId: string, projectId: string): Promise
   }
 }
 
+async function recordGuidelineVersion(
+  project: QmProjectRow,
+  user: AuthenticatedUser,
+  input: { content: string; sourceFileName?: string; changeSummary?: string; restoredFrom?: string },
+): Promise<GuidelineVersionSummary | null> {
+  const content = input.content.trim();
+  if (!content) return null;
+  const projectKey = projectKeyFromRow(project);
+  const latest = await getSupabaseAdmin().from(GUIDELINE_VERSIONS_TABLE)
+    .select('id,content')
+    .eq('project_key', projectKey)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latest.error) {
+    if (missingGuidelineVersionsTable(latest.error)) return null;
+    throw new Error(latest.error.message);
+  }
+  if (latest.data?.content === content && !input.restoredFrom) return null;
+
+  const { data, error } = await getSupabaseAdmin().from(GUIDELINE_VERSIONS_TABLE).insert({
+    project_key: projectKey,
+    author_id: user.id,
+    author_name: user.name,
+    author_email: user.email,
+    content,
+    characters: content.length,
+    source_file_name: text(input.sourceFileName),
+    change_summary: text(input.changeSummary, input.restoredFrom ? 'Restored a previous guidelines version.' : 'Updated project guidelines.'),
+    restored_from: input.restoredFrom || null,
+  }).select('id,project_key,author_name,author_email,source_file_name,change_summary,characters,restored_from,created_at').single();
+  if (error) {
+    if (missingGuidelineVersionsTable(error)) return null;
+    throw new Error(error.message);
+  }
+  return guidelineVersionSummary(data as Record<string, unknown>);
+}
+
+export async function listGuidelineVersions(userId: string, projectId: string, limit = 30): Promise<GuidelineVersionSummary[]> {
+  const project = await getUserProject(userId, projectId);
+  if (!project) throw new Error('Project not found.');
+  const { data, error } = await getSupabaseAdmin().from(GUIDELINE_VERSIONS_TABLE)
+    .select('id,project_key,author_name,author_email,source_file_name,change_summary,characters,restored_from,created_at')
+    .eq('project_key', projectKeyFromRow(project))
+    .order('created_at', { ascending: false })
+    .limit(Math.max(1, Math.min(100, limit)));
+  if (error) {
+    if (missingGuidelineVersionsTable(error)) throw guidelineVersionsMigrationError();
+    throw new Error(error.message);
+  }
+  return (data || []).map((row) => guidelineVersionSummary(row as Record<string, unknown>));
+}
+
+export async function getGuidelineVersion(userId: string, projectId: string, versionId: string): Promise<GuidelineVersionSummary & { content: string }> {
+  const project = await getUserProject(userId, projectId);
+  if (!project) throw new Error('Project not found.');
+  const { data, error } = await getSupabaseAdmin().from(GUIDELINE_VERSIONS_TABLE)
+    .select('*')
+    .eq('id', versionId)
+    .eq('project_key', projectKeyFromRow(project))
+    .single();
+  if (error) {
+    if (missingGuidelineVersionsTable(error)) throw guidelineVersionsMigrationError();
+    throw new Error(error.message);
+  }
+  return { ...guidelineVersionSummary(data as Record<string, unknown>), content: text(data.content) };
+}
+
+export async function restoreGuidelineVersion(user: AuthenticatedUser, projectId: string, versionId: string): Promise<QmProjectRow> {
+  const project = await getUserProject(user.id, projectId);
+  if (!project) throw new Error('Project not found.');
+  if (!['owner', 'admin'].includes(projectRole(project.role))) throw new Error('Only a project owner or admin can restore guidelines.');
+  const version = await getGuidelineVersion(user.id, projectId, versionId);
+  const projectKey = projectKeyFromRow(project);
+  const { error } = await getSupabaseAdmin().from(TABLE).update({
+    project_guidelines: version.content,
+    updated_at: new Date().toISOString(),
+  }).eq('project_key', projectKey);
+  if (error) throw new Error(error.message);
+  await recordGuidelineVersion(project, user, {
+    content: version.content,
+    sourceFileName: version.sourceFileName,
+    changeSummary: `Restored version from ${version.createdAt}.`,
+    restoredFrom: version.id,
+  });
+  await appendAuditEvent({
+    actorId: user.id,
+    projectKey,
+    action: 'project.guidelines_restored',
+    targetType: 'guideline_version',
+    targetId: version.id,
+    before: { characters: project.project_guidelines.length },
+    after: { characters: version.content.length },
+  });
+  return (await getUserProject(user.id, projectId)) || { ...project, project_guidelines: version.content };
+}
+
 export async function getActiveUserProject(userId: string, projectId?: string): Promise<QmProjectRow | null> {
   if (projectId) return getUserProject(userId, projectId);
   const projects = await listUserProjects(userId);
@@ -702,7 +877,9 @@ async function updateProjectPayload(userId: string, projectId: string, payload: 
 }
 
 export async function createUserProject(user: AuthenticatedUser, input: QmProjectInput): Promise<QmProjectRow> {
-  const storedKey = await getUserDiscourseKey(user.id);
+  const storedKey = text(input.discourseApiKey)
+    ? await saveUserDiscourseKey(user.id, input.discourseApiKey!, text(input.discourseUsername))
+    : await getUserDiscourseKey(user.id);
   const hydratedInput = storedKey && !text(input.discourseUsername)
     ? { ...input, discourseUsername: storedKey.discourse_username }
     : input;
@@ -734,6 +911,13 @@ export async function createUserProject(user: AuthenticatedUser, input: QmProjec
   const project = await insertProjectPayload(payload);
   await initializeProjectFiles(project);
   if (!shared) await syncSharedProjectFields(project).catch(() => undefined);
+  if (!shared && project.project_guidelines.trim()) {
+    await recordGuidelineVersion(project, user, {
+      content: project.project_guidelines,
+      sourceFileName: input.guidelinesSourceName,
+      changeSummary: input.guidelinesChangeSummary || 'Initial project guidelines.',
+    }).catch((err) => console.warn('Could not create initial guideline version:', err instanceof Error ? err.message : err));
+  }
   await appendAuditEvent({ actorId: user.id, projectKey: projectKeyFromRow(project), action: shared ? 'project.joined' : 'project.created', targetType: 'project', targetId: project.id, after: toPublicProject(project) });
   return project;
 }
@@ -741,6 +925,9 @@ export async function createUserProject(user: AuthenticatedUser, input: QmProjec
 export async function updateUserProject(user: AuthenticatedUser, projectId: string, input: QmProjectInput): Promise<QmProjectRow> {
   const existing = await getUserProject(user.id, projectId);
   if (!existing) throw new Error('Project not found.');
+  if (text(input.discourseApiKey)) {
+    await saveUserDiscourseKey(user.id, input.discourseApiKey!, text(input.discourseUsername, existing.discourse_username));
+  }
 
   const changesSharedConfiguration = [
     input.projectKey,
@@ -762,6 +949,13 @@ export async function updateUserProject(user: AuthenticatedUser, projectId: stri
   const project = await updateProjectPayload(user.id, projectId, payload);
   await initializeProjectFiles(project);
   await syncSharedProjectFields(project).catch(() => undefined);
+  if (input.projectGuidelines !== undefined && existing.project_guidelines.trim() !== project.project_guidelines.trim()) {
+    await recordGuidelineVersion(project, user, {
+      content: project.project_guidelines,
+      sourceFileName: input.guidelinesSourceName,
+      changeSummary: input.guidelinesChangeSummary,
+    }).catch((err) => console.warn('Could not create guideline version:', err instanceof Error ? err.message : err));
+  }
   await appendAuditEvent({ actorId: user.id, projectKey: projectKeyFromRow(project), action: 'project.updated', targetType: 'project', targetId: project.id, before: toPublicProject(existing), after: toPublicProject(project) });
   return project;
 }
@@ -957,19 +1151,28 @@ async function initializeProjectFiles(row: QmProjectRow): Promise<void> {
   ]);
 }
 
-export function projectBotConfig(row: QmProjectRow): BotConfig {
+export function projectBotConfig(row: QmProjectRow, userKey?: UserDiscourseKeyRow | null): BotConfig {
+  const keyCiphertext = text(userKey?.discourse_api_key_ciphertext) || row.discourse_api_key_ciphertext;
   return {
     communityBaseUrl: row.community_base_url || 'https://community.outlier.ai',
     communityCategoryId: row.community_category_id,
     communityCategorySlug: row.community_category_slug,
     communityChatChannelId: row.community_chat_channel_id,
-    discourseApiKey: decryptSecret(row.discourse_api_key_ciphertext),
+    discourseApiKey: decryptSecret(keyCiphertext),
     discourseApiClientId: row.discourse_api_client_id || 'daily-thread-bot',
-    discourseUsername: row.discourse_username,
+    discourseUsername: text(userKey?.discourse_username) || row.discourse_username,
   };
 }
 
-export function projectRuntimeContext(row: QmProjectRow, aiKey?: UserAiKeyRow | null): ProjectContext {
+export async function projectBotConfigForRow(row: QmProjectRow): Promise<BotConfig> {
+  return projectBotConfig(row, await getUserDiscourseKey(row.owner_id));
+}
+
+export function projectRuntimeContext(
+  row: QmProjectRow,
+  aiKey?: UserAiKeyRow | null,
+  discourseKey?: UserDiscourseKeyRow | null,
+): ProjectContext {
   const projectLinks: ProjectContext['projectLinks'] = {};
   if (text(row.war_room_link)) projectLinks.warRoom = text(row.war_room_link);
   const anthropicApiKey = text(aiKey?.anthropic_api_key_ciphertext)
@@ -992,7 +1195,7 @@ export function projectRuntimeContext(row: QmProjectRow, aiKey?: UserAiKeyRow | 
         ? (row.settings as Record<string, unknown>).blockedTopics as string[]
         : ['pay', 'payment', 'account suspension', 'disciplinary action', 'legal', 'eligibility decision'],
     },
-    botConfig: projectBotConfig(row),
+    botConfig: projectBotConfig(row, discourseKey),
     aiConfig: {
       anthropicApiKey,
       anthropicModel: anthropicModel(aiKey?.anthropic_model),
@@ -1005,6 +1208,9 @@ export function projectRuntimeContext(row: QmProjectRow, aiKey?: UserAiKeyRow | 
 }
 
 export async function projectRuntimeContextForRow(row: QmProjectRow): Promise<ProjectContext> {
-  const aiKey = await getUserAiKey(row.owner_id);
-  return projectRuntimeContext(row, aiKey);
+  const [aiKey, discourseKey] = await Promise.all([
+    getUserAiKey(row.owner_id),
+    getUserDiscourseKey(row.owner_id),
+  ]);
+  return projectRuntimeContext(row, aiKey, discourseKey);
 }

@@ -5,6 +5,7 @@ create table if not exists public.project_data_files (
   file_path text not null,
   content_type text not null check (content_type in ('json', 'text')),
   content text not null default '',
+  characters integer not null default 0 check (characters >= 0),
   size_bytes bigint not null default 0 check (size_bytes >= 0),
   content_sha256 text not null default '',
   last_write_reason text not null default '',
@@ -177,6 +178,39 @@ create table if not exists public.scheduled_messages (
 );
 create index if not exists scheduled_messages_due_idx on public.scheduled_messages(project_key, status, scheduled_for);
 alter table public.scheduled_messages enable row level security;
+
+create table if not exists public.project_guideline_versions (
+  id uuid primary key default gen_random_uuid(),
+  project_key text not null,
+  author_id uuid references auth.users(id) on delete set null,
+  author_name text not null default '',
+  author_email text not null default '',
+  content text not null default '',
+  source_file_name text not null default '',
+  change_summary text not null default '',
+  restored_from uuid references public.project_guideline_versions(id) on delete set null,
+  created_at timestamptz not null default now(),
+  check (project_key ~ '^[a-z0-9][a-z0-9-]{1,63}$'),
+  check (octet_length(content) <= 5242880)
+);
+create index if not exists project_guideline_versions_project_idx on public.project_guideline_versions(project_key, created_at desc);
+alter table public.project_guideline_versions enable row level security;
+
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  project_key text not null,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  user_agent text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (project_key ~ '^[a-z0-9][a-z0-9-]{1,63}$')
+);
+create index if not exists push_subscriptions_owner_idx on public.push_subscriptions(owner_id, project_key);
+create index if not exists push_subscriptions_project_idx on public.push_subscriptions(project_key);
+alter table public.push_subscriptions enable row level security;
 
 alter table public.qm_projects enable row level security;
 

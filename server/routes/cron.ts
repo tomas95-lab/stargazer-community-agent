@@ -184,7 +184,7 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
           respectSchedule: true,
           skipProcessed: true,
           markProcessed: true,
-          maxAnswers: Number(process.env.AGENT_MAX_ANSWERS || 4),
+          maxAnswers: context.automationSettings?.communityMaxAnswers ?? Number(process.env.AGENT_MAX_ANSWERS || 4),
           messageCount: Number(process.env.AGENT_MESSAGE_COUNT || 50),
         })
       ));
@@ -325,7 +325,7 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
           maxChannels: Number(process.env.DM_REVIEW_MAX_CHANNELS || 5),
           requestDelayMs: Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500),
           autoReply: context.automationSettings?.dmAutoReply ?? process.env.DM_AUTO_REPLY === 'true',
-          maxAutoReplies: Number(process.env.DM_AUTO_REPLY_MAX || 3),
+          maxAutoReplies: context.automationSettings?.dmMaxAutoReplies ?? Number(process.env.DM_AUTO_REPLY_MAX || 3),
         })
       ));
       runs.push({

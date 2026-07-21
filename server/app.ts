@@ -20,6 +20,8 @@ import reviewQueueRouter from './routes/review-queue';
 import sandboxRouter from './routes/sandbox';
 import memoryRouter from './routes/memory';
 import usageRouter from './routes/usage';
+import qualityRouter from './routes/quality';
+import pushRouter from './routes/push';
 import platformRouter from './routes/platform';
 import discourseAuthRouter from './routes/discourse-auth';
 import { attachProjectContext } from './auth';
@@ -77,6 +79,8 @@ app.use('/api/review-queue', reviewQueueRouter);
 app.use('/api/sandbox', sandboxRouter);
 app.use('/api/memory', memoryRouter);
 app.use('/api/usage', usageRouter);
+app.use('/api/quality', qualityRouter);
+app.use('/api/push', pushRouter);
 
 const uiBuild = path.resolve(__dirname, '../ui/dist');
 app.use(express.static(uiBuild));

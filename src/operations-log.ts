@@ -26,9 +26,8 @@ export async function readOperationLog(limit = MAX_ENTRIES): Promise<OperationLo
   if (runtimeDbConfigured()) {
     try {
       const scope = runtimeScope();
-      let query = runtimeDb().from('automation_events').select('id,created_at,action,status,message,metadata')
+      const query = runtimeDb().from('automation_events').select('id,created_at,action,status,message,metadata')
         .eq('project_key', scope.projectKey).order('created_at', { ascending: false }).limit(Math.max(1, Math.min(MAX_ENTRIES, limit)));
-      if (scope.ownerId) query = query.or(`owner_id.eq.${scope.ownerId},owner_id.is.null`);
       const { data, error } = await query;
       if (error) throw new Error(error.message);
       return (data || []).map((row) => ({
@@ -68,7 +67,11 @@ export async function appendOperationLog(
         detail: detail ?? null,
       }).select('id,created_at').single();
       if (error) throw new Error(error.message);
-      return { id: data.id, at: data.created_at, ...entry };
+      const nextEntry = { id: data.id, at: data.created_at, ...entry };
+      await import('./push-notifications')
+        .then(({ dispatchOperationPush }) => dispatchOperationPush(nextEntry))
+        .catch(() => undefined);
+      return nextEntry;
     } catch (err) {
       if (!runtimeTableMissing(err)) {
         console.warn('Could not write operation log:', err);
@@ -94,6 +97,10 @@ export async function appendOperationLog(
         console.warn('Could not write operation detail:', err);
       });
     }
+
+    await import('./push-notifications')
+      .then(({ dispatchOperationPush }) => dispatchOperationPush(nextEntry))
+      .catch(() => undefined);
 
     return nextEntry;
   } catch (err) {
@@ -145,4 +152,33 @@ export async function readOperationDetail(id: string): Promise<OperationDetailRe
   } catch {
     return { entry };
   }
+}
+
+export async function readOperationDetails(ids: string[]): Promise<Map<string, unknown>> {
+  const validIds = [...new Set(ids.filter((id) => /^[a-z0-9-]{8,80}$/i.test(id)))];
+  if (!validIds.length) return new Map();
+
+  if (runtimeDbConfigured()) {
+    try {
+      const scope = runtimeScope();
+      const { data, error } = await runtimeDb().from('automation_events')
+        .select('id,detail')
+        .eq('project_key', scope.projectKey)
+        .in('id', validIds);
+      if (error) throw new Error(error.message);
+      return new Map((data || []).filter((row) => row.detail !== null).map((row) => [row.id, row.detail]));
+    } catch (err) {
+      if (!runtimeTableMissing(err)) throw err;
+    }
+  }
+
+  const records = await Promise.all(validIds.map(async (id) => {
+    try {
+      const record = await readDataJSON<OperationDetailRecord>(operationDetailPath(id));
+      return [id, record.detail] as const;
+    } catch {
+      return null;
+    }
+  }));
+  return new Map(records.filter((record): record is readonly [string, unknown] => Boolean(record)));
 }

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   TriangleAlert as IconAlertTriangle,
   Archive as IconArchive,
@@ -9,6 +9,7 @@ import {
   MessageCircle as IconMessageCircle,
   RefreshCw as IconRefresh,
   RotateCcw as IconRotateClockwise,
+  BookOpenCheck,
 } from 'lucide-react';
 import { api, type KnowledgeGap, type ReviewQueueItem, type ReviewQueueResult } from '../api';
 import { Badge } from '@/components/ui/badge';
@@ -131,6 +132,7 @@ function QueueItem({
 }
 
 export default function ReviewQueue() {
+  const navigate = useNavigate();
   const [result, setResult] = useState<ReviewQueueResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [showClosed, setShowClosed] = useState(false);
@@ -138,7 +140,7 @@ export default function ReviewQueue() {
   const [error, setError] = useState('');
   const [knowledgeGaps, setKnowledgeGaps] = useState<KnowledgeGap[]>([]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -149,11 +151,11 @@ export default function ReviewQueue() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showClosed]);
 
   useEffect(() => {
     void load();
-  }, [showClosed]);
+  }, [load]);
 
   const updateStatus = async (item: ReviewQueueItem, status: ReviewQueueItem['status']) => {
     setUpdatingId(item.id);
@@ -216,14 +218,25 @@ export default function ReviewQueue() {
           </div>
           <div className="divide-y divide-border">
             {knowledgeGaps.map((gap) => (
-              <div key={gap.id} className="flex flex-col gap-2 px-5 py-4 md:flex-row md:items-center md:justify-between">
-                <div className="min-w-0">
+              <div key={gap.id} className="grid gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                <div className="min-w-0 space-y-3">
                   <p className="text-sm font-medium text-foreground">{gap.reason}</p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{gap.examples[0]}</p>
+                  <div className="rounded-md border border-border bg-muted/30 p-3">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Suggested guidelines draft</p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">{gap.suggestedGuideline}</p>
+                  </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <Badge variant="secondary">{gap.occurrences} occurrences</Badge>
                   <Badge variant="outline">{gap.sources.join(' + ')}</Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate('/project', { state: { guidelineSuggestion: gap.suggestedGuideline } })}
+                  >
+                    <BookOpenCheck />
+                    Review in guidelines
+                  </Button>
                 </div>
               </div>
             ))}

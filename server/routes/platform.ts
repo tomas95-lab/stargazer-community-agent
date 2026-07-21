@@ -5,16 +5,19 @@ import {
   deleteUserProject,
   getActiveUserProject,
   getSharedProjectSummary,
+  getGuidelineVersion,
   getUserAiKey,
   getUserProject,
   getSupabaseAdmin,
   isPlatformConfigured,
   listUserProjects,
   listProjectMembers,
+  listGuidelineVersions,
   QmProjectInput,
-  projectBotConfig,
+  projectBotConfigForRow,
   saveUserAiKey,
   restoreUserProject,
+  restoreGuidelineVersion,
   setProjectAutomationPaused,
   setProjectLifecycleStatus,
   toPublicProject,
@@ -55,6 +58,8 @@ function projectInput(body: unknown): QmProjectInput {
       ? Number(raw.aiDailyCallLimit)
       : raw.aiDailyCallLimit === null ? null : undefined,
     projectGuidelines: typeof raw.projectGuidelines === 'string' ? raw.projectGuidelines : undefined,
+    guidelinesSourceName: typeof raw.guidelinesSourceName === 'string' ? raw.guidelinesSourceName : undefined,
+    guidelinesChangeSummary: typeof raw.guidelinesChangeSummary === 'string' ? raw.guidelinesChangeSummary : undefined,
     warRoomLink: typeof raw.warRoomLink === 'string' ? raw.warRoomLink : undefined,
     agentMode: raw.agentMode === 'auto' || raw.agentMode === 'supervised' || raw.agentMode === 'draft'
       ? raw.agentMode
@@ -76,13 +81,15 @@ router.get('/status', async (_req: Request, res: Response) => {
   let schemaMessage = '';
   if (isPlatformConfigured()) {
     try {
-      const [projects, locks, events, dataFiles] = await Promise.all([
+      const [projects, locks, events, dataFiles, guidelineVersions, pushSubscriptions] = await Promise.all([
         getSupabaseAdmin().from('qm_projects').select('role,status,settings').limit(1),
         getSupabaseAdmin().from('automation_run_locks').select('job', { head: true, count: 'exact' }),
         getSupabaseAdmin().from('automation_events').select('id', { head: true, count: 'exact' }),
         getSupabaseAdmin().from('project_data_files').select('file_path').limit(1),
+        getSupabaseAdmin().from('project_guideline_versions').select('id').limit(1),
+        getSupabaseAdmin().from('push_subscriptions').select('id').limit(1),
       ]);
-      const error = projects.error || locks.error || events.error || dataFiles.error;
+      const error = projects.error || locks.error || events.error || dataFiles.error || guidelineVersions.error || pushSubscriptions.error;
       schemaReady = !error;
       schemaMessage = error?.message || '';
     } catch (err) {
@@ -191,10 +198,12 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
       return;
     }
     const aiKey = await getUserAiKey(authReq.authUser!.id);
-    const config = projectBotConfig(project);
+    const config = await projectBotConfigForRow(project);
     let discourseReachable = false;
     let discourseIdentity = '';
     let discourseError = '';
+    let channelReachable = false;
+    let channelError = '';
     try {
       const response = await fetch(`${config.communityBaseUrl}/session/current.json`, {
         headers: { 'User-Api-Key': config.discourseApiKey, 'User-Api-Client-Id': config.discourseApiClientId },
@@ -204,16 +213,41 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
       if (response.ok) {
         const body = await response.json() as { current_user?: { username?: string } };
         discourseIdentity = body.current_user?.username || '';
+      } else if (response.status === 403) {
+        discourseError = 'The saved Discourse key is invalid or no longer authorized. Reconnect Discourse.';
       } else discourseError = `Discourse returned ${response.status}.`;
     } catch (err) {
       discourseError = err instanceof Error ? err.message : String(err);
     }
 
+    if (discourseReachable && config.communityChatChannelId) {
+      try {
+        const response = await fetch(
+          `${config.communityBaseUrl}/chat/api/channels/${encodeURIComponent(config.communityChatChannelId)}/messages.json?page_size=1`,
+          {
+            headers: { 'User-Api-Key': config.discourseApiKey, 'User-Api-Client-Id': config.discourseApiClientId },
+            signal: AbortSignal.timeout(6_000),
+          },
+        );
+        channelReachable = response.ok;
+        if (!response.ok) channelError = response.status === 403
+          ? 'Your Discourse user cannot access this channel.'
+          : `Channel returned ${response.status}.`;
+      } catch (err) {
+        channelError = err instanceof Error ? err.message : String(err);
+      }
+    } else if (!config.communityChatChannelId) channelError = 'Missing channel ID';
+    else channelError = 'Reconnect Discourse before checking the channel.';
+
+    const categoryIdValid = /^\d+$/.test(config.communityCategoryId);
+    const identityMatches = Boolean(discourseIdentity)
+      && discourseIdentity.toLowerCase() === project.discourse_username.toLowerCase();
+
     const checks = [
       { id: 'discourse', label: 'Discourse connection', ok: discourseReachable, detail: discourseIdentity || discourseError || 'Not connected' },
-      { id: 'category', label: 'Community category', ok: Boolean(config.communityCategoryId), detail: config.communityCategoryId || 'Missing category ID' },
-      { id: 'channel', label: 'Community channel', ok: Boolean(config.communityChatChannelId), detail: config.communityChatChannelId || 'Missing channel ID' },
-      { id: 'username', label: 'Discourse identity', ok: Boolean(project.discourse_username), detail: project.discourse_username || 'Missing username' },
+      { id: 'category', label: 'Community category', ok: categoryIdValid, detail: categoryIdValid ? config.communityCategoryId : 'Category ID must be numeric.' },
+      { id: 'channel', label: 'Community channel', ok: channelReachable, detail: channelReachable ? config.communityChatChannelId : channelError },
+      { id: 'username', label: 'Discourse identity', ok: identityMatches, detail: identityMatches ? discourseIdentity : discourseIdentity ? `Connected as ${discourseIdentity}; expected ${project.discourse_username}.` : project.discourse_username || 'Missing username' },
       { id: 'guidelines', label: 'Project guidelines', ok: project.project_guidelines.trim().length >= 100, detail: `${project.project_guidelines.length} characters` },
       { id: 'claude', label: 'Claude API key', ok: Boolean(aiKey?.anthropic_api_key_ciphertext), detail: aiKey?.anthropic_api_key_ciphertext ? aiKey.anthropic_model : 'Not configured' },
       { id: 'automation', label: 'Project automation', ok: project.enabled && project.status !== 'archived', detail: project.status || (project.enabled ? 'active' : 'paused') },
@@ -253,6 +287,47 @@ router.get('/projects/:id/export', requirePlatformUser, async (req: Request, res
     });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/projects/:id/guidelines/versions', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const versions = await listGuidelineVersions(authReq.authUser!.id, routeParam(req.params.id), Number(req.query.limit || 30));
+    res.json({ versions });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const migrationRequired = /pending Supabase database migration/i.test(message);
+    res.status(migrationRequired ? 503 : 400).json({
+      error: message,
+      ...(migrationRequired ? { code: 'database_migration_required' } : {}),
+    });
+  }
+});
+
+router.get('/projects/:id/guidelines/versions/:versionId', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const version = await getGuidelineVersion(authReq.authUser!.id, routeParam(req.params.id), routeParam(req.params.versionId));
+    res.json({ version });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const migrationRequired = /pending Supabase database migration/i.test(message);
+    res.status(migrationRequired ? 503 : 400).json({
+      error: message,
+      ...(migrationRequired ? { code: 'database_migration_required' } : {}),
+    });
+  }
+});
+
+router.post('/projects/:id/guidelines/versions/:versionId/restore', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const project = await restoreGuidelineVersion(authReq.authUser!, routeParam(req.params.id), routeParam(req.params.versionId));
+    const aiKey = await getUserAiKey(authReq.authUser!.id);
+    res.json({ project: toPublicProject(project, aiKey) });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
 

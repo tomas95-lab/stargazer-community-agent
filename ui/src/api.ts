@@ -490,6 +490,7 @@ export interface KnowledgeGap {
   occurrences: number;
   sources: Array<'community' | 'dm'>;
   examples: string[];
+  suggestedGuideline: string;
 }
 
 export interface DailySummaryActivity {
@@ -667,6 +668,8 @@ export interface QmProjectInput {
   aiDailyTokenLimit?: number | null;
   aiDailyCallLimit?: number | null;
   projectGuidelines?: string;
+  guidelinesSourceName?: string;
+  guidelinesChangeSummary?: string;
   warRoomLink?: string;
   agentMode?: ProjectAgentMode;
   autoReplyEnabled?: boolean;
@@ -731,6 +734,53 @@ export interface GuidelinesExtractionResult {
   chunks: number;
   warnings: string[];
   fileName: string;
+}
+
+export interface GuidelineVersionSummary {
+  id: string;
+  projectKey: string;
+  authorName: string;
+  authorEmail: string;
+  sourceFileName: string;
+  changeSummary: string;
+  characters: number;
+  restoredFrom: string;
+  createdAt: string;
+}
+
+export interface GuidelineVersion extends GuidelineVersionSummary {
+  content: string;
+}
+
+export interface QualityMetrics {
+  generatedAt: string;
+  windowDays: number;
+  totals: {
+    runs: number;
+    messages: number;
+    candidates: number;
+    replies: number;
+    reactions: number;
+    escalations: number;
+    humanResolved: number;
+    errors: number;
+    aiTokensToday: number;
+  };
+  rates: {
+    responseRate: number;
+    escalationRate: number;
+    resolutionRate: number;
+    errorRate: number;
+    averageEscalationConfidence: number | null;
+  };
+  daily: Array<{ date: string; messages: number; replies: number; escalations: number; errors: number }>;
+  recommendations: string[];
+}
+
+export interface PushStatus {
+  configured: boolean;
+  publicKey: string;
+  subscriptions: number;
 }
 
 export interface DiscourseAuthStatus {
@@ -928,6 +978,9 @@ export const api = {
   findSharedProject: (projectKey: string) =>
     request<{ project: SharedProjectSummary | null }>(`/platform/projects/shared/${encodeURIComponent(projectKey)}`),
   getProjectHealth: (id: string) => request<ProjectHealthResult>(`/platform/projects/${id}/health`),
+  getGuidelineVersions: (id: string, limit = 30) => request<{ versions: GuidelineVersionSummary[] }>(`/platform/projects/${id}/guidelines/versions?limit=${limit}`),
+  getGuidelineVersion: (id: string, versionId: string) => request<{ version: GuidelineVersion }>(`/platform/projects/${id}/guidelines/versions/${versionId}`),
+  restoreGuidelineVersion: (id: string, versionId: string) => request<{ project: QmProject }>(`/platform/projects/${id}/guidelines/versions/${versionId}/restore`, { method: 'POST' }),
   exportProject: (id: string) => request<{ version: number; exportedAt: string; project: QmProjectInput }>(`/platform/projects/${id}/export`),
   extractGuidelinesFromPdf: (opts: { fileName: string; mimeType: string; base64: string }) =>
     request<GuidelinesExtractionResult>('/platform/guidelines/extract', {
@@ -968,6 +1021,11 @@ export const api = {
       removedProjectData: boolean;
       remainingProjectConnections: number;
     }>(`/platform/projects/${id}`, { method: 'DELETE' }),
+  getQualityMetrics: (days = 14) => request<QualityMetrics>(`/quality?days=${days}`),
+  getPushStatus: () => request<PushStatus>('/push/status'),
+  subscribePush: (subscription: PushSubscriptionJSON) => request<{ ok: boolean }>('/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
+  unsubscribePush: (endpoint: string) => request<{ ok: boolean }>('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+  testPush: () => request<{ ok: boolean; sent: number; failed: number }>('/push/test', { method: 'POST' }),
   startDiscourseAuth: (opts: { projectId?: string; returnTo?: string } = {}) =>
     request<DiscourseAuthStartResult>('/discourse-auth/start', {
       method: 'POST',

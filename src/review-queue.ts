@@ -1,5 +1,5 @@
 import { readDataJSON, writeDataJSON } from './data-store';
-import { OperationLogEntry, readOperationDetail, readOperationLog } from './operations-log';
+import { OperationLogEntry, readOperationDetails, readOperationLog } from './operations-log';
 import { runtimeDb, runtimeDbConfigured, runtimeScope, runtimeTableMissing } from './runtime-db';
 
 export type ReviewQueueSource = 'community' | 'dm';
@@ -155,22 +155,28 @@ function withStatus(item: ReviewQueueItem, state: ReviewQueueState): ReviewQueue
   };
 }
 
-async function readDetailFast(entry: OperationLogEntry): Promise<unknown | undefined> {
-  if (!/^[a-z0-9-]{8,80}$/i.test(entry.id)) return undefined;
-  try {
-    const record = await readOperationDetail(entry.id);
-    return record?.detail;
-  } catch {
-    return undefined;
-  }
-}
-
 export interface KnowledgeGap {
   id: string;
   reason: string;
   occurrences: number;
   sources: ReviewQueueSource[];
   examples: string[];
+  suggestedGuideline: string;
+}
+
+function guidelineSuggestion(reason: string, examples: string[]): string {
+  const sample = examples[0]?.replace(/\s+/g, ' ').trim().slice(0, 280);
+  return [
+    '## Support guidance draft',
+    '',
+    `Escalation gap: ${reason}`,
+    sample ? `Example contributor question: ${sample}` : '',
+    '',
+    'Verified response policy:',
+    '- Add the exact project rule or answer here.',
+    '- Include the approved link, timing, owner, and escalation path when relevant.',
+    '- State when the agent must hand this topic to a QM instead of answering.',
+  ].filter(Boolean).join('\n');
 }
 
 export async function getKnowledgeGaps(limit = 8): Promise<KnowledgeGap[]> {
@@ -178,13 +184,16 @@ export async function getKnowledgeGaps(limit = 8): Promise<KnowledgeGap[]> {
   const groups = new Map<string, KnowledgeGap>();
   for (const item of queue.items.filter((candidate) => candidate.action === 'human')) {
     const key = item.reason.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140) || 'unknown';
-    const current = groups.get(key) || { id: key, reason: item.reason, occurrences: 0, sources: [], examples: [] };
+    const current = groups.get(key) || { id: key, reason: item.reason, occurrences: 0, sources: [], examples: [], suggestedGuideline: '' };
     current.occurrences += 1;
     if (!current.sources.includes(item.source)) current.sources.push(item.source);
     if (current.examples.length < 3 && !current.examples.includes(item.message)) current.examples.push(item.message);
     groups.set(key, current);
   }
-  return [...groups.values()].sort((left, right) => right.occurrences - left.occurrences).slice(0, Math.max(1, limit));
+  return [...groups.values()]
+    .map((gap) => ({ ...gap, suggestedGuideline: guidelineSuggestion(gap.reason, gap.examples) }))
+    .sort((left, right) => right.occurrences - left.occurrences)
+    .slice(0, Math.max(1, limit));
 }
 
 function communityItems(entry: OperationLogEntry, detail: unknown): ReviewQueueItem[] {
@@ -383,10 +392,10 @@ export async function getReviewQueue(limit = 150, options: ReviewQueueOptions = 
   const relevantEntries = entries
     .filter((entry) => ['community_agent', 'dm_review', 'dm_auto_reply'].includes(entry.action))
     .slice(0, DETAIL_LOOKUP_LIMIT);
-  const details = await Promise.all(relevantEntries.map((entry) => readDetailFast(entry)));
+  const details = await readOperationDetails(relevantEntries.map((entry) => entry.id));
 
-  for (const [index, entry] of relevantEntries.entries()) {
-    const detail = details[index];
+  for (const entry of relevantEntries) {
+    const detail = details.get(entry.id);
     const items = detail
       ? entry.action === 'community_agent'
         ? communityItems(entry, detail)

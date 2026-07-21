@@ -19,6 +19,7 @@ import {
   SlidersHorizontal,
   TestTube2,
   Users,
+  ChartNoAxesCombined,
 } from "lucide-react"
 
 export interface WorkspaceGuide {
@@ -154,6 +155,16 @@ export const workspaceGuides: WorkspaceGuide[] = [
     tips: ["Keep each fact atomic and explicit.", "Use guidelines for long-form source documents."],
   },
   {
+    path: "/guidelines",
+    title: "Guidelines history",
+    shortTitle: "Guidelines history",
+    description: "Compare project guideline versions, see who changed them, and restore a trusted previous version.",
+    group: "Project",
+    icon: ScrollText,
+    steps: ["Select a saved version.", "Compare it with the current project guidelines.", "Restore only after reviewing the removed and added content."],
+    tips: ["Every saved guidelines change creates a version automatically.", "Restoring a version creates a new audit entry instead of deleting history."],
+  },
+  {
     path: "/links",
     title: "Project links",
     shortTitle: "Links",
@@ -162,6 +173,16 @@ export const workspaceGuides: WorkspaceGuide[] = [
     icon: Link2,
     steps: ["Add a descriptive label.", "Paste the canonical URL.", "Remove links that are no longer valid."],
     tips: ["Only trusted project links should be available to the agent.", "Use clear labels such as War Room or Project Guide."],
+  },
+  {
+    path: "/quality",
+    title: "Quality dashboard",
+    shortTitle: "Quality",
+    description: "Measure response coverage, escalations, human resolution, errors, and AI usage for the active project.",
+    group: "System",
+    icon: ChartNoAxesCombined,
+    steps: ["Choose a reporting window.", "Compare replies and escalations over time.", "Follow the recommended next actions."],
+    tips: ["A high escalation rate often points to missing project context.", "Use Run Details to diagnose recurring errors."],
   },
   {
     path: "/settings",

@@ -169,7 +169,10 @@ async function claimAttempt(attempt: DiscourseAuthAttempt): Promise<void> {
   if (!data?.length) throw new Error('Authorization was already used. Please start again.');
 }
 
-function verifyPayload(attempt: DiscourseAuthAttempt, payload: DiscoursePayload): void {
+function verifyPayload(
+  attempt: DiscourseAuthAttempt,
+  payload: DiscoursePayload,
+): asserts payload is DiscoursePayload & { key: string; nonce: string } {
   if (!payload.key || !payload.nonce || payload.nonce !== attempt.nonce) {
     throw new Error('Authorization could not be verified. Please try again.');
   }
@@ -212,20 +215,16 @@ async function storeAuthorizedDiscourseKey(attempt: DiscourseAuthAttempt, payloa
 
   if (upsertError) throw new Error(upsertError.message);
 
-  if (attempt.project_id) {
-    const patch: Record<string, string> = {
-      discourse_api_key_ciphertext: encryptedKey,
-      updated_at: now,
-    };
-    if (username) patch.discourse_username = username;
-
-    const { error: projectError } = await getSupabaseAdmin()
-      .from(PROJECTS_TABLE)
-      .update(patch)
-      .eq('id', attempt.project_id)
-      .eq('owner_id', attempt.owner_id);
-    if (projectError) throw new Error(projectError.message);
-  }
+  const patch: Record<string, string> = {
+    discourse_api_key_ciphertext: encryptedKey,
+    updated_at: now,
+  };
+  if (username) patch.discourse_username = username;
+  const { error: projectError } = await getSupabaseAdmin()
+    .from(PROJECTS_TABLE)
+    .update(patch)
+    .eq('owner_id', attempt.owner_id);
+  if (projectError) throw new Error(projectError.message);
 
   return username;
 }

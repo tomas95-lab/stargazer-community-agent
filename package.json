@@ -24,6 +24,7 @@
     "training:scan": "node node_modules/tsx/dist/cli.mjs src/manager-training-scan.ts",
     "guidelines:extract": "node scripts/extract-guidelines.mjs",
     "storage:migrate": "node node_modules/tsx/dist/cli.mjs src/migrate-data-store.ts",
+    "storage:migrate:operations": "node node_modules/tsx/dist/cli.mjs src/migrate-operational-history.ts",
     "storage:verify": "node node_modules/tsx/dist/cli.mjs src/migrate-data-store.ts --verify"
   },
   "keywords": [],
@@ -37,12 +38,14 @@
     "cors": "^2.8.6",
     "dotenv": "^16.5.0",
     "express": "^5.2.1",
-    "pdf-parse": "^2.4.5"
+    "pdf-parse": "^2.4.5",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
+    "@types/web-push": "^3.6.4",
     "tsx": "^4.19.0",
     "typescript": "^5.8.0"
   }

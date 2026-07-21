@@ -2,6 +2,8 @@ node_modules/
 dist/
 .env
 .browser-profile/
+.browser-profile-mobile/
+.visual-*/
 output/*.md
 output/*.txt
 output/*.png
@@ -15,3 +17,4 @@ ui/dist/
 env
 
 .vercel
+supabase/.temp/

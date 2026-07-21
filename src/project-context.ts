@@ -48,6 +48,8 @@ export interface RuntimeAutomationSettings {
   autoPost?: boolean;
   autoReact?: boolean;
   dmAutoReply?: boolean;
+  communityMaxAnswers?: number;
+  dmMaxAutoReplies?: number;
 }
 
 export interface RuntimeAgentPolicy {

@@ -19,12 +19,14 @@ const DailySummary = lazy(() => import("@/pages/DailySummary"))
 const Dashboard = lazy(() => import("@/pages/Dashboard"))
 const DirectMessages = lazy(() => import("@/pages/DirectMessages"))
 const Help = lazy(() => import("@/pages/Help"))
+const GuidelinesHistory = lazy(() => import("@/pages/GuidelinesHistory"))
 const History = lazy(() => import("@/pages/History"))
 const LinkManager = lazy(() => import("@/pages/LinkManager"))
 const MessageComposer = lazy(() => import("@/pages/MessageComposer"))
 const Projects = lazy(() => import("@/pages/Projects"))
 const ProjectSetup = lazy(() => import("@/pages/ProjectSetup"))
 const ProjectMemoryPage = lazy(() => import("@/pages/ProjectMemory"))
+const QualityDashboard = lazy(() => import("@/pages/QualityDashboard"))
 const ReviewQueue = lazy(() => import("@/pages/ReviewQueue"))
 const RunDetails = lazy(() => import("@/pages/RunDetails"))
 const Settings = lazy(() => import("@/pages/Settings"))
@@ -131,6 +133,8 @@ function WorkspaceRoutes() {
                 <Route path="/summary" element={<DailySummary />} />
                 <Route path="/sandbox" element={<TestingSandbox />} />
                 <Route path="/memory" element={<ProjectMemoryPage />} />
+                <Route path="/guidelines" element={<GuidelinesHistory />} />
+                <Route path="/quality" element={<QualityDashboard />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/projects/new" element={<ProjectSetup forceNew />} />
                 <Route path="/help" element={<Help />} />

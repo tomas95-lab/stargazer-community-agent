@@ -235,6 +235,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
   const guidelinesInputRef = useRef<HTMLInputElement>(null)
+  const consumedGuidelineSuggestion = useRef("")
 
   const editing = Boolean(activeProject)
 
@@ -258,6 +259,20 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     if (!activeDraftKey) return
     writeDraft(activeDraftKey, form)
   }, [activeDraftKey, form])
+
+  useEffect(() => {
+    if (!activeDraftKey) return
+    const state = location.state as { guidelineSuggestion?: string } | null
+    const suggestion = state?.guidelineSuggestion?.trim() || ""
+    if (!suggestion || consumedGuidelineSuggestion.current === suggestion) return
+    consumedGuidelineSuggestion.current = suggestion
+    setForm((current) => ({
+      ...current,
+      projectGuidelines: [current.projectGuidelines.trim(), suggestion].filter(Boolean).join("\n\n"),
+    }))
+    setMessage("Knowledge gap draft added. Complete the verified policy before saving.")
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [activeDraftKey, location.pathname, location.search, location.state, navigate])
 
   useEffect(() => {
     if (!user) return
@@ -480,6 +495,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       aiDailyTokenLimit: optionalNumber(form.aiDailyTokenLimit),
       aiDailyCallLimit: optionalNumber(form.aiDailyCallLimit),
       projectGuidelines: form.projectGuidelines,
+      guidelinesSourceName: guidelinesFile?.name,
+      guidelinesChangeSummary: guidelinesFile ? `Uploaded ${guidelinesFile.name}.` : 'Updated guidelines in the editor.',
       warRoomLink: form.warRoomLink,
       agentMode: form.agentMode,
       autoReplyEnabled: form.autoReplyEnabled,

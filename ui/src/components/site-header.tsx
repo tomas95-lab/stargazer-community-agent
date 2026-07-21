@@ -2,6 +2,7 @@ import { useLocation } from "react-router-dom"
 import { CircleDot, FolderKanban } from "lucide-react"
 
 import { ContextualGuide } from "@/components/contextual-guide"
+import { CommandPalette } from "@/components/command-palette"
 import { NotificationBell } from "@/components/notification-bell"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -26,6 +27,7 @@ export function SiteHeader() {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          <CommandPalette />
           {currentProject ? (
             <Select value={currentProject.id} onValueChange={selectProject}>
               <SelectTrigger className="hidden h-9 w-[210px] bg-background lg:flex" aria-label="Active project">

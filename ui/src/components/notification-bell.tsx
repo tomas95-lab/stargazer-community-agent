@@ -1,32 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Bell as IconBell, BellOff as IconBellOff, BellRing as IconBellRinging } from "lucide-react"
 
-import { api, type OperationLogEntry } from "@/api"
+import { api, type OperationLogEntry, type PushStatus } from "@/api"
 import { Button } from "@/components/ui/button"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { disableWebPush, enableWebPush, webPushSubscription, webPushSupported } from "@/lib/web-push"
+import { usePlatform } from "@/platform"
 
-const ENABLED_KEY = "stargazer_browser_notifications_enabled"
-const LAST_SEEN_AT_KEY = "stargazer_browser_notifications_last_seen_at"
+const ENABLED_KEY = "community_agent_browser_notifications_enabled"
+const LAST_SEEN_AT_KEY = "community_agent_browser_notifications_last_seen_at"
 const POLL_MS = 60_000
 
-type NotificationPayload = {
-  title: string
-  body: string
-  tag: string
-}
+type NotificationPayload = { title: string; body: string; tag: string }
+type NotificationMode = "off" | "polling" | "push"
 
 function asNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0
 }
 
 function asStrings(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : []
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
 }
 
 function userList(users: string[]): string {
@@ -36,67 +29,23 @@ function userList(users: string[]): string {
 
 function notificationFor(entry: OperationLogEntry): NotificationPayload | null {
   const metadata = entry.metadata || {}
-
   if (entry.action === "dm_review") {
     const count = asNumber(metadata.newIncomingMessages)
     if (count <= 0) return null
-    const senders = userList(asStrings(metadata.newDmSenders))
-    return {
-      title: "New direct messages",
-      body: `${count} new DM${count === 1 ? "" : "s"} from ${senders}.`,
-      tag: `dm-review:${entry.id}`,
-    }
+    return { title: "New direct messages", body: `${count} new DM${count === 1 ? "" : "s"} from ${userList(asStrings(metadata.newDmSenders))}.`, tag: `dm-review:${entry.id}` }
   }
-
   if (entry.action === "community_agent") {
     const candidates = asNumber(metadata.candidates)
     const posted = asNumber(metadata.posted)
     const reacted = asNumber(metadata.reacted)
     const needsHuman = asNumber(metadata.needsHuman)
     if (candidates <= 0 && posted <= 0 && reacted <= 0) return null
-
-    if (posted > 0) {
-      const users = userList(asStrings(metadata.postedUsers))
-      return {
-        title: "Bot replied in Community",
-        body: `${posted} ${posted === 1 ? "reply" : "replies"} posted for ${users}. ${reacted} reacted. ${needsHuman} need human review.`,
-        tag: `community-posted:${entry.id}`,
-      }
-    }
-
-    if (reacted > 0) {
-      const users = userList(asStrings(metadata.reactedUsers))
-      return {
-        title: "Bot reacted in Community",
-        body: `${reacted} useful ${reacted === 1 ? "message" : "messages"} acknowledged for ${users}. ${needsHuman} need human review.`,
-        tag: `community-reacted:${entry.id}`,
-      }
-    }
-
-    const users = userList(asStrings(metadata.candidateUsers))
-    return {
-      title: "New Community messages",
-      body: `${candidates} message${candidates === 1 ? "" : "s"} need review from ${users}.`,
-      tag: `community-candidates:${entry.id}`,
-    }
+    if (posted > 0) return { title: "Bot replied in Community", body: `${posted} ${posted === 1 ? "reply" : "replies"} posted. ${needsHuman} need human review.`, tag: `community-posted:${entry.id}` }
+    if (reacted > 0) return { title: "Bot reacted in Community", body: `${reacted} useful ${reacted === 1 ? "message" : "messages"} acknowledged.`, tag: `community-reacted:${entry.id}` }
+    return { title: "New Community messages", body: `${candidates} message${candidates === 1 ? "" : "s"} need review from ${userList(asStrings(metadata.candidateUsers))}.`, tag: `community-candidates:${entry.id}` }
   }
-
-  if (entry.action === "dm_reply") {
-    return {
-      title: "DM reply sent",
-      body: entry.message,
-      tag: `dm-reply:${entry.id}`,
-    }
-  }
-
+  if (entry.action === "dm_reply") return { title: "DM reply sent", body: entry.message, tag: `dm-reply:${entry.id}` }
   return null
-}
-
-function notificationPermission(): NotificationPermission | "unsupported" {
-  if (typeof window === "undefined" || !("Notification" in window)) {
-    return "unsupported"
-  }
-  return Notification.permission
 }
 
 function readEnabled(): boolean {
@@ -110,99 +59,85 @@ function writeEnabled(enabled: boolean): void {
 }
 
 function readLastSeenAt(): string {
-  if (typeof window === "undefined") return ""
-  return window.localStorage.getItem(LAST_SEEN_AT_KEY) || ""
+  return typeof window === "undefined" ? "" : window.localStorage.getItem(LAST_SEEN_AT_KEY) || ""
 }
 
 function writeLastSeenAt(value: string): void {
-  if (typeof window === "undefined" || !value) return
-  window.localStorage.setItem(LAST_SEEN_AT_KEY, value)
+  if (typeof window !== "undefined" && value) window.localStorage.setItem(LAST_SEEN_AT_KEY, value)
 }
 
 export function NotificationBell() {
-  const [enabled, setEnabled] = useState(readEnabled)
-  const [permission, setPermission] = useState(notificationPermission)
-  const [checking, setChecking] = useState(false)
+  const { currentProject } = usePlatform()
+  const [mode, setMode] = useState<NotificationMode>(readEnabled() ? "polling" : "off")
+  const [status, setStatus] = useState<PushStatus | null>(null)
+  const [checking, setChecking] = useState(true)
   const [error, setError] = useState("")
 
-  const active = enabled && permission === "granted"
-
-  const seedLatestOperation = useCallback(async () => {
-    const { entries } = await api.getOperations(1)
-    if (entries[0]?.at) writeLastSeenAt(entries[0].at)
+  const refresh = useCallback(async () => {
+    setChecking(true)
+    try {
+      const nextStatus = await api.getPushStatus()
+      setStatus(nextStatus)
+      const subscription = nextStatus.configured ? await webPushSubscription() : null
+      if (subscription) setMode("push")
+      else setMode(readEnabled() && Notification.permission === "granted" ? "polling" : "off")
+    } catch {
+      setMode(readEnabled() && typeof Notification !== "undefined" && Notification.permission === "granted" ? "polling" : "off")
+    } finally {
+      setChecking(false)
+    }
   }, [])
 
-  const poll = useCallback(async () => {
-    if (!readEnabled() || notificationPermission() !== "granted") return
+  useEffect(() => { void refresh() }, [refresh, currentProject?.id])
 
-    const lastSeenAt = readLastSeenAt()
+  const poll = useCallback(async () => {
+    if (mode !== "polling" || Notification.permission !== "granted") return
     const { entries } = await api.getOperations(25)
     const newestAt = entries[0]?.at
     if (!newestAt) return
-
-    if (!lastSeenAt) {
-      writeLastSeenAt(newestAt)
-      return
-    }
-
-    const pending = entries
-      .filter((entry) => entry.at > lastSeenAt)
-      .sort((left, right) => left.at.localeCompare(right.at))
-
-    for (const entry of pending) {
+    const lastSeenAt = readLastSeenAt()
+    if (!lastSeenAt) return writeLastSeenAt(newestAt)
+    for (const entry of entries.filter((item) => item.at > lastSeenAt).sort((a, b) => a.at.localeCompare(b.at))) {
       const payload = notificationFor(entry)
-      if (!payload) continue
-      new Notification(payload.title, {
-        body: payload.body,
-        tag: payload.tag,
-        silent: false,
-      })
+      if (payload) new Notification(payload.title, { body: payload.body, tag: payload.tag })
     }
-
     writeLastSeenAt(newestAt)
-  }, [])
+  }, [mode])
 
   useEffect(() => {
-    if (!active) return
+    if (mode !== "polling") return
     void poll().catch(() => undefined)
-    const timer = window.setInterval(() => {
-      void poll().catch(() => undefined)
-    }, POLL_MS)
+    const timer = window.setInterval(() => void poll().catch(() => undefined), POLL_MS)
     return () => window.clearInterval(timer)
-  }, [active, poll])
+  }, [mode, poll])
 
-  const toggle = async () => {
-    setError("")
-    const currentPermission = notificationPermission()
-    setPermission(currentPermission)
-
-    if (enabled) {
-      writeEnabled(false)
-      setEnabled(false)
-      return
-    }
-
-    if (currentPermission === "unsupported") {
-      setError("Browser notifications are unavailable.")
-      return
-    }
-
-    let nextPermission = currentPermission
-    if (currentPermission === "default") {
-      nextPermission = await Notification.requestPermission()
-      setPermission(nextPermission)
-    }
-
-    if (nextPermission !== "granted") {
-      setError("Notifications are blocked.")
-      return
-    }
-
+  async function toggle() {
     setChecking(true)
+    setError("")
     try {
-      await seedLatestOperation()
+      if (mode === "push") {
+        await disableWebPush()
+        setMode("off")
+        return
+      }
+      if (mode === "polling") {
+        writeEnabled(false)
+        setMode("off")
+        return
+      }
+      if (status?.configured && webPushSupported()) {
+        await enableWebPush(status)
+        writeEnabled(false)
+        setMode("push")
+        return
+      }
+      if (!("Notification" in window)) throw new Error("Browser notifications are unavailable.")
+      const permission = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission
+      if (permission !== "granted") throw new Error("Notifications are blocked in this browser.")
+      const { entries } = await api.getOperations(1)
+      writeLastSeenAt(entries[0]?.at || new Date().toISOString())
       writeEnabled(true)
-      setEnabled(true)
+      setMode("polling")
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -210,33 +145,17 @@ export function NotificationBell() {
     }
   }
 
-  const Icon = useMemo(() => {
-    if (checking) return IconBellRinging
-    if (active) return IconBellRinging
-    if (permission === "denied" || permission === "unsupported") return IconBellOff
-    return IconBell
-  }, [active, checking, permission])
-
-  const label = active
-    ? "Mac notifications are enabled"
-    : error || (permission === "denied" ? "Mac notifications are blocked" : "Enable Mac notifications")
+  const Icon = useMemo(() => checking || mode !== "off" ? IconBellRinging : error ? IconBellOff : IconBell, [checking, mode, error])
+  const label = error || (mode === "push" ? "Web Push notifications are enabled" : mode === "polling" ? "In-browser notifications are enabled" : "Enable notifications")
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => void toggle()}
-          aria-label={label}
-          className={active ? "text-primary" : ""}
-        >
+        <Button variant="ghost" size="icon" onClick={() => void toggle()} aria-label={label} className={mode !== "off" ? "text-primary" : ""}>
           <Icon />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>
-        <p>{label}</p>
-      </TooltipContent>
+      <TooltipContent><p>{label}</p></TooltipContent>
     </Tooltip>
   )
 }
