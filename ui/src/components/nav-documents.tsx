@@ -1,10 +1,6 @@
 "use client"
 
-import {
-  IconDots,
-  IconExternalLink,
-  type Icon,
-} from "@tabler/icons-react"
+import { MoreHorizontal as IconDots, ExternalLink as IconExternalLink, type LucideIcon } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 
 import {
@@ -30,7 +26,7 @@ export function NavDocuments({
   items: {
     name: string
     url: string
-    icon: Icon
+    icon: LucideIcon
   }[]
   label?: string
 }) {

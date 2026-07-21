@@ -282,7 +282,7 @@ export default function TopicEditor() {
           <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       ) : topics.length === 0 ? (
-        <div className="space-y-3 rounded-xl border border-dashed border-border bg-card/60 py-16 text-center">
+        <div className="space-y-3 rounded-lg border border-dashed border-border bg-card/60 py-16 text-center">
           <ClipboardList className="mx-auto size-9 text-primary" />
           <p className="font-semibold text-foreground">No topics yet</p>
           <p className="text-sm text-muted-foreground">Create topics in advance. The publisher uses the one matching today's date.</p>

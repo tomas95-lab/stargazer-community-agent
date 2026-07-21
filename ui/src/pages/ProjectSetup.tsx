@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { ChangeEvent, DragEvent, FormEvent, ReactNode } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { IconCheck, IconExternalLink, IconFileText, IconFileTypePdf, IconLoader2, IconRefresh, IconSearch, IconShieldCheck, IconUpload, IconX } from "@tabler/icons-react"
+import { Check as IconCheck, ExternalLink as IconExternalLink, FileText as IconFileText, FileUp as IconFileTypePdf, LoaderCircle as IconLoader2, RefreshCw as IconRefresh, Search as IconSearch, ShieldCheck as IconShieldCheck, Upload as IconUpload, X as IconX } from "lucide-react"
 
 import { api, projectSelection, type DiscourseAuthStatus, type QmProjectInput } from "@/api"
 import { useAuth } from "@/auth"
 import { usePlatform } from "@/platform"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -18,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface ProjectFormState {
   ownerName: string
@@ -165,12 +167,31 @@ function GuideItem({ icon, title, children }: { icon: ReactNode; title: string; 
   )
 }
 
-function OnboardingGuide() {
+function SetupSection({ number, title, description, className = "" }: { number: number; title: string; description: string; className?: string }) {
   return (
-    <Card className="rounded-lg">
+    <div className={`flex items-start gap-3 border-t pt-6 ${className}`}>
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-foreground text-xs font-semibold text-background">{number}</span>
+      <div>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{description}</p>
+      </div>
+    </div>
+  )
+}
+
+function OnboardingGuide({ completed }: { completed: boolean[] }) {
+  const progress = completed.filter(Boolean).length
+  return (
+    <Card className="rounded-lg shadow-sm">
       <CardHeader>
-        <CardTitle>Onboarding guide</CardTitle>
-        <CardDescription>Use this checklist to find each value before saving the project.</CardDescription>
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle>Setup guide</CardTitle>
+          <Badge variant={progress === completed.length ? "secondary" : "outline"}>{progress} of {completed.length}</Badge>
+        </div>
+        <CardDescription>Find each value and verify the project before enabling automation.</CardDescription>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${(progress / completed.length) * 100}%` }} />
+        </div>
       </CardHeader>
       <CardContent className="grid gap-4">
         <GuideItem icon={<IconCheck className="size-4" />} title="Project ID and name">
@@ -276,6 +297,17 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       ? "Your Anthropic API key (leave blank to keep current key)"
       : "Your Anthropic API key"
   }, [editing, activeProject])
+
+  const setupChecks = useMemo(() => [
+    Boolean(form.ownerName.trim() && form.projectName.trim() && form.projectKey.trim()),
+    Boolean(form.categoryId.trim() && form.channelId.trim() && form.discourseUsername.trim()),
+    Boolean((discourseStatus?.connected || activeProject?.discourseApiKeyConfigured || form.discourseApiKey.trim())
+      && (activeProject?.anthropicApiKeyConfigured || form.anthropicApiKey.trim())),
+    form.projectGuidelines.trim().length >= 100,
+    Boolean(form.agentMode && Number.isFinite(Number(form.minConfidence))),
+  ], [activeProject, discourseStatus, form])
+
+  const setupProgress = setupChecks.filter(Boolean).length
 
   function update<K extends keyof ProjectFormState>(key: K, value: ProjectFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -473,22 +505,23 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   return (
     <div className={editing ? "bg-background px-4 md:px-6" : "min-h-screen bg-background px-4 py-8 md:px-8"}>
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
             <p className="text-sm text-muted-foreground">{description}</p>
           </div>
-          <Button type="button" variant="outline" onClick={() => void signOut()}>
-            Sign out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Badge variant={setupProgress === setupChecks.length ? "secondary" : "outline"}>{setupProgress} of {setupChecks.length} ready</Badge>
+            {!editing ? <Button type="button" variant="outline" onClick={() => void signOut()}>Sign out</Button> : null}
+          </div>
         </div>
 
-        <div className={editing ? "grid gap-6" : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]"}>
+        <div className={editing ? "grid gap-6" : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_480px]"}>
         <Card className="rounded-lg">
           <CardHeader>
-            <CardTitle>Community connection</CardTitle>
+            <CardTitle>Project configuration</CardTitle>
             <CardDescription>
-              These values define which category, channel and Discourse user the agent can access.
+              Complete the five sections below. Drafts are saved locally as you work, but API keys are never stored in the browser draft.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -516,6 +549,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                   Connect Discourse
                 </Button>
               </div>
+
+              <SetupSection number={1} title="Project identity" description="Name the project and use the exact shared Project ID used by the other QMs." />
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
@@ -557,6 +592,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     Use the same ID as the other QMs to load and share that project.
                   </p>
                 </div>
+                <SetupSection className="md:col-span-2" number={2} title="Community target" description="Identify the category and chat channel this project owns in Outlier Community." />
                 <div className="grid gap-2">
                   <Label htmlFor="communityBaseUrl">Community base URL</Label>
                   <Input
@@ -604,6 +640,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     Open the project chat or channel and copy the numeric ID from the URL or settings.
                   </p>
                 </div>
+                <SetupSection className="md:col-span-2" number={3} title="Personal connections" description="Connect your own Community and Claude credentials. These are private to your QM account." />
                 <div className="grid gap-2">
                   <Label htmlFor="discourseUsername">Discourse username</Label>
                   <Input
@@ -687,6 +724,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                     placeholder="100"
                   />
                 </div>
+                <SetupSection className="md:col-span-2" number={4} title="Project context" description="Add the trusted links and source material the agent should use when answering." />
                 <div className="grid gap-2 md:col-span-2">
                   <Label htmlFor="warRoomLink">War Room link</Label>
                   <Input
@@ -761,19 +799,18 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                 />
               </div>
 
+              <SetupSection number={5} title="Automation policy" description="Choose how much autonomy the agent has and the minimum confidence required." />
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="grid gap-2">
                   <Label htmlFor="agentMode">Agent mode</Label>
-                  <select
-                    id="agentMode"
-                    className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    value={form.agentMode}
-                    onChange={(event) => update("agentMode", event.target.value as ProjectFormState["agentMode"])}
-                  >
-                    <option value="supervised">Supervised</option>
-                    <option value="draft">Draft only</option>
-                    <option value="auto">Automatic replies</option>
-                  </select>
+                  <Select value={form.agentMode} onValueChange={(value) => update("agentMode", value as ProjectFormState["agentMode"])}>
+                    <SelectTrigger id="agentMode"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="supervised">Supervised</SelectItem>
+                      <SelectItem value="draft">Draft only</SelectItem>
+                      <SelectItem value="auto">Automatic replies</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="minConfidence">Minimum confidence</Label>
@@ -814,7 +851,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         </Card>
         {!editing ? (
           <aside className="lg:sticky lg:top-6 lg:self-start">
-            <OnboardingGuide />
+            <OnboardingGuide completed={setupChecks} />
           </aside>
         ) : null}
         </div>

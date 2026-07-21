@@ -1,7 +1,7 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom"
-import { IconLoader2, IconLock } from "@tabler/icons-react"
+import { LoaderCircle as IconLoader2, LockKeyhole as IconLock, Orbit } from "lucide-react"
 
 import { useAuth } from "@/auth"
 import { Button } from "@/components/ui/button"
@@ -50,7 +50,12 @@ export default function Login() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <Card className="w-full max-w-md rounded-lg">
+      <div className="w-full min-w-0 max-w-md">
+        <Link to="/" className="mb-5 flex items-center justify-center gap-2 text-sm font-semibold text-foreground">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Orbit className="size-4" /></span>
+          Community Agent
+        </Link>
+      <Card className="w-full min-w-0 overflow-hidden rounded-lg">
         <CardHeader>
           <div className="mb-2 flex size-10 items-center justify-center rounded-md border bg-muted">
             <IconLock className="size-5" />
@@ -102,6 +107,8 @@ export default function Login() {
           )}
         </CardContent>
       </Card>
+      <p className="mt-5 text-center text-xs text-muted-foreground">Secure QM workspace for Outlier Community operations</p>
+      </div>
     </main>
   )
 }

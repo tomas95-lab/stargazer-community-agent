@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IconDeviceFloppy, IconLoader2, IconPlus, IconRefresh, IconTrash } from '@tabler/icons-react';
+import { Save as IconDeviceFloppy, LoaderCircle as IconLoader2, Plus as IconPlus, RefreshCw as IconRefresh, Trash2 as IconTrash } from 'lucide-react';
 import { api, type ProjectMemory, type ProjectMemoryFact } from '../api';
 import { Button } from '@/components/ui/button';
 

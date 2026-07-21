@@ -1,31 +1,9 @@
-import * as React from "react"
 import { Link } from "react-router-dom"
-import {
-  IconCalendarEvent,
-  IconAlertTriangle,
-  IconDatabase,
-  IconDashboard,
-  IconFlask,
-  IconFolder,
-  IconHelpCircle,
-  IconHistory,
-  IconInbox,
-  IconInnerShadowTop,
-  IconLink,
-  IconListDetails,
-  IconLogs,
-  IconMessage,
-  IconPencil,
-  IconReportAnalytics,
-  IconRobot,
-  IconSettings,
-} from "@tabler/icons-react"
+import { Inbox, MessageSquarePlus, Orbit } from "lucide-react"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
-import { usePlatform } from "@/platform"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -34,139 +12,67 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
-
-const data = {
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/",
-      icon: IconDashboard,
-    },
-    {
-      title: "Topics",
-      url: "/topics",
-      icon: IconListDetails,
-    },
-    {
-      title: "Comms",
-      url: "/comms",
-      icon: IconMessage,
-    },
-    {
-      title: "Composer",
-      url: "/composer",
-      icon: IconPencil,
-    },
-    {
-      title: "Community Agent",
-      url: "/agent",
-      icon: IconRobot,
-    },
-    {
-      title: "DM Review",
-      url: "/dms",
-      icon: IconInbox,
-    },
-    {
-      title: "Projects",
-      url: "/projects",
-      icon: IconFolder,
-    },
-    {
-      title: "Review Queue",
-      url: "/review",
-      icon: IconAlertTriangle,
-    },
-    {
-      title: "Daily Summary",
-      url: "/summary",
-      icon: IconReportAnalytics,
-    },
-    {
-      title: "Sessions",
-      url: "/webinars",
-      icon: IconCalendarEvent,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Help",
-      url: "/help",
-      icon: IconHelpCircle,
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: IconSettings,
-    },
-  ],
-  documents: [
-    {
-      name: "Link Manager",
-      url: "/links",
-      icon: IconLink,
-    },
-    {
-      name: "Run History",
-      url: "/history",
-      icon: IconHistory,
-    },
-    {
-      name: "Run Details",
-      url: "/runs",
-      icon: IconLogs,
-    },
-    {
-      name: "Testing Sandbox",
-      url: "/sandbox",
-      icon: IconFlask,
-    },
-    {
-      name: "Project Memory",
-      url: "/memory",
-      icon: IconDatabase,
-    },
-    {
-      name: "Project Settings",
-      url: "/project",
-      icon: IconSettings,
-    },
-  ],
-}
+import { useAuth } from "@/auth"
+import { usePlatform } from "@/platform"
+import { guidesForGroup } from "@/lib/workspace-guides"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { currentProject } = usePlatform()
-  const projectName = currentProject?.projectName || "Project"
-  const projectKey = currentProject?.projectKey || "69cd3d3788bf65e1468428b1"
+  const { user } = useAuth()
+  const projectName = currentProject?.projectName || "Select a project"
+  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "QM"
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader className="gap-3 border-b border-sidebar-border px-3 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
-            >
-              <Link to="/">
-                <IconInnerShadowTop className="size-5!" />
-                <span className="truncate text-base font-semibold">{projectName}</span>
+            <SidebarMenuButton asChild size="lg" tooltip="Community Agent">
+              <Link to="/" className="group/brand">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
+                  <Orbit className="size-4" />
+                </span>
+                <span className="min-w-0 leading-tight">
+                  <span className="block truncate text-sm font-semibold">Community Agent</span>
+                  <span className="block truncate text-xs text-sidebar-foreground/60">{projectName}</span>
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2 overflow-hidden group-data-[collapsible=icon]:grid-cols-1">
+          <Button asChild size="sm" className="justify-start group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:px-0">
+            <Link to="/composer">
+              <MessageSquarePlus className="size-4" />
+              <span className="group-data-[collapsible=icon]:hidden">Compose</span>
+            </Link>
+          </Button>
+          <Button asChild size="icon" variant="outline" className="size-8 group-data-[collapsible=icon]:hidden">
+            <Link to="/agent" title="Open Community inbox">
+              <Inbox className="size-4" />
+              <span className="sr-only">Open Community inbox</span>
+            </Link>
+          </Button>
+        </div>
       </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} label="Resources" />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+
+      <SidebarContent className="py-2">
+        <NavMain items={guidesForGroup("Overview")} />
+        <NavMain label="Inbox" items={guidesForGroup("Inbox")} />
+        <NavMain label="Content" items={guidesForGroup("Content")} />
+        <NavMain label="Project" items={guidesForGroup("Project")} />
+        <SidebarSeparator className="mx-3 w-auto" />
+        <NavMain label="System" items={guidesForGroup("System")} />
       </SidebarContent>
-      <SidebarFooter>
+
+      <SidebarFooter className="border-t border-sidebar-border p-2">
         <NavUser
           user={{
-            name: projectName,
-            email: `Project ID: ${projectKey}`,
+            name: userName,
+            email: user?.email || currentProject?.projectKey || "QM workspace",
             avatar: "",
           }}
         />

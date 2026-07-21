@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  IconAlertTriangle,
-  IconArchive,
-  IconArrowRight,
-  IconCircleCheck,
-  IconInbox,
-  IconMessageCircle,
-  IconRefresh,
-  IconRotateClockwise,
-} from '@tabler/icons-react';
+  TriangleAlert as IconAlertTriangle,
+  Archive as IconArchive,
+  ArrowRight as IconArrowRight,
+  CircleCheck as IconCircleCheck,
+  Inbox as IconInbox,
+  MessageCircle as IconMessageCircle,
+  RefreshCw as IconRefresh,
+  RotateCcw as IconRotateClockwise,
+} from 'lucide-react';
 import { api, type KnowledgeGap, type ReviewQueueItem, type ReviewQueueResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

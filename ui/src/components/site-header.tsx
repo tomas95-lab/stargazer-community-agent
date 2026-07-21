@@ -1,64 +1,50 @@
 import { useLocation } from "react-router-dom"
+import { CircleDot, FolderKanban } from "lucide-react"
 
+import { ContextualGuide } from "@/components/contextual-guide"
+import { NotificationBell } from "@/components/notification-bell"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { NotificationBell } from "@/components/notification-bell"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { guideForPath } from "@/lib/workspace-guides"
 import { usePlatform } from "@/platform"
-
-const TITLES: Record<string, string> = {
-  "/": "Project Dashboard",
-  "/topics": "Topics",
-  "/comms": "Comms Automator",
-  "/composer": "Message Composer",
-  "/agent": "Community Agent",
-  "/dms": "DM Review",
-  "/webinars": "Sessions",
-  "/links": "Link Manager",
-  "/history": "History",
-  "/runs": "Run Details",
-  "/review": "Human Review Queue",
-  "/sandbox": "Testing Sandbox",
-  "/memory": "Project Memory",
-  "/help": "Help",
-  "/settings": "Settings",
-  "/project": "Project Settings",
-}
 
 export function SiteHeader() {
   const { pathname } = useLocation()
   const { currentProject, projects, selectProject } = usePlatform()
-  const title = TITLES[pathname] ?? "Project"
+  const guide = guideForPath(pathname)
 
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
-        />
-        <h1 className="text-base font-medium">{title}</h1>
-        <div className="ml-auto flex items-center gap-2">
-          {projects.length > 1 ? (
-            <select
-              className="h-8 max-w-52 rounded-md border border-input bg-background px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              value={currentProject?.id || ""}
-              onChange={(event) => {
-                selectProject(event.target.value)
-              }}
-              aria-label="Active project"
-            >
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.projectName} ({project.projectKey})
-                </option>
-              ))}
-            </select>
-          ) : currentProject ? (
-            <span className="hidden max-w-52 truncate text-sm text-muted-foreground sm:inline">
-              {currentProject.projectName} ({currentProject.projectKey})
-            </span>
+    <header className="sticky top-0 z-30 flex min-h-(--header-height) shrink-0 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90">
+      <div className="flex w-full min-w-0 items-center gap-3 px-4 lg:px-6">
+        <SidebarTrigger className="-ml-1 shrink-0" />
+        <Separator orientation="vertical" className="hidden h-5 sm:block" />
+
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-sm font-semibold text-foreground sm:text-base">{guide.title}</h1>
+          <p className="hidden truncate text-xs text-muted-foreground md:block">{guide.description}</p>
+        </div>
+
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {currentProject ? (
+            <Select value={currentProject.id} onValueChange={selectProject}>
+              <SelectTrigger className="hidden h-9 w-[210px] bg-background lg:flex" aria-label="Active project">
+                <FolderKanban className="size-4 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <CircleDot className={project.enabled ? "size-3 text-emerald-600" : "size-3 text-muted-foreground"} />
+                      <span className="truncate">{project.projectName}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : null}
+          <ContextualGuide />
           <NotificationBell />
         </div>
       </div>

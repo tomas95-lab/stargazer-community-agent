@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react"
 import type { CSSProperties, ReactNode } from "react"
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom"
 
@@ -6,27 +7,30 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 import { PlatformProvider, usePlatform } from "@/platform"
-import CommsAutomator from "@/pages/CommsAutomator"
-import CommunityAgent from "@/pages/CommunityAgent"
-import DailySummary from "@/pages/DailySummary"
-import Dashboard from "@/pages/Dashboard"
-import DirectMessages from "@/pages/DirectMessages"
-import Help from "@/pages/Help"
-import History from "@/pages/History"
-import LinkManager from "@/pages/LinkManager"
 import Login from "@/pages/Login"
-import MessageComposer from "@/pages/MessageComposer"
-import Projects from "@/pages/Projects"
-import ProjectSetup from "@/pages/ProjectSetup"
-import ProjectMemoryPage from "@/pages/ProjectMemory"
-import ReviewQueue from "@/pages/ReviewQueue"
-import RunDetails from "@/pages/RunDetails"
-import Settings from "@/pages/Settings"
 import Signup from "@/pages/Signup"
-import TestingSandbox from "@/pages/TestingSandbox"
-import TopicEditor from "@/pages/TopicEditor"
-import WebinarScheduler from "@/pages/WebinarScheduler"
+
+const CommsAutomator = lazy(() => import("@/pages/CommsAutomator"))
+const CommunityAgent = lazy(() => import("@/pages/CommunityAgent"))
+const DailySummary = lazy(() => import("@/pages/DailySummary"))
+const Dashboard = lazy(() => import("@/pages/Dashboard"))
+const DirectMessages = lazy(() => import("@/pages/DirectMessages"))
+const Help = lazy(() => import("@/pages/Help"))
+const History = lazy(() => import("@/pages/History"))
+const LinkManager = lazy(() => import("@/pages/LinkManager"))
+const MessageComposer = lazy(() => import("@/pages/MessageComposer"))
+const Projects = lazy(() => import("@/pages/Projects"))
+const ProjectSetup = lazy(() => import("@/pages/ProjectSetup"))
+const ProjectMemoryPage = lazy(() => import("@/pages/ProjectMemory"))
+const ReviewQueue = lazy(() => import("@/pages/ReviewQueue"))
+const RunDetails = lazy(() => import("@/pages/RunDetails"))
+const Settings = lazy(() => import("@/pages/Settings"))
+const TestingSandbox = lazy(() => import("@/pages/TestingSandbox"))
+const TopicEditor = lazy(() => import("@/pages/TopicEditor"))
+const WebinarScheduler = lazy(() => import("@/pages/WebinarScheduler"))
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const auth = useAuth()
@@ -34,11 +38,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
   if (!auth.configured) return children
   if (auth.loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-        Loading workspace...
-      </main>
-    )
+    return <WorkspaceLoading label="Loading your workspace" />
   }
   if (!auth.session) return <Navigate to="/login" state={{ from: location }} replace />
   return children
@@ -50,14 +50,51 @@ function RequireProject({ children }: { children: ReactNode }) {
 
   if (!auth.configured) return children
   if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-        Loading projects...
-      </main>
-    )
+    return <WorkspaceLoading label="Loading your projects" />
   }
   if (projects.length === 0) return <Navigate to="/onboarding" replace />
   return children
+}
+
+function WorkspaceLoading({ label }: { label: string }) {
+  return (
+    <main className="flex min-h-screen bg-background">
+      <aside className="hidden w-72 border-r bg-sidebar p-4 md:block">
+        <Skeleton className="h-10 w-48" />
+        <div className="mt-8 space-y-3">
+          {Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-8 w-full" />)}
+        </div>
+      </aside>
+      <section className="flex-1 p-6">
+        <div className="flex items-center gap-3 border-b pb-5">
+          <Skeleton className="size-8" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-72 max-w-full" />
+          </div>
+        </div>
+        <div className="mx-auto mt-8 max-w-6xl space-y-4" aria-live="polite">
+          <p className="text-sm text-muted-foreground">{label}...</p>
+          <div className="grid gap-4 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-28 w-full" />)}
+          </div>
+          <Skeleton className="h-72 w-full" />
+        </div>
+      </section>
+    </main>
+  )
+}
+
+function PageLoading() {
+  return (
+    <div className="space-y-5 px-4 lg:px-6" aria-label="Loading page">
+      <div className="space-y-2"><Skeleton className="h-7 w-52" /><Skeleton className="h-4 w-80 max-w-full" /></div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-24" />)}
+      </div>
+      <Skeleton className="h-72" />
+    </div>
+  )
 }
 
 function WorkspaceRoutes() {
@@ -68,7 +105,7 @@ function WorkspaceRoutes() {
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
+          "--header-height": "calc(var(--spacing) * 16)",
         } as CSSProperties
       }
     >
@@ -77,7 +114,8 @@ function WorkspaceRoutes() {
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
-            <main className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 py-5 md:gap-6 md:py-7">
+              <Suspense fallback={<PageLoading />}>
               <Routes key={currentProject?.id || "default-project"}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/topics" element={<TopicEditor />} />
@@ -100,6 +138,7 @@ function WorkspaceRoutes() {
                 <Route path="/project" element={<ProjectSetup />} />
                 <Route path="*" element={<Dashboard />} />
               </Routes>
+              </Suspense>
             </main>
           </div>
         </div>
@@ -121,7 +160,7 @@ export default function App() {
               element={
                 <RequireAuth>
                   <PlatformProvider>
-                    <ProjectSetup />
+                    <Suspense fallback={<WorkspaceLoading label="Loading project setup" />}><ProjectSetup /></Suspense>
                   </PlatformProvider>
                 </RequireAuth>
               }
@@ -139,6 +178,7 @@ export default function App() {
               }
             />
           </Routes>
+          <Toaster richColors closeButton />
         </TooltipProvider>
       </AuthProvider>
     </BrowserRouter>

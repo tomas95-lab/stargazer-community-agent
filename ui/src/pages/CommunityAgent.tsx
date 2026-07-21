@@ -1,4 +1,4 @@
-import { IconCornerDownRight, IconMessageCircle, IconMessages } from '@tabler/icons-react';
+import { CornerDownRight as IconCornerDownRight, MessageCircle as IconMessageCircle, MessagesSquare as IconMessages } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   api,

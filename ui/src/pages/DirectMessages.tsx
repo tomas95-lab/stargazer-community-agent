@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  IconAlertCircle,
-  IconCheck,
-  IconClock,
-  IconInbox,
-  IconRefresh,
-  IconSend,
-  IconSparkles,
-  IconUser,
-} from '@tabler/icons-react';
+  CircleAlert as IconAlertCircle,
+  Check as IconCheck,
+  Clock as IconClock,
+  Inbox as IconInbox,
+  RefreshCw as IconRefresh,
+  Send as IconSend,
+  Sparkles as IconSparkles,
+  User as IconUser,
+} from 'lucide-react';
 import { api, type DmDraftResult, type DmReviewMessage, type DmReviewResult, type DmReviewThreadSummary } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

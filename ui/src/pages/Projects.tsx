@@ -1,17 +1,17 @@
 import { Link } from 'react-router-dom';
 import {
-  IconCircleCheck,
-  IconArchive,
-  IconRestore,
-  IconExternalLink,
-  IconFolder,
-  IconDownload,
-  IconUpload,
-  IconPlus,
-  IconPlayerPause,
-  IconPlayerPlay,
-  IconRefresh,
-} from '@tabler/icons-react';
+  CircleCheck as IconCircleCheck,
+  Archive as IconArchive,
+  ArchiveRestore as IconRestore,
+  ExternalLink as IconExternalLink,
+  Folder as IconFolder,
+  Download as IconDownload,
+  Upload as IconUpload,
+  Plus as IconPlus,
+  Pause as IconPlayerPause,
+  Play as IconPlayerPlay,
+  RefreshCw as IconRefresh,
+} from 'lucide-react';
 import { useRef, useState } from 'react';
 import { api, projectSelection, type QmProject } from '@/api';
 import { usePlatform } from '@/platform';

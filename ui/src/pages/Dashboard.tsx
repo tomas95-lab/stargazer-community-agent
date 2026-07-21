@@ -2,14 +2,17 @@ import { useEffect, useState } from "react"
 import type { ComponentType } from "react"
 import { useNavigate } from "react-router-dom"
 import {
+  ArrowRight,
   AlertTriangle,
   Bot,
+  CheckCircle2,
+  CircleAlert,
   FileText,
   Link2,
-  Loader2,
   MessageSquareText,
   PencilLine,
   Target,
+  Settings,
 } from "lucide-react"
 
 import { api, type PreviewData, type Topic, type Webinar } from "@/api"
@@ -21,7 +24,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { usePlatform } from "@/platform"
 
 function NextWebinarCard({ webinar }: { webinar: Webinar }) {
   const dt = new Date(`${webinar.date}T${webinar.timeUtc}:00Z`)
@@ -32,10 +37,10 @@ function NextWebinarCard({ webinar }: { webinar: Webinar }) {
 
   return (
     <div className="px-4 lg:px-6">
-      <Card className="border-primary/30 bg-primary/10 shadow-xs">
+      <Card className="border-blue-200 bg-blue-50/70 shadow-xs">
         <CardContent className="space-y-2 p-5">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase text-primary">Next Session</p>
+            <p className="text-xs font-semibold uppercase text-blue-700">Next Session</p>
             <Badge variant="secondary">{timeLeft}</Badge>
           </div>
           <p className="font-semibold text-foreground">{webinar.title}</p>
@@ -74,6 +79,7 @@ function QuickAction({
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { currentProject } = usePlatform()
   const [date, setDate] = useState("")
   const [topic, setTopic] = useState<Topic | null>(null)
   const [preview, setPreview] = useState<PreviewData | null>(null)
@@ -104,35 +110,43 @@ export default function Dashboard() {
     .sort((a, b) => a.date.localeCompare(b.date))[0]
 
   const upcomingTopics = allTopics.filter((t) => t.date >= date).length
+  const readiness = [
+    { label: "Community target", ready: Boolean(currentProject?.categoryId && currentProject.channelId) },
+    { label: "Discourse", ready: Boolean(currentProject?.discourseApiKeyConfigured) },
+    { label: "Claude", ready: Boolean(currentProject?.anthropicApiKeyConfigured) },
+    { label: "Guidelines", ready: Boolean(currentProject?.projectGuidelinesCharacters) },
+  ]
+  const readyCount = readiness.filter((item) => item.ready).length
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading project...</p>
+      <div className="space-y-5 px-4 lg:px-6" aria-label="Loading dashboard">
+        <div className="space-y-2"><Skeleton className="h-7 w-44" /><Skeleton className="h-4 w-64" /></div>
+        <div className="grid gap-3 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-28" />)}
         </div>
+        <Skeleton className="h-64" />
       </div>
     )
   }
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      <div className="flex items-center justify-between px-4 lg:px-6">
+      <div className="flex flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project Comms</h1>
-          <p className="text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-2xl font-semibold text-foreground">Today</h2>
+            <Badge variant={currentProject?.enabled ? "secondary" : "outline"}>
+              {currentProject?.status || (currentProject?.enabled ? "active" : "paused")}
+            </Badge>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
             {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="hidden sm:flex"
-          onClick={() => navigate("/agent")}
-        >
+        <Button type="button" onClick={() => navigate("/agent")}>
           <Bot className="size-4" />
-          Agent scheduled
+          Open inbox
         </Button>
       </div>
 
@@ -142,9 +156,36 @@ export default function Dashboard() {
           todayDate: date,
           upcomingTopics,
           sessions: webinars.length,
-          agentStatus: "Ready",
+          agentStatus: currentProject?.enabled ? "Active" : "Paused",
         }}
       />
+
+      <div className="px-4 lg:px-6">
+        <div className={`flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between ${readyCount === readiness.length ? "bg-emerald-50/60" : "bg-amber-50/60"}`}>
+          <div className="flex items-start gap-3">
+            {readyCount === readiness.length
+              ? <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-700" />
+              : <CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" />}
+            <div>
+              <p className="text-sm font-semibold">{readyCount === readiness.length ? "Project is ready" : `${readiness.length - readyCount} setup item${readiness.length - readyCount === 1 ? "" : "s"} need attention`}</p>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                {readiness.map((item) => (
+                  <span key={item.label} className={`text-xs ${item.ready ? "text-emerald-700" : "text-amber-800"}`}>
+                    {item.ready ? "Ready" : "Missing"}: {item.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          {readyCount < readiness.length ? (
+            <Button variant="outline" size="sm" onClick={() => navigate("/project")} className="bg-background">
+              <Settings className="size-4" />
+              Complete setup
+              <ArrowRight className="size-4" />
+            </Button>
+          ) : null}
+        </div>
+      </div>
 
       {nextWebinar && <NextWebinarCard webinar={nextWebinar} />}
 

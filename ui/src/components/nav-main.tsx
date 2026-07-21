@@ -1,69 +1,36 @@
 import { Link, useLocation } from "react-router-dom"
-import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react"
 
-import { Button } from "@/components/ui/button"
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import type { WorkspaceGuide } from "@/lib/workspace-guides"
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string
-    url: string
-    icon?: Icon
-  }[]
-}) {
+export function NavMain({ items, label }: { items: WorkspaceGuide[]; label?: string }) {
   const { pathname } = useLocation()
 
   return (
-    <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
+    <SidebarGroup className="py-1.5">
+      {label ? <SidebarGroupLabel>{label}</SidebarGroupLabel> : null}
+      <SidebarGroupContent>
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              asChild
-              tooltip="Quick Create"
-              className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
-            >
-              <Link to="/topics">
-                <IconCirclePlusFilled />
-                <span>New Topic</span>
-              </Link>
-            </SidebarMenuButton>
-            <Button
-              asChild
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <Link to="/agent">
-                <IconMail />
-                <span className="sr-only">Inbox</span>
-              </Link>
-            </Button>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.url}
-                tooltip={item.title}
-              >
-                <Link to={item.url}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {items.map((item) => {
+            const active = pathname === item.path || (item.path === "/projects" && pathname === "/projects/new")
+            return (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton asChild isActive={active} tooltip={item.shortTitle}>
+                  <Link to={item.path}>
+                    <item.icon />
+                    <span>{item.shortTitle}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

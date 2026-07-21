@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconFlask, IconLoader2, IconRefresh, IconSparkles } from '@tabler/icons-react';
+import { FlaskConical as IconFlask, LoaderCircle as IconLoader2, RefreshCw as IconRefresh, Sparkles as IconSparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { api, type SandboxReplayMessage, type SandboxResult } from '../api';
 import { Badge } from '@/components/ui/badge';

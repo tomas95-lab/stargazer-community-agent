@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  IconAlertTriangle,
-  IconCheck,
-  IconClock,
-  IconInbox,
-  IconMessageCircle,
-  IconRefresh,
-  IconReportAnalytics,
-  IconRobot,
-} from '@tabler/icons-react';
+  TriangleAlert as IconAlertTriangle,
+  Check as IconCheck,
+  Clock as IconClock,
+  Inbox as IconInbox,
+  MessageCircle as IconMessageCircle,
+  RefreshCw as IconRefresh,
+  ChartNoAxesCombined as IconReportAnalytics,
+  Bot as IconRobot,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api, type DailySummaryPerson, type DailySummaryResult } from '../api';
 import { Badge } from '@/components/ui/badge';

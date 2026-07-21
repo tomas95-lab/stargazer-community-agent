@@ -1,11 +1,11 @@
 import {
-  IconCalendarEvent,
-  IconCircleCheckFilled,
-  IconClockHour4,
-  IconFileText,
-  IconRobot,
-  IconTrendingUp,
-} from "@tabler/icons-react"
+  CalendarDays as IconCalendarEvent,
+  CircleCheckBig as IconCircleCheckFilled,
+  Clock3 as IconClockHour4,
+  FileText as IconFileText,
+  Bot as IconRobot,
+  TrendingUp as IconTrendingUp,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -33,7 +33,7 @@ export function SectionCards({
   const topicIsReady = stats.todayStatus === "Ready"
 
   return (
-    <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card">
+    <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Today's Thread</CardDescription>

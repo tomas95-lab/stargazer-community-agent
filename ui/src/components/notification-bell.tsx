@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { IconBell, IconBellOff, IconBellRinging } from "@tabler/icons-react"
+import { Bell as IconBell, BellOff as IconBellOff, BellRing as IconBellRinging } from "lucide-react"
 
 import { api, type OperationLogEntry } from "@/api"
 import { Button } from "@/components/ui/button"
