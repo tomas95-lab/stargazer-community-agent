@@ -1,0 +1,21 @@
+{
+  "mode": "dm-review",
+  "scanMode": "full",
+  "generatedAt": "2026-07-21T21:21:44.343Z",
+  "window": {
+    "utcDate": "2026-07-21",
+    "argentinaDate": "2026-07-21",
+    "startUtc": "2026-07-21T07:00:00.000Z",
+    "endUtc": "2026-07-22T07:00:00.000Z"
+  },
+  "totalDirectChannels": 59,
+  "scannedChannels": 5,
+  "skippedInactiveChannels": 54,
+  "incomingMessages": 0,
+  "pendingIncomingMessages": 0,
+  "unresolvedChannels": 0,
+  "channelsWithTodayMessages": 0,
+  "threads": [],
+  "messages": [],
+  "errors": []
+}
