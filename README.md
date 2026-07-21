@@ -52,10 +52,9 @@ COMMUNITY_CHAT_CHANNEL_ID=828853
 Required for the web API data store:
 
 ```bash
-DATA_STORE=github
-GITHUB_TOKEN=...
-GITHUB_OWNER=tomasruiz653
-GITHUB_REPO=community_bot
+STORAGE_BACKEND=supabase
+SUPABASE_URL=...
+SUPABASE_SECRET_KEY=...
 ```
 
 Optional:
@@ -113,7 +112,7 @@ npm run dev
 
 Vite proxies `/api` to `http://localhost:3001`.
 
-Protected actions require an admin token. Set `ADMIN_TOKEN` on the server, then open the UI Settings page and save the same token locally in your browser. The token is sent as `X-Admin-Token` for publish, send, sync, create, update, and delete actions.
+Protected actions use the signed-in Supabase session. `ADMIN_TOKEN` remains available only for trusted server-to-server and legacy administrative calls; it is never stored in the browser.
 
 Build the UI:
 
@@ -129,11 +128,24 @@ npm test
 
 ## Data Model
 
-`DATA_STORE` controls where JSON data is read and written:
+`STORAGE_BACKEND` controls where project content is read and written. The legacy `DATA_STORE` name remains accepted during migration:
 
-- `github`: use GitHub through `GITHUB_TOKEN`.
+- `supabase`: production backend for project content.
+- `github`: legacy backend used only during migration.
 - `local`: use files in this checkout.
-- `auto`: use GitHub when `GITHUB_TOKEN` exists, otherwise local files.
+- `auto`: use Supabase when configured, then GitHub when configured, otherwise local files.
+
+Production project content is stored in `project_data_files`, isolated by `project_key`. Runtime locks, operation logs, review state, schedules, and AI usage use their dedicated Supabase tables. GitHub remains the source repository, not the application database.
+
+To migrate legacy content after applying `supabase/schema.sql`:
+
+```bash
+npm run storage:migrate -- --source=github
+npm run storage:migrate -- --source=github --apply
+npm run storage:verify -- --source=github
+```
+
+The migration never deletes GitHub data. Set `STORAGE_FALLBACK=github` only for the transition window, then remove all GitHub storage variables after verification.
 
 `data/topics.json` is the daily thread calendar. The publisher chooses the topic whose `date` matches today. If no exact match exists, the CLI falls back to the first topic.
 
@@ -227,7 +239,7 @@ Vercel calls `/api/cron/daily-thread` Monday-Friday at 06:00 and 07:00 PST. The 
 
 `runDailyPublishJob` also has a backend weekend guard. If a scheduler calls the endpoint on Saturday or Sunday in PST, the job skips with `reason: "weekend_pst"`. Set `FORCE_DAILY_PUBLISH=true` only for a manual emergency publish.
 
-For production cron, use `DATA_STORE=github` with `GITHUB_TOKEN` so the publish marker persists between serverless runs. The job also checks the Community category for an existing daily-thread title before publishing, which prevents duplicate posts if the marker file is missing.
+For production cron, use `STORAGE_BACKEND=supabase` so publish markers persist between serverless runs without committing runtime data to GitHub. The job also checks the Community category for an existing daily-thread title before publishing, which prevents duplicate posts if the marker is missing.
 
 Vercel calls `/api/cron/community-agent` roughly every 90 minutes between 06:00 and 15:00 PST.
 

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw } from 'lucide-react';
-import { api, type AiUsageSummary, type AutomationHealthJob, type AutomationHealthResult } from '../api';
+import { RefreshCw, ShieldCheck } from 'lucide-react';
+import { api, type AiUsageSummary, type AutomationHealthJob, type AutomationHealthResult, type ProjectHealthResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { APP_TIME_ZONE_LABEL, formatAppDateTime } from '@/lib/timezone';
+import { usePlatform } from '@/platform';
 
 const LABELS: Record<string, string> = {
   COMMUNITY_BASE_URL: 'Community Base URL',
@@ -13,8 +14,9 @@ const LABELS: Record<string, string> = {
   DISCOURSE_API_KEY: 'Discourse API Key',
   DISCOURSE_API_CLIENT_ID: 'Discourse API Client ID',
   DISCOURSE_USERNAME: 'Discourse Username',
-  DATA_STORE_REQUESTED: 'Data Store Requested',
-  DATA_STORE_ACTIVE: 'Data Store Active',
+  STORAGE_BACKEND_REQUESTED: 'Storage Backend Requested',
+  STORAGE_BACKEND_ACTIVE: 'Storage Backend Active',
+  STORAGE_FALLBACK: 'Legacy Storage Fallback',
   ANTHROPIC_CONFIGURED: 'Legacy Claude Fallback',
   ANTHROPIC_MODEL: 'Legacy Claude Model',
   CRON_CONFIGURED: 'Cron Configured',
@@ -69,6 +71,7 @@ function formatNumber(value?: number | null): string {
 }
 
 export default function Settings() {
+  const { currentProject, refreshProjects } = usePlatform();
   const [config, setConfig] = useState<Record<string, string>>({});
   const [health, setHealth] = useState<AutomationHealthResult | null>(null);
   const [healthLoading, setHealthLoading] = useState(true);
@@ -76,12 +79,45 @@ export default function Settings() {
   const [usage, setUsage] = useState<AiUsageSummary | null>(null);
   const [usageLoading, setUsageLoading] = useState(true);
   const [usageError, setUsageError] = useState('');
+  const [projectHealth, setProjectHealth] = useState<ProjectHealthResult | null>(null);
+  const [projectHealthLoading, setProjectHealthLoading] = useState(false);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [schedule, setSchedule] = useState({ timezone: 'America/Los_Angeles', startTime: '00:00', endTime: '23:59', autoPost: false, autoReact: false, dmAutoReply: false });
 
   useEffect(() => {
     api.getConfig().then(setConfig);
     loadHealth();
     loadUsage();
   }, []);
+
+  useEffect(() => {
+    if (!currentProject) return;
+    const settings = currentProject.settings || {};
+    setSchedule({
+      timezone: typeof settings.timezone === 'string' ? settings.timezone : 'America/Los_Angeles',
+      startTime: typeof settings.startTime === 'string' ? settings.startTime : '00:00',
+      endTime: typeof settings.endTime === 'string' ? settings.endTime : '23:59',
+      autoPost: settings.autoPost === true,
+      autoReact: settings.autoReact === true,
+      dmAutoReply: settings.dmAutoReply === true,
+    });
+    setProjectHealthLoading(true);
+    api.getProjectHealth(currentProject.id)
+      .then(setProjectHealth)
+      .catch(() => setProjectHealth(null))
+      .finally(() => setProjectHealthLoading(false));
+  }, [currentProject]);
+
+  const saveSchedule = async () => {
+    if (!currentProject) return;
+    setScheduleSaving(true);
+    try {
+      await api.updateProject(currentProject.id, { settings: { ...currentProject.settings, ...schedule, weekdays: [1, 2, 3, 4, 5] } });
+      await refreshProjects();
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
 
   const loadHealth = () => {
     setHealthLoading(true);
@@ -109,6 +145,47 @@ export default function Settings() {
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
         <span className="rounded-full border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Environment managed</span>
       </div>
+
+      <section className="sg-panel overflow-hidden p-0">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="size-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Project Health Center</h2>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">Live checks for {currentProject?.projectName || 'the active project'}.</p>
+          </div>
+          <Badge variant={projectHealth?.healthy ? 'secondary' : 'outline'}>
+            {projectHealthLoading ? 'checking' : projectHealth?.healthy ? 'healthy' : 'attention needed'}
+          </Badge>
+        </div>
+        <div className="grid gap-px bg-border md:grid-cols-2 lg:grid-cols-4">
+          {(projectHealth?.checks || []).map((check) => (
+            <div key={check.id} className="bg-background p-4">
+              <p className="text-sm font-medium text-foreground">{check.label}</p>
+              <p className={`mt-1 text-xs ${check.ok ? 'text-muted-foreground' : 'text-destructive'}`}>{check.detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {currentProject && (currentProject.role === 'owner' || currentProject.role === 'admin') ? (
+        <section className="sg-panel p-6">
+          <h2 className="text-lg font-semibold text-foreground">Project Automation Policy</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Project-specific schedule and allowed automatic actions.</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <label className="text-sm"><span className="sg-label mb-1 block">Timezone</span><input className="sg-input w-full px-3 py-2" value={schedule.timezone} onChange={(event) => setSchedule({ ...schedule, timezone: event.target.value })} /></label>
+            <label className="text-sm"><span className="sg-label mb-1 block">Start time</span><input type="time" className="sg-input w-full px-3 py-2" value={schedule.startTime} onChange={(event) => setSchedule({ ...schedule, startTime: event.target.value })} /></label>
+            <label className="text-sm"><span className="sg-label mb-1 block">End time</span><input type="time" className="sg-input w-full px-3 py-2" value={schedule.endTime} onChange={(event) => setSchedule({ ...schedule, endTime: event.target.value })} /></label>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-5 text-sm">
+            <label className="flex items-center gap-2"><input type="checkbox" checked={schedule.autoPost} onChange={(event) => setSchedule({ ...schedule, autoPost: event.target.checked })} /> Auto reply in Community</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={schedule.autoReact} onChange={(event) => setSchedule({ ...schedule, autoReact: event.target.checked })} /> Auto react</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={schedule.dmAutoReply} onChange={(event) => setSchedule({ ...schedule, dmAutoReply: event.target.checked })} /> Auto reply to DMs</label>
+          </div>
+          <Button className="mt-5" onClick={() => void saveSchedule()} disabled={scheduleSaving}>Save automation policy</Button>
+        </section>
+      ) : null}
 
       <div className="sg-panel overflow-hidden p-0">
         <div className="flex flex-col gap-3 border-b border-border px-6 py-4 md:flex-row md:items-center md:justify-between">

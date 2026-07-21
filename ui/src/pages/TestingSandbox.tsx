@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { IconFlask, IconLoader2, IconRefresh, IconSparkles } from '@tabler/icons-react';
 import ReactMarkdown from 'react-markdown';
-import { api, type SandboxResult } from '../api';
+import { api, type SandboxReplayMessage, type SandboxResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,6 +26,8 @@ export default function TestingSandbox() {
   const [result, setResult] = useState<SandboxResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [replayMessages, setReplayMessages] = useState<SandboxReplayMessage[]>([]);
+  const [loadingReplay, setLoadingReplay] = useState(false);
 
   const evaluate = async () => {
     setLoading(true);
@@ -55,6 +57,18 @@ export default function TestingSandbox() {
     setError('');
   };
 
+  const loadReplay = async () => {
+    setLoadingReplay(true);
+    setError('');
+    try {
+      setReplayMessages((await api.getSandboxReplayMessages()).messages.filter((item) => item.message.trim()));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoadingReplay(false);
+    }
+  };
+
   return (
     <div className="space-y-6 px-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -65,6 +79,10 @@ export default function TestingSandbox() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button onClick={() => void loadReplay()} variant="outline" disabled={loadingReplay}>
+            {loadingReplay ? <IconLoader2 className="animate-spin" /> : <IconRefresh />}
+            Replay recent
+          </Button>
           <Button onClick={reset} variant="outline" disabled={loading}>
             <IconRefresh />
             Reset
@@ -78,6 +96,26 @@ export default function TestingSandbox() {
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
         <section className="sg-panel space-y-4 p-5">
+          {replayMessages.length > 0 && (
+            <div>
+              <label className="sg-label mb-1 block">Historical message</label>
+              <select
+                className="sg-input w-full px-3 py-2 text-sm"
+                defaultValue=""
+                onChange={(event) => {
+                  const selected = replayMessages.find((item) => String(item.id) === event.target.value);
+                  if (!selected) return;
+                  setUsername(selected.username);
+                  setMessage(selected.message);
+                  setNowLocal(datetimeLocal(new Date(selected.createdAt)));
+                  setResult(null);
+                }}
+              >
+                <option value="" disabled>Select a recent message</option>
+                {replayMessages.map((item) => <option key={item.id} value={item.id}>{item.username}: {item.message.slice(0, 80)}</option>)}
+              </select>
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
             <div>
               <label className="sg-label mb-1 block">Channel</label>

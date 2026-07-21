@@ -8,48 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
-function SyncButton() {
-  const [status, setStatus] = useState<'idle' | 'syncing' | 'ok' | 'error'>('idle');
-  const [msg, setMsg] = useState('');
-
-  const sync = async () => {
-    setStatus('syncing');
-    setMsg('');
-    try {
-      const res = await api.syncToGitHub();
-      setMsg(res.message);
-      setStatus('ok');
-      setTimeout(() => setStatus('idle'), 4000);
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : String(err));
-      setStatus('error');
-      setTimeout(() => setStatus('idle'), 5000);
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-3">
-      {msg && (
-        <span className={`text-xs ${status === 'error' ? 'text-danger' : 'text-success'}`}>{msg}</span>
-      )}
-      <button
-        onClick={sync}
-        disabled={status === 'syncing'}
-        className="flex items-center gap-2 rounded-md border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
-      >
-        {status === 'syncing' ? (
-          <><span className="inline-block size-3 animate-spin rounded-full border border-muted-foreground border-t-transparent" /> Syncing...</>
-        ) : (
-          <>
-            <Upload className="size-3" />
-            Sync local changes
-          </>
-        )}
-      </button>
-    </div>
-  );
-}
-
 function ImportErrors({ errors }: { errors: TopicImportError[] }) {
   if (errors.length === 0) return null;
   return (
@@ -289,7 +247,6 @@ export default function TopicEditor() {
           <p className="mt-1 text-sm text-muted-foreground">Manage daily thread topics stored in GitHub.</p>
         </div>
         <div className="flex items-center gap-3">
-          <SyncButton />
           <Button type="button" variant="outline" onClick={() => setShowImport((value) => !value)}>
             <FileJson className="size-4" />
             Import JSON

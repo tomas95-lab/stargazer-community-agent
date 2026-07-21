@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getReviewQueue, updateReviewQueueItemStatus } from '../../src/review-queue';
+import { getKnowledgeGaps, getReviewQueue, updateReviewQueueItemStatus } from '../../src/review-queue';
 import { requireAdminToken } from '../auth';
 
 const router = Router();
@@ -30,6 +30,14 @@ router.patch('/status', requireAdminToken, async (req: Request, res: Response) =
     res.json({ ok: true, update });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/knowledge-gaps', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    res.json({ gaps: await getKnowledgeGaps(clampNumber(req.query.limit, 8, 1, 20)) });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
 

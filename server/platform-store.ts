@@ -11,6 +11,8 @@ import {
 } from '../src/project-context';
 
 export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
+export type ProjectRole = 'owner' | 'admin' | 'qm' | 'viewer';
+export type ProjectStatus = 'setup' | 'active' | 'paused' | 'completed' | 'archived';
 
 export interface AuthenticatedUser {
   id: string;
@@ -38,6 +40,10 @@ export interface QmProjectRow {
   auto_reply_enabled: boolean;
   min_confidence: number;
   enabled: boolean;
+  role?: ProjectRole;
+  status?: ProjectStatus;
+  archived_at?: string | null;
+  settings?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +69,8 @@ export interface QmProjectInput {
   autoReplyEnabled?: boolean;
   minConfidence?: number;
   enabled?: boolean;
+  status?: ProjectStatus;
+  settings?: Record<string, unknown>;
 }
 
 export interface QmProjectPublic {
@@ -90,6 +98,10 @@ export interface QmProjectPublic {
   autoReplyEnabled: boolean;
   minConfidence: number;
   enabled: boolean;
+  role: ProjectRole;
+  status: ProjectStatus;
+  archivedAt: string;
+  settings: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -97,6 +109,7 @@ export interface QmProjectPublic {
 const TABLE = 'qm_projects';
 const USER_KEYS_TABLE = 'user_discourse_keys';
 const USER_AI_KEYS_TABLE = 'user_ai_keys';
+const AUDIT_TABLE = 'platform_audit_events';
 let supabaseAdmin: SupabaseClient | null = null;
 
 function env(key: string): string {
@@ -186,11 +199,73 @@ function userName(user: User): string {
   return text(user.user_metadata?.name) || text(user.user_metadata?.full_name) || text(user.email).split('@')[0] || 'QM';
 }
 
+function projectRole(value: unknown): ProjectRole {
+  return value === 'admin' || value === 'qm' || value === 'viewer' || value === 'owner' ? value : 'owner';
+}
+
+function projectStatus(value: unknown, enabled = true): ProjectStatus {
+  return value === 'setup' || value === 'active' || value === 'paused' || value === 'completed' || value === 'archived'
+    ? value
+    : enabled ? 'active' : 'paused';
+}
+
+function canManageProject(row: QmProjectRow): boolean {
+  return projectRole(row.role) !== 'viewer';
+}
+
 export interface DeletedProjectResult {
   project: QmProjectRow;
   projectKey: string;
   removedProjectData: boolean;
   remainingProjectConnections: number;
+}
+
+export async function appendAuditEvent(input: {
+  actorId?: string;
+  projectKey: string;
+  action: string;
+  targetType?: string;
+  targetId?: string;
+  before?: unknown;
+  after?: unknown;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  const { error } = await getSupabaseAdmin().from(AUDIT_TABLE).insert({
+    actor_id: input.actorId || null,
+    project_key: canonicalProjectId(input.projectKey),
+    action: input.action,
+    target_type: input.targetType || '',
+    target_id: input.targetId || '',
+    before_data: input.before ?? null,
+    after_data: input.after ?? null,
+    metadata: input.metadata || {},
+  });
+  if (error) console.warn('Could not write platform audit event:', error.message);
+}
+
+export async function listProjectMembers(userId: string, projectId: string): Promise<Array<{ id: string; name: string; email: string; role: ProjectRole; enabled: boolean }>> {
+  const project = await getUserProject(userId, projectId);
+  if (!project) throw new Error('Project not found.');
+  const { data, error } = await getSupabaseAdmin().from(TABLE)
+    .select('id,owner_name,owner_email,role,enabled')
+    .eq('project_key', projectKeyFromRow(project))
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data || []).map((row) => ({ id: row.id, name: row.owner_name, email: row.owner_email, role: projectRole(row.role), enabled: row.enabled }));
+}
+
+export async function updateProjectMemberRole(userId: string, projectId: string, memberId: string, role: ProjectRole): Promise<void> {
+  const project = await getUserProject(userId, projectId);
+  if (!project) throw new Error('Project not found.');
+  if (projectRole(project.role) !== 'owner') throw new Error('Only a project owner can change member roles.');
+  const { data: member, error: memberError } = await getSupabaseAdmin().from(TABLE).select('id,owner_id,role')
+    .eq('id', memberId).eq('project_key', projectKeyFromRow(project)).maybeSingle();
+  if (memberError) throw new Error(memberError.message);
+  if (!member) throw new Error('Project member not found.');
+  if (member.owner_id === userId && role !== 'owner') throw new Error('Transfer ownership before changing your own owner role.');
+  const { error } = await getSupabaseAdmin().from(TABLE).update({ role, updated_at: new Date().toISOString() }).eq('id', memberId);
+  if (error) throw new Error(error.message);
+  await appendAuditEvent({ actorId: userId, projectKey: projectKeyFromRow(project), action: 'project.member_role_changed', targetType: 'member', targetId: memberId, before: { role: member.role }, after: { role } });
 }
 
 function positiveIntOrNull(value: unknown, fallback: number | null = null): number | null {
@@ -233,9 +308,9 @@ function legacyStargazerDefaults(projectKey: string): Partial<QmProjectRow> {
   return {
     project_name: 'TESTING PROJECT',
     community_base_url: envFallback('COMMUNITY_BASE_URL', 'https://community.outlier.ai'),
-    community_category_id: envFallback('COMMUNITY_CATEGORY_ID', '15895'),
-    community_category_slug: envFallback('COMMUNITY_CATEGORY_SLUG', 'stargazer-axiom'),
-    community_chat_channel_id: envFallback('COMMUNITY_CHAT_CHANNEL_ID', '828853'),
+    community_category_id: envFallback('COMMUNITY_CATEGORY_ID'),
+    community_category_slug: envFallback('COMMUNITY_CATEGORY_SLUG', 'testing-project'),
+    community_chat_channel_id: envFallback('COMMUNITY_CHAT_CHANNEL_ID'),
   };
 }
 
@@ -290,6 +365,10 @@ function publicProject(row: QmProjectRow, aiKey?: UserAiKeyRow | null): QmProjec
     autoReplyEnabled: row.auto_reply_enabled,
     minConfidence: row.min_confidence,
     enabled: row.enabled,
+    role: projectRole(row.role),
+    status: projectStatus(row.status, row.enabled),
+    archivedAt: row.archived_at || '',
+    settings: row.settings && typeof row.settings === 'object' ? row.settings : {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -425,6 +504,8 @@ function normalizeProjectInput(
     auto_reply_enabled: input.autoReplyEnabled ?? existing?.auto_reply_enabled ?? false,
     min_confidence: clampConfidence(input.minConfidence ?? existing?.min_confidence),
     enabled: existing?.enabled ?? shared?.enabled ?? true,
+    status: projectStatus(input.status ?? existing?.status ?? shared?.status, existing?.enabled ?? shared?.enabled ?? true),
+    settings: input.settings ?? existing?.settings ?? shared?.settings ?? {},
     updated_at: new Date().toISOString(),
   };
 }
@@ -445,6 +526,7 @@ export async function listEnabledProjectConnections(): Promise<QmProjectRow[]> {
     .from(TABLE)
     .select('*')
     .eq('enabled', true)
+    .neq('status', 'archived')
     .order('created_at', { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -509,7 +591,9 @@ export async function getUserProject(userId: string, projectId: string): Promise
 export async function getActiveUserProject(userId: string, projectId?: string): Promise<QmProjectRow | null> {
   if (projectId) return getUserProject(userId, projectId);
   const projects = await listUserProjects(userId);
-  return projects.find((project) => project.enabled) || projects[0] || null;
+  return projects.find((project) => project.enabled && project.status !== 'archived')
+    || projects.find((project) => project.status !== 'archived')
+    || null;
 }
 
 export async function getSharedProjectConnection(projectKey: string, includePaused = false): Promise<QmProjectRow | null> {
@@ -532,6 +616,40 @@ export async function getSharedProjectConnection(projectKey: string, includePaus
     if (missingProjectKeyColumn(err)) return null;
     throw err;
   }
+}
+
+export async function getSharedProjectSummary(projectKey: string): Promise<{
+  projectKey: string;
+  projectName: string;
+  communityBaseUrl: string;
+  categoryId: string;
+  categorySlug: string;
+  channelId: string;
+  projectGuidelines: string;
+  warRoomLink: string;
+  agentMode: ProjectAgentMode;
+  autoReplyEnabled: boolean;
+  minConfidence: number;
+  status: ProjectStatus;
+  settings: Record<string, unknown>;
+} | null> {
+  const project = await getSharedProjectConnection(projectKey, true);
+  if (!project) return null;
+  return {
+    projectKey: projectKeyFromRow(project),
+    projectName: project.project_name,
+    communityBaseUrl: project.community_base_url,
+    categoryId: project.community_category_id,
+    categorySlug: project.community_category_slug,
+    channelId: project.community_chat_channel_id,
+    projectGuidelines: project.project_guidelines,
+    warRoomLink: project.war_room_link,
+    agentMode: project.agent_mode,
+    autoReplyEnabled: project.auto_reply_enabled,
+    minConfidence: Number(project.min_confidence),
+    status: projectStatus(project.status, project.enabled),
+    settings: project.settings || {},
+  };
 }
 
 async function insertProjectPayload(payload: Partial<QmProjectRow>): Promise<QmProjectRow> {
@@ -588,11 +706,35 @@ export async function createUserProject(user: AuthenticatedUser, input: QmProjec
   const hydratedInput = storedKey && !text(input.discourseUsername)
     ? { ...input, discourseUsername: storedKey.discourse_username }
     : input;
-  const shared = await getSharedProjectConnection(projectKeyFromInput(hydratedInput));
-  const payload = normalizeProjectInput(hydratedInput, user, undefined, storedKey?.discourse_api_key_ciphertext, shared);
+  const projectKey = projectKeyFromInput(hydratedInput);
+  const userAlreadyConnected = (await listUserProjects(user.id))
+    .some((project) => projectKeyFromRow(project) === projectKey);
+  if (userAlreadyConnected) throw new Error('This project is already connected to your workspace.');
+  const shared = await getSharedProjectConnection(projectKey, true);
+  const projectInput = shared ? {
+    ...hydratedInput,
+    projectKey: projectKeyFromRow(shared),
+    projectName: shared.project_name,
+    communityBaseUrl: shared.community_base_url,
+    categoryId: shared.community_category_id,
+    categorySlug: shared.community_category_slug,
+    channelId: shared.community_chat_channel_id,
+    projectGuidelines: shared.project_guidelines,
+    warRoomLink: shared.war_room_link,
+    agentMode: shared.agent_mode,
+    autoReplyEnabled: shared.auto_reply_enabled,
+    minConfidence: Number(shared.min_confidence),
+    status: projectStatus(shared.status, shared.enabled),
+    settings: shared.settings || {},
+  } : hydratedInput;
+  const payload = {
+    ...normalizeProjectInput(projectInput, user, undefined, storedKey?.discourse_api_key_ciphertext, shared),
+    role: shared ? 'qm' as const : 'owner' as const,
+  };
   const project = await insertProjectPayload(payload);
   await initializeProjectFiles(project);
-  await syncSharedProjectFields(project).catch(() => undefined);
+  if (!shared) await syncSharedProjectFields(project).catch(() => undefined);
+  await appendAuditEvent({ actorId: user.id, projectKey: projectKeyFromRow(project), action: shared ? 'project.joined' : 'project.created', targetType: 'project', targetId: project.id, after: toPublicProject(project) });
   return project;
 }
 
@@ -600,19 +742,40 @@ export async function updateUserProject(user: AuthenticatedUser, projectId: stri
   const existing = await getUserProject(user.id, projectId);
   if (!existing) throw new Error('Project not found.');
 
+  const changesSharedConfiguration = [
+    input.projectKey,
+    input.projectName,
+    input.communityBaseUrl,
+    input.categoryId,
+    input.categorySlug,
+    input.channelId,
+    input.projectGuidelines,
+    input.warRoomLink,
+    input.settings,
+  ].some((value) => value !== undefined);
+  if (changesSharedConfiguration && !canManageProject(existing)) {
+    throw new Error('Your project role does not allow editing shared settings.');
+  }
+
   const shared = await getSharedProjectConnection(projectKeyFromInput(input, existing));
   const payload = normalizeProjectInput(input, user, existing, undefined, shared?.id === existing.id ? null : shared);
   const project = await updateProjectPayload(user.id, projectId, payload);
   await initializeProjectFiles(project);
   await syncSharedProjectFields(project).catch(() => undefined);
+  await appendAuditEvent({ actorId: user.id, projectKey: projectKeyFromRow(project), action: 'project.updated', targetType: 'project', targetId: project.id, before: toPublicProject(existing), after: toPublicProject(project) });
   return project;
 }
 
 export async function setProjectAutomationPaused(userId: string, projectId: string, paused: boolean): Promise<QmProjectRow> {
   const existing = await getUserProject(userId, projectId);
   if (!existing) throw new Error('Project not found.');
+  if (!canManageProject(existing)) throw new Error('Your project role does not allow pausing this project.');
 
-  const patch = { enabled: !paused, updated_at: new Date().toISOString() };
+  const patch: Pick<QmProjectRow, 'enabled' | 'status' | 'updated_at'> = {
+    enabled: !paused,
+    status: paused ? 'paused' : 'active',
+    updated_at: new Date().toISOString(),
+  };
   const projectKey = projectKeyFromRow(existing);
   try {
     const { error } = await getSupabaseAdmin()
@@ -630,6 +793,23 @@ export async function setProjectAutomationPaused(userId: string, projectId: stri
     if (error) throw new Error(error.message);
   }
 
+  return (await getUserProject(userId, existing.id)) || { ...existing, ...patch };
+}
+
+export async function setProjectLifecycleStatus(userId: string, projectId: string, status: ProjectStatus): Promise<QmProjectRow> {
+  const existing = await getUserProject(userId, projectId);
+  if (!existing) throw new Error('Project not found.');
+  if (!canManageProject(existing)) throw new Error('Your project role does not allow changing project status.');
+  const projectKey = projectKeyFromRow(existing);
+  const patch = {
+    status,
+    enabled: status === 'active',
+    archived_at: status === 'archived' ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await getSupabaseAdmin().from(TABLE).update(patch).eq('project_key', projectKey);
+  if (error) throw new Error(error.message);
+  await appendAuditEvent({ actorId: userId, projectKey, action: 'project.status_changed', targetType: 'project', targetId: existing.id, before: { status: existing.status }, after: { status } });
   return (await getUserProject(userId, existing.id)) || { ...existing, ...patch };
 }
 
@@ -665,27 +845,35 @@ async function deleteProjectFiles(projectKey: string, projectName: string): Prom
 export async function deleteUserProject(userId: string, projectId: string): Promise<DeletedProjectResult> {
   const existing = await getUserProject(userId, projectId);
   if (!existing) throw new Error('Project not found.');
+  if (!canManageProject(existing)) throw new Error('Your project role does not allow archiving this project.');
 
   const projectKey = projectKeyFromRow(existing);
   const { error } = await getSupabaseAdmin()
     .from(TABLE)
-    .delete()
-    .eq('owner_id', userId)
-    .eq('id', existing.id);
+    .update({ enabled: false, status: 'archived', archived_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq('project_key', projectKey);
 
   if (error) throw new Error(error.message);
-
-  const remainingProjectConnections = await countProjectConnections(projectKey);
-  const removedProjectData = remainingProjectConnections === 0
-    ? await deleteProjectFiles(projectKey, existing.project_name)
-    : false;
 
   return {
     project: existing,
     projectKey,
-    removedProjectData,
-    remainingProjectConnections,
+    removedProjectData: false,
+    remainingProjectConnections: await countProjectConnections(projectKey),
   };
+}
+
+export async function restoreUserProject(userId: string, projectId: string): Promise<QmProjectRow> {
+  const existing = await getUserProject(userId, projectId);
+  if (!existing) throw new Error('Project not found.');
+  if (!canManageProject(existing)) throw new Error('Your project role does not allow restoring this project.');
+  const projectKey = projectKeyFromRow(existing);
+  const { error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .update({ enabled: false, status: 'paused', archived_at: null, updated_at: new Date().toISOString() })
+    .eq('project_key', projectKey);
+  if (error) throw new Error(error.message);
+  return (await getUserProject(userId, existing.id)) || { ...existing, enabled: false, status: 'paused', archived_at: null };
 }
 
 async function writeDataJSONIfMissing<T>(filePath: string, data: T, message: string): Promise<void> {
@@ -708,6 +896,10 @@ async function syncSharedProjectFields(row: QmProjectRow): Promise<void> {
     community_chat_channel_id: row.community_chat_channel_id,
     project_guidelines: row.project_guidelines,
     war_room_link: row.war_room_link,
+    agent_mode: row.agent_mode,
+    auto_reply_enabled: row.auto_reply_enabled,
+    min_confidence: row.min_confidence,
+    settings: row.settings || {},
     updated_at: new Date().toISOString(),
   };
 
@@ -790,6 +982,16 @@ export function projectRuntimeContext(row: QmProjectRow, aiKey?: UserAiKeyRow | 
     projectName: row.project_name,
     ownerId: row.owner_id,
     automationPaused: row.enabled === false,
+    automationSettings: {
+      ...(row.settings && typeof row.settings === 'object' ? row.settings : {}),
+      ...((row.settings as Record<string, unknown> | undefined)?.autoPost === undefined ? { autoPost: row.auto_reply_enabled } : {}),
+    },
+    agentPolicy: {
+      minConfidence: row.min_confidence,
+      blockedTopics: Array.isArray((row.settings as Record<string, unknown> | undefined)?.blockedTopics)
+        ? (row.settings as Record<string, unknown>).blockedTopics as string[]
+        : ['pay', 'payment', 'account suspension', 'disciplinary action', 'legal', 'eligibility decision'],
+    },
     botConfig: projectBotConfig(row),
     aiConfig: {
       anthropicApiKey,

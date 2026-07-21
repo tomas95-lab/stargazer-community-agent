@@ -39,7 +39,7 @@ const DEFAULT_MEMORY: ProjectMemory = {
     {
       id: 'war-room-breakout',
       title: 'War Room breakout room',
-      body: 'Once users enter the War Room, they must join the breakout room called Stargazer - Team.',
+      body: 'Use only the active project guidelines to direct users to a specific War Room or breakout room.',
       source: 'project operations',
     },
     {

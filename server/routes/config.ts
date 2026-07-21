@@ -22,8 +22,9 @@ router.get('/', (_req: Request, res: Response) => {
   const store = dataStoreSummary();
   res.json({
     ...env,
-    DATA_STORE_REQUESTED: store.requested,
-    DATA_STORE_ACTIVE: store.active,
+    STORAGE_BACKEND_REQUESTED: store.requested,
+    STORAGE_BACKEND_ACTIVE: store.active,
+    STORAGE_FALLBACK: process.env.STORAGE_FALLBACK || process.env.DATA_STORE_FALLBACK || '',
     ANTHROPIC_CONFIGURED: String(Boolean(process.env.ANTHROPIC_API_KEY)),
     ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
     CRON_CONFIGURED: String(Boolean(process.env.CRON_SECRET)),

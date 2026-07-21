@@ -12,8 +12,7 @@ import { formatPostTitle, todayDate } from './utils';
 import { DiscourseClient } from './discourse-client';
 import { readDataJSON } from './data-store';
 import { loadProjectLinks } from './links';
-
-const CHANNEL_ID = process.env.COMMUNITY_CHAT_CHANNEL_ID || '828853';
+import { assertProjectAutomationActive } from './project-context';
 
 function discourseClient(): DiscourseClient {
   const config = loadBotConfig();
@@ -25,13 +24,13 @@ function discourseClient(): DiscourseClient {
 }
 
 const server = new McpServer({
-  name: 'stargazer-community-bot',
+  name: 'community-management-agent',
   version: '1.0.0',
 });
 
 server.tool(
   'publish_daily_thread',
-  'Publish today\'s daily thread to the Stargazer Axiom community. Reads topic data and posts it.',
+  'Publish today\'s daily thread to the active project community.',
   {
     date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
     post_chat: z.boolean().optional().describe('Also post announcement to chat channel. Defaults to true.'),
@@ -65,13 +64,14 @@ server.tool(
 
 server.tool(
   'send_chat_message',
-  'Send a message to the Stargazer Axiom community chat channel.',
+  'Send a message to the active project community chat channel.',
   {
     message: z.string().describe('The message to send to the chat channel.'),
   },
   async ({ message }) => {
     try {
-      await discourseClient().sendChatMessage(CHANNEL_ID, message);
+      assertProjectAutomationActive();
+      await discourseClient().sendChatMessage(loadBotConfig().communityChatChannelId, message);
       return { content: [{ type: 'text', text: '✅ Message sent to chat.' }] };
     } catch (err) {
       return { content: [{ type: 'text', text: `❌ ${err instanceof Error ? err.message : String(err)}` }] };
@@ -81,14 +81,14 @@ server.tool(
 
 server.tool(
   'read_chat_messages',
-  'Read recent messages from the Stargazer Axiom community chat channel.',
+  'Read recent messages from the active project community chat channel.',
   {
     count: z.number().optional().describe('Number of recent messages to fetch. Defaults to 20.'),
   },
   async ({ count }) => {
     const limit = count || 20;
     try {
-      const msgs = await discourseClient().readChatMessages(CHANNEL_ID, limit);
+      const msgs = await discourseClient().readChatMessages(loadBotConfig().communityChatChannelId, limit);
       const text = msgs.map((m) => `[${m.user?.username}] ${m.message}`).join('\n');
       return { content: [{ type: 'text', text: text || 'No messages found.' }] };
     } catch (err) {
@@ -99,13 +99,14 @@ server.tool(
 
 server.tool(
   'read_community_posts',
-  'Read recent posts/topics from the Stargazer Axiom community forum.',
+  'Read recent posts/topics from the active project community forum.',
   {
-    category_id: z.number().optional().describe('Category ID to filter. Defaults to Stargazer Axiom category.'),
+    category_id: z.number().optional().describe('Category ID to filter. Defaults to the active project category.'),
     count: z.number().optional().describe('Number of topics to fetch. Defaults to 10.'),
   },
   async ({ category_id, count }) => {
-    const catId = category_id || parseInt(process.env.COMMUNITY_CATEGORY_ID || '15895');
+    const catId = category_id || parseInt(loadBotConfig().communityCategoryId, 10);
+    if (!Number.isFinite(catId)) return { content: [{ type: 'text', text: 'No category is configured for the active project.' }] };
     const limit = count || 10;
     try {
       const client = discourseClient();
@@ -120,13 +121,14 @@ server.tool(
 
 server.tool(
   'reply_to_topic',
-  'Reply to a specific topic in the Stargazer Axiom community forum.',
+  'Reply to a specific topic in the active project community forum.',
   {
     topic_id: z.number().describe('The topic ID to reply to.'),
     message: z.string().describe('The reply message content (supports markdown).'),
   },
   async ({ topic_id, message }) => {
     try {
+      assertProjectAutomationActive();
       const data = await discourseClient().replyToTopic(topic_id, message);
       return { content: [{ type: 'text', text: `✅ Reply posted (post ID: ${data.id})` }] };
     } catch (err) {

@@ -4,39 +4,6 @@ import { api } from '../api';
 import type { Webinar } from '../api';
 import { appDateTimeToDate } from '@/lib/timezone';
 
-function SyncButton() {
-
-  const [status, setStatus] = useState<'idle' | 'syncing' | 'ok' | 'error'>('idle');
-  const [msg, setMsg] = useState('');
-
-  const sync = async () => {
-    setStatus('syncing');
-    try {
-      const res = await api.syncToGitHub();
-      setMsg(res.message);
-      setStatus('ok');
-      setTimeout(() => setStatus('idle'), 4000);
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : String(err));
-      setStatus('error');
-      setTimeout(() => setStatus('idle'), 5000);
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-3">
-      {msg && <span className={`text-xs ${status === 'error' ? 'text-danger' : 'text-success'}`}>{msg}</span>}
-      <button
-        onClick={sync}
-        disabled={status === 'syncing'}
-        className="flex items-center gap-2 rounded-md border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
-      >
-        {status === 'syncing' ? 'Syncing...' : 'Sync local changes'}
-      </button>
-    </div>
-  );
-}
-
 const EMPTY: Omit<Webinar, 'id'> = {
   type: 'webinar',
   title: '',
@@ -119,7 +86,6 @@ export default function WebinarScheduler() {
           <h1 className="text-2xl font-semibold text-foreground">Session Scheduler</h1>
           <p className="mt-1 text-sm text-muted-foreground">Schedule webinars & onboardings. Reminder jobs use this data source.</p>
         </div>
-        <SyncButton />
       </div>
 
       <div className="sg-panel space-y-4 p-6">

@@ -1,5 +1,6 @@
 import { readDataJSON, writeDataJSON } from './data-store';
-import { OperationDetailRecord, OperationLogEntry, readOperationLog } from './operations-log';
+import { OperationLogEntry, readOperationDetail, readOperationLog } from './operations-log';
+import { runtimeDb, runtimeDbConfigured, runtimeScope, runtimeTableMissing } from './runtime-db';
 
 export type ReviewQueueSource = 'community' | 'dm';
 export type ReviewQueuePriority = 'high' | 'medium' | 'low';
@@ -41,7 +42,6 @@ export interface ReviewQueueResult {
 }
 
 const DETAIL_LOOKUP_LIMIT = 50;
-const DETAIL_DIR = 'output/operation-details';
 const STATE_FILE = 'output/review-queue-state.json';
 
 interface ReviewQueueStateRecord {
@@ -116,6 +116,15 @@ function normalizeStatusRecord(value: unknown): ReviewQueueStateRecord | null {
 }
 
 async function readReviewQueueState(): Promise<ReviewQueueState> {
+  if (runtimeDbConfigured()) {
+    try {
+      const { data, error } = await runtimeDb().from('review_queue_status').select('*').eq('project_key', runtimeScope().projectKey);
+      if (error) throw new Error(error.message);
+      return { items: Object.fromEntries((data || []).map((row) => [row.item_id, { status: row.status, updatedAt: row.updated_at, note: row.note || undefined }])) };
+    } catch (err) {
+      if (!runtimeTableMissing(err)) throw err;
+    }
+  }
   try {
     const raw = await readDataJSON<ReviewQueueState>(STATE_FILE);
     const items = Object.entries(asRecord(raw.items)).reduce<Record<string, ReviewQueueStateRecord>>((acc, [id, value]) => {
@@ -149,11 +158,33 @@ function withStatus(item: ReviewQueueItem, state: ReviewQueueState): ReviewQueue
 async function readDetailFast(entry: OperationLogEntry): Promise<unknown | undefined> {
   if (!/^[a-z0-9-]{8,80}$/i.test(entry.id)) return undefined;
   try {
-    const record = await readDataJSON<OperationDetailRecord>(`${DETAIL_DIR}/${entry.id}.json`);
-    return record.detail;
+    const record = await readOperationDetail(entry.id);
+    return record?.detail;
   } catch {
     return undefined;
   }
+}
+
+export interface KnowledgeGap {
+  id: string;
+  reason: string;
+  occurrences: number;
+  sources: ReviewQueueSource[];
+  examples: string[];
+}
+
+export async function getKnowledgeGaps(limit = 8): Promise<KnowledgeGap[]> {
+  const queue = await getReviewQueue(500, { includeResolved: true });
+  const groups = new Map<string, KnowledgeGap>();
+  for (const item of queue.items.filter((candidate) => candidate.action === 'human')) {
+    const key = item.reason.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140) || 'unknown';
+    const current = groups.get(key) || { id: key, reason: item.reason, occurrences: 0, sources: [], examples: [] };
+    current.occurrences += 1;
+    if (!current.sources.includes(item.source)) current.sources.push(item.source);
+    if (current.examples.length < 3 && !current.examples.includes(item.message)) current.examples.push(item.message);
+    groups.set(key, current);
+  }
+  return [...groups.values()].sort((left, right) => right.occurrences - left.occurrences).slice(0, Math.max(1, limit));
 }
 
 function communityItems(entry: OperationLogEntry, detail: unknown): ReviewQueueItem[] {
@@ -306,6 +337,22 @@ export async function updateReviewQueueItemStatus(
 
   const state = await readReviewQueueState();
   const updatedAt = new Date().toISOString();
+
+  if (runtimeDbConfigured()) {
+    try {
+      const scope = runtimeScope();
+      if (status === 'open') {
+        const { error } = await runtimeDb().from('review_queue_status').delete().eq('project_key', scope.projectKey).eq('item_id', trimmedId);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await runtimeDb().from('review_queue_status').upsert({ project_key: scope.projectKey, item_id: trimmedId, status, note: text(note), updated_at: updatedAt });
+        if (error) throw new Error(error.message);
+      }
+      return { id: trimmedId, status, note: text(note) || undefined, updatedAt };
+    } catch (err) {
+      if (!runtimeTableMissing(err)) throw err;
+    }
+  }
 
   if (status === 'open') {
     delete state.items[trimmedId];

@@ -40,6 +40,21 @@ export interface RuntimeAiConfig {
   dailyCallLimit?: number | null;
 }
 
+export interface RuntimeAutomationSettings {
+  timezone?: string;
+  weekdays?: number[];
+  startTime?: string;
+  endTime?: string;
+  autoPost?: boolean;
+  autoReact?: boolean;
+  dmAutoReply?: boolean;
+}
+
+export interface RuntimeAgentPolicy {
+  minConfidence?: number;
+  blockedTopics?: string[];
+}
+
 export interface ProjectContext {
   projectId: string;
   source: ProjectContextSource;
@@ -51,6 +66,8 @@ export interface ProjectContext {
   projectLinks?: RuntimeProjectLinks;
   projectMemoryFacts?: RuntimeProjectMemoryFact[];
   automationPaused?: boolean;
+  automationSettings?: RuntimeAutomationSettings;
+  agentPolicy?: RuntimeAgentPolicy;
 }
 
 const storage = new AsyncLocalStorage<ProjectContext>();
@@ -116,6 +133,32 @@ export function assertProjectAutomationActive(): void {
   }
 }
 
+export function projectScheduleAllowsNow(now = new Date()): boolean {
+  const settings = getProjectContext().automationSettings;
+  if (!settings) return true;
+  const timezone = settings.timezone || 'America/Los_Angeles';
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const weekdayName = parts.find((part) => part.type === 'weekday')?.value || '';
+  const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(weekdayName);
+  if (settings.weekdays?.length && !settings.weekdays.includes(weekday)) return false;
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value || 0);
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value || 0);
+  const current = hour * 60 + minute;
+  const parse = (value: string | undefined, fallback: number) => {
+    const match = value?.match(/^(\d{1,2}):(\d{2})$/);
+    return match ? Number(match[1]) * 60 + Number(match[2]) : fallback;
+  };
+  const start = parse(settings.startTime, 0);
+  const end = parse(settings.endTime, 24 * 60 - 1);
+  return start <= end ? current >= start && current <= end : current >= start || current <= end;
+}
+
 export function runWithProjectContext<T>(context: ProjectContext, fn: () => T): T {
   return storage.run(context, fn);
 }
@@ -146,6 +189,7 @@ export function projectScopedDataPath(filePath: string, projectId = getCurrentPr
     ['data/links.json', `data/projects/${id}/links.json`],
     ['data/webinars.json', `data/projects/${id}/webinars.json`],
     ['data/comms-templates.json', `data/projects/${id}/comms-templates.json`],
+    ['data/composer-templates.json', `data/projects/${id}/composer-templates.json`],
     ['data/scheduled-messages.json', `data/projects/${id}/scheduled-messages.json`],
     ['data/project-guidelines.txt', `data/projects/${id}/project-guidelines.txt`],
     ['data/project-memory.json', `data/projects/${id}/project-memory.json`],

@@ -117,19 +117,12 @@ function encryptedPayloadBuffer(payload: string): Buffer {
 
 function decryptPayload(payload: string, privateKeyPem: string): DiscoursePayload {
   const encrypted = encryptedPayloadBuffer(payload);
-  const paddings = [constants.RSA_PKCS1_OAEP_PADDING, constants.RSA_PKCS1_PADDING];
-  const errors: string[] = [];
-
-  for (const padding of paddings) {
-    try {
-      const decrypted = privateDecrypt({ key: privateKeyPem, padding }, encrypted);
-      return JSON.parse(decrypted.toString('utf8')) as DiscoursePayload;
-    } catch (err) {
-      errors.push(err instanceof Error ? err.message : String(err));
-    }
+  try {
+    const decrypted = privateDecrypt({ key: privateKeyPem, padding: constants.RSA_PKCS1_OAEP_PADDING }, encrypted);
+    return JSON.parse(decrypted.toString('utf8')) as DiscoursePayload;
+  } catch (err) {
+    throw new Error(`Authorization payload could not be decrypted. ${err instanceof Error ? err.message : String(err)}`.trim());
   }
-
-  throw new Error(`Authorization payload could not be decrypted. ${errors[0] || ''}`.trim());
 }
 
 async function deleteExpiredAttempts(): Promise<void> {
@@ -166,6 +159,22 @@ async function deleteAttempt(id: string): Promise<void> {
   await getSupabaseAdmin().from(ATTEMPTS_TABLE).delete().eq('id', id);
 }
 
+async function claimAttempt(attempt: DiscourseAuthAttempt): Promise<void> {
+  const { data, error } = await getSupabaseAdmin().from(ATTEMPTS_TABLE)
+    .update({ consumed_at: new Date().toISOString() })
+    .eq('id', attempt.id)
+    .is('consumed_at', null)
+    .select('id');
+  if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error('Authorization was already used. Please start again.');
+}
+
+function verifyPayload(attempt: DiscourseAuthAttempt, payload: DiscoursePayload): void {
+  if (!payload.key || !payload.nonce || payload.nonce !== attempt.nonce) {
+    throw new Error('Authorization could not be verified. Please try again.');
+  }
+}
+
 async function fetchDiscourseUsername(userApiKey: string): Promise<string> {
   try {
     const res = await fetch(`${DISCOURSE_AUTH_BASE_URL}/session/current.json`, {
@@ -184,9 +193,7 @@ async function fetchDiscourseUsername(userApiKey: string): Promise<string> {
 }
 
 async function storeAuthorizedDiscourseKey(attempt: DiscourseAuthAttempt, payload: DiscoursePayload): Promise<string> {
-  if (!payload.key || !payload.nonce || payload.nonce !== attempt.nonce) {
-    throw new Error('Authorization could not be verified. Please try again.');
-  }
+  verifyPayload(attempt, payload);
 
   const username = await fetchDiscourseUsername(payload.key);
   const encryptedKey = encryptSecret(payload.key);
@@ -341,6 +348,8 @@ router.post('/complete', requirePlatformUser, async (req: Request, res: Response
     }
 
     const payload = decryptPayload(payloadParam, decryptSecret(attempt.private_key_ciphertext));
+    verifyPayload(attempt, payload);
+    await claimAttempt(attempt);
     const username = await storeAuthorizedDiscourseKey(attempt, payload);
     await deleteAttempt(attempt.id);
 
@@ -393,6 +402,8 @@ router.get('/callback', async (req: Request, res: Response) => {
     }
 
     const payload = decryptPayload(payloadParam, decryptSecret(attempt.private_key_ciphertext));
+    verifyPayload(attempt, payload);
+    await claimAttempt(attempt);
     try {
       await storeAuthorizedDiscourseKey(attempt, payload);
     } catch (err) {

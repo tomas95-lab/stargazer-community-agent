@@ -14,6 +14,20 @@ interface GitHubContentDirectoryItem {
   size: number;
 }
 
+interface GitHubRepository {
+  default_branch: string;
+}
+
+interface GitHubTreeResponse {
+  truncated: boolean;
+  tree: Array<{
+    path: string;
+    type: 'blob' | 'tree' | string;
+    sha: string;
+    size?: number;
+  }>;
+}
+
 class GitHubApiError extends Error {
   status: number;
   body: string;
@@ -152,6 +166,40 @@ export async function listDirectory(dirPath: string): Promise<Array<{ name: stri
 export async function readFile(filePath: string): Promise<string> {
   const file = await githubRequest<GitHubContentFile>(contentPath(filePath));
   return Buffer.from(file.content, 'base64').toString('utf-8');
+}
+
+export async function listFilesRecursive(dirPath: string): Promise<Array<{ path: string; sha: string; size: number }>> {
+  const content = await readContent(dirPath);
+  if (!content) return [];
+  if (!Array.isArray(content)) {
+    return [{ path: dirPath, sha: content.sha, size: content.size }];
+  }
+
+  const files: Array<{ path: string; sha: string; size: number }> = [];
+  for (const item of content) {
+    const childPath = item.path || `${dirPath.replace(/\/+$/, '')}/${item.name}`;
+    if (item.type === 'dir') {
+      files.push(...await listFilesRecursive(childPath));
+    } else if (item.type === 'file') {
+      files.push({ path: childPath, sha: item.sha, size: item.size });
+    }
+  }
+  return files;
+}
+
+export async function listRepositoryFiles(prefixes: string[]): Promise<Array<{ path: string; sha: string; size: number }>> {
+  const { owner, repo } = getRepo();
+  const repositoryPath = `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+  const repository = await githubRequest<GitHubRepository>(repositoryPath);
+  const tree = await githubRequest<GitHubTreeResponse>(
+    `${repositoryPath}/git/trees/${encodeURIComponent(repository.default_branch)}?recursive=1`,
+  );
+  if (tree.truncated) throw new Error('GitHub repository tree is too large for a complete migration listing.');
+  const normalizedPrefixes = prefixes.map((prefix) => prefix.replace(/\\/g, '/').replace(/^\/+|\/+$/g, ''));
+  return tree.tree
+    .filter((item) => item.type === 'blob')
+    .filter((item) => normalizedPrefixes.some((prefix) => item.path === prefix || item.path.startsWith(`${prefix}/`)))
+    .map((item) => ({ path: item.path, sha: item.sha, size: item.size || 0 }));
 }
 
 async function readContent(filePath: string): Promise<GitHubContentFile | GitHubContentDirectoryItem[] | null> {

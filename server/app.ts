@@ -23,12 +23,38 @@ import usageRouter from './routes/usage';
 import platformRouter from './routes/platform';
 import discourseAuthRouter from './routes/discourse-auth';
 import { attachProjectContext } from './auth';
+import { apiRateLimit, protectWorkspaceApi, securityHeaders } from './security';
 
 const app = express();
 
-app.use(cors());
-app.use(express.json({ limit: '18mb' }));
+const allowedOrigins = new Set(
+  [
+    process.env.FRONTEND_BASE_URL,
+    process.env.APP_FRONTEND_URL,
+    process.env.PUBLIC_BASE_URL,
+    process.env.CRON_TARGET_BASE_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL.replace(/^https?:\/\//, '')}` : '',
+    ...(process.env.CORS_ALLOWED_ORIGINS || '').split(',').map((value) => value.trim()),
+    'http://localhost:5173',
+    'http://localhost:3001',
+  ].filter((value): value is string => Boolean(value)).map((value) => value.replace(/\/+$/, ''))
+);
+
+app.use(securityHeaders);
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin.replace(/\/+$/, ''))) callback(null, true);
+    else callback(new Error('Origin is not allowed.'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Authorization', 'Content-Type', 'X-Admin-Token', 'X-Project-Id', 'X-Cron-Secret'],
+}));
+app.use('/api/platform/guidelines/extract', express.json({ limit: '18mb' }));
+app.use('/api/platform/projects', express.json({ limit: '8mb' }));
+app.use(express.json({ limit: '2mb' }));
+app.use('/api', apiRateLimit);
 app.use(attachProjectContext);
+app.use('/api', protectWorkspaceApi);
 
 app.use('/api/platform', platformRouter);
 app.use('/api/discourse-auth', discourseAuthRouter);

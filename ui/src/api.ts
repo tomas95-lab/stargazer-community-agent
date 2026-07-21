@@ -1,24 +1,8 @@
-import { getSupabaseAccessToken } from "@/lib/supabase";
+import { getSupabaseAccessToken, refreshSupabaseAccessToken } from "@/lib/supabase";
 import { AUTH_SESSION_INVALID_EVENT } from "@/auth-events";
 
 const BASE = '/api';
-const ADMIN_TOKEN_KEY = 'stargazer_admin_token';
 const PROJECT_ID_KEY = 'qm_active_project_id';
-
-function getStoredAdminToken(): string {
-  if (typeof window === 'undefined') return '';
-  return window.localStorage.getItem(ADMIN_TOKEN_KEY) || '';
-}
-
-function setStoredAdminToken(token: string): void {
-  if (typeof window === 'undefined') return;
-  const trimmed = token.trim();
-  if (trimmed) {
-    window.localStorage.setItem(ADMIN_TOKEN_KEY, trimmed);
-  } else {
-    window.localStorage.removeItem(ADMIN_TOKEN_KEY);
-  }
-}
 
 function getStoredProjectId(): string {
   if (typeof window === 'undefined') return '';
@@ -36,7 +20,7 @@ function setStoredProjectId(projectId: string): void {
 }
 
 function isAuthSessionError(message: string): boolean {
-  return /auth session missing|authentication required|invalid supabase session|jwt|token/i.test(message);
+  return /auth session missing|invalid supabase session|jwt expired|invalid jwt|token has expired|refresh token/i.test(message);
 }
 
 function notifyInvalidAuthSession(message: string): void {
@@ -45,12 +29,16 @@ function notifyInvalidAuthSession(message: string): void {
   window.dispatchEvent(new CustomEvent(AUTH_SESSION_INVALID_EVENT, { detail: { message } }));
 }
 
-async function request<T>(path: string, opts?: RequestInit, retryStaleProject = true): Promise<T> {
-  const token = getStoredAdminToken();
-  const accessToken = await getSupabaseAccessToken();
+async function request<T>(
+  path: string,
+  opts?: RequestInit,
+  retryStaleProject = true,
+  retryAuth = true,
+  accessTokenOverride = '',
+): Promise<T> {
+  const accessToken = accessTokenOverride || await getSupabaseAccessToken();
   const projectId = getStoredProjectId();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['X-Admin-Token'] = token;
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (projectId) headers['X-Project-Id'] = projectId;
 
@@ -66,22 +54,21 @@ async function request<T>(path: string, opts?: RequestInit, retryStaleProject = 
     const message = body.error || res.statusText;
     if (res.status === 404 && projectId && message === 'Project not found.' && retryStaleProject) {
       projectSelection.clearProjectId();
-      return request<T>(path, opts, false);
+      return request<T>(path, opts, false, retryAuth, accessToken);
     }
-    if (res.status === 401 && isAuthSessionError(message)) {
+    if (res.status === 401 && accessToken && isAuthSessionError(message)) {
+      if (retryAuth) {
+        const refreshedToken = await refreshSupabaseAccessToken();
+        if (refreshedToken) {
+          return request<T>(path, opts, retryStaleProject, false, refreshedToken);
+        }
+      }
       notifyInvalidAuthSession(message);
     }
     throw new Error(message);
   }
   return res.json();
 }
-
-export const adminAuth = {
-  getToken: getStoredAdminToken,
-  setToken: setStoredAdminToken,
-  clearToken: () => setStoredAdminToken(''),
-  hasToken: () => Boolean(getStoredAdminToken()),
-};
 
 export const projectSelection = {
   getProjectId: getStoredProjectId,
@@ -497,6 +484,14 @@ export interface ReviewQueueResult {
   };
 }
 
+export interface KnowledgeGap {
+  id: string;
+  reason: string;
+  occurrences: number;
+  sources: Array<'community' | 'dm'>;
+  examples: string[];
+}
+
 export interface DailySummaryActivity {
   id: string;
   at: string;
@@ -620,6 +615,8 @@ export interface AiUsageSummary {
 }
 
 export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
+export type ProjectRole = 'owner' | 'admin' | 'qm' | 'viewer';
+export type ProjectStatus = 'setup' | 'active' | 'paused' | 'completed' | 'archived';
 
 export interface QmProject {
   id: string;
@@ -646,6 +643,10 @@ export interface QmProject {
   autoReplyEnabled: boolean;
   minConfidence: number;
   enabled: boolean;
+  role: ProjectRole;
+  status: ProjectStatus;
+  archivedAt: string;
+  settings: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -671,6 +672,8 @@ export interface QmProjectInput {
   autoReplyEnabled?: boolean;
   minConfidence?: number;
   enabled?: boolean;
+  status?: ProjectStatus;
+  settings?: Record<string, unknown>;
 }
 
 export interface PlatformStatus {
@@ -678,12 +681,55 @@ export interface PlatformStatus {
   supabaseUrlConfigured: boolean;
   secretConfigured: boolean;
   encryptionConfigured: boolean;
+  schemaReady: boolean;
+  schemaMessage: string;
+}
+
+export interface SandboxReplayMessage {
+  id: number;
+  username: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface ProjectMember {
+  id: string;
+  name: string;
+  email: string;
+  role: ProjectRole;
+  enabled: boolean;
+}
+
+export interface SharedProjectSummary {
+  projectKey: string;
+  projectName: string;
+  communityBaseUrl: string;
+  categoryId: string;
+  categorySlug: string;
+  channelId: string;
+  projectGuidelines: string;
+  warRoomLink: string;
+  agentMode: ProjectAgentMode;
+  autoReplyEnabled: boolean;
+  minConfidence: number;
+  status: ProjectStatus;
+  settings: Record<string, unknown>;
+}
+
+export interface ProjectHealthResult {
+  projectId: string;
+  generatedAt: string;
+  healthy: boolean;
+  checks: Array<{ id: string; label: string; ok: boolean; detail: string }>;
 }
 
 export interface GuidelinesExtractionResult {
   text: string;
   pages: number;
   characters: number;
+  tables: number;
+  chunks: number;
+  warnings: string[];
   fileName: string;
 }
 
@@ -849,6 +895,7 @@ export const api = {
     if (opts.includeResolved) params.set('includeResolved', 'true');
     return request<ReviewQueueResult>(`/review-queue?${params.toString()}`);
   },
+  getKnowledgeGaps: (limit = 8) => request<{ gaps: KnowledgeGap[] }>(`/review-queue/knowledge-gaps?limit=${limit}`),
   updateReviewQueueStatus: (id: string, status: ReviewQueueItem['status'], note = '') =>
     request<{ ok: boolean; update: { id: string; status: ReviewQueueItem['status']; note?: string; updatedAt: string } }>('/review-queue/status', {
       method: 'PATCH',
@@ -878,6 +925,10 @@ export const api = {
   getPlatformMe: () => request<{ user: { id: string; email: string; name: string } }>('/platform/me'),
   getProjects: () => request<{ projects: QmProject[] }>('/platform/projects'),
   getCurrentProject: () => request<{ project: QmProject | null }>('/platform/projects/current'),
+  findSharedProject: (projectKey: string) =>
+    request<{ project: SharedProjectSummary | null }>(`/platform/projects/shared/${encodeURIComponent(projectKey)}`),
+  getProjectHealth: (id: string) => request<ProjectHealthResult>(`/platform/projects/${id}/health`),
+  exportProject: (id: string) => request<{ version: number; exportedAt: string; project: QmProjectInput }>(`/platform/projects/${id}/export`),
   extractGuidelinesFromPdf: (opts: { fileName: string; mimeType: string; base64: string }) =>
     request<GuidelinesExtractionResult>('/platform/guidelines/extract', {
       method: 'POST',
@@ -888,6 +939,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(project),
     }),
+  getSandboxReplayMessages: (count = 12) => request<{ messages: SandboxReplayMessage[] }>(`/sandbox/recent-community?count=${count}`),
   updateProject: (id: string, project: QmProjectInput) =>
     request<{ project: QmProject }>(`/platform/projects/${id}`, {
       method: 'PUT',
@@ -898,6 +950,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ paused }),
     }),
+  setProjectStatus: (id: string, status: ProjectStatus) =>
+    request<{ project: QmProject }>(`/platform/projects/${id}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status }),
+    }),
+  restoreProject: (id: string) =>
+    request<{ project: QmProject }>(`/platform/projects/${id}/restore`, { method: 'POST' }),
+  getProjectMembers: (id: string) => request<{ members: ProjectMember[] }>(`/platform/projects/${id}/members`),
+  updateProjectMemberRole: (id: string, memberId: string, role: ProjectRole) =>
+    request<{ ok: boolean }>(`/platform/projects/${id}/members/${memberId}`, { method: 'PATCH', body: JSON.stringify({ role }) }),
   deleteProject: (id: string) =>
     request<{
       ok: boolean;

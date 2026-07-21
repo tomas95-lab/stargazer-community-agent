@@ -10,7 +10,7 @@ import {
   IconRefresh,
   IconRotateClockwise,
 } from '@tabler/icons-react';
-import { api, type ReviewQueueItem, type ReviewQueueResult } from '../api';
+import { api, type KnowledgeGap, type ReviewQueueItem, type ReviewQueueResult } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { APP_TIME_ZONE_LABEL, formatAppDateTime } from '@/lib/timezone';
@@ -136,12 +136,14 @@ export default function ReviewQueue() {
   const [showClosed, setShowClosed] = useState(false);
   const [updatingId, setUpdatingId] = useState('');
   const [error, setError] = useState('');
+  const [knowledgeGaps, setKnowledgeGaps] = useState<KnowledgeGap[]>([]);
 
   const load = async () => {
     setLoading(true);
     setError('');
     try {
       setResult(await api.getReviewQueue(150, { includeResolved: showClosed }));
+      setKnowledgeGaps((await api.getKnowledgeGaps()).gaps);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -205,6 +207,29 @@ export default function ReviewQueue() {
       </div>
 
       {error && <div className="sg-status-danger rounded-lg border p-4 text-sm">{error}</div>}
+
+      {knowledgeGaps.length > 0 && (
+        <section className="sg-panel overflow-hidden p-0">
+          <div className="border-b border-border px-5 py-4">
+            <h2 className="text-base font-semibold text-foreground">Knowledge gaps</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Repeated reasons the agent needed a human. Use these to improve Project Guidelines.</p>
+          </div>
+          <div className="divide-y divide-border">
+            {knowledgeGaps.map((gap) => (
+              <div key={gap.id} className="flex flex-col gap-2 px-5 py-4 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">{gap.reason}</p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">{gap.examples[0]}</p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Badge variant="secondary">{gap.occurrences} occurrences</Badge>
+                  <Badge variant="outline">{gap.sources.join(' + ')}</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="sg-panel overflow-hidden p-0">
         {loading && !result ? (

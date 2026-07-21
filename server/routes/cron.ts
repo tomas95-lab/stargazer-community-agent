@@ -5,7 +5,7 @@ import { runDailyPublishJob } from '../../src/daily-publish-job';
 import { runDmReviewJob } from '../../src/dm-review-job';
 import { appendOperationLog, OperationStatus } from '../../src/operations-log';
 import { processDueScheduledMessages } from '../../src/scheduled-messages';
-import { canonicalProjectId, defaultProjectId, isLegacyProjectId, ProjectContext, runWithProjectContext } from '../../src/project-context';
+import { canonicalProjectId, defaultProjectId, isLegacyProjectId, ProjectContext, projectScheduleAllowsNow, runWithProjectContext } from '../../src/project-context';
 import { withCronRunLock } from '../../src/cron-locks';
 import {
   isPlatformConfigured,
@@ -167,13 +167,18 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
         runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused', result: undefined });
         continue;
       }
+      const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
+      if (!withinSchedule) {
+        runs.push({ projectId: context.projectId, skipped: true, reason: 'outside_project_schedule', result: undefined });
+        continue;
+      }
       const locked = await runInContext(context, () => withCronRunLock(
         'community-agent',
         context.projectId,
         slot(req),
         () => runCommunityAgent({
-          post: process.env.AGENT_AUTO_POST === 'true',
-          react: process.env.AGENT_AUTO_REACT === 'true',
+          post: context.automationSettings?.autoPost ?? process.env.AGENT_AUTO_POST === 'true',
+          react: context.automationSettings?.autoReact ?? process.env.AGENT_AUTO_REACT === 'true',
           includeCommunity: true,
           onlyToday: true,
           respectSchedule: true,
@@ -243,6 +248,11 @@ async function handleDailyThreadCron(req: Request, res: Response): Promise<void>
         runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused', result: undefined });
         continue;
       }
+      const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
+      if (!withinSchedule) {
+        runs.push({ projectId: context.projectId, skipped: true, reason: 'outside_project_schedule', result: undefined });
+        continue;
+      }
       const locked = await runInContext(context, () => withCronRunLock(
         'daily-thread',
         context.projectId,
@@ -301,6 +311,11 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
         runs.push({ projectId: context.projectId, ownerId: context.ownerId, skipped: true, reason: 'project_paused', result: undefined });
         continue;
       }
+      const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
+      if (!withinSchedule) {
+        runs.push({ projectId: context.projectId, ownerId: context.ownerId, skipped: true, reason: 'outside_project_schedule', result: undefined });
+        continue;
+      }
       const locked = await runInContext(context, () => withCronRunLock(
         'dm-review',
         context.ownerId || context.projectId,
@@ -309,7 +324,7 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
           messageCount: Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50),
           maxChannels: Number(process.env.DM_REVIEW_MAX_CHANNELS || 5),
           requestDelayMs: Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500),
-          autoReply: process.env.DM_AUTO_REPLY === 'true',
+          autoReply: context.automationSettings?.dmAutoReply ?? process.env.DM_AUTO_REPLY === 'true',
           maxAutoReplies: Number(process.env.DM_AUTO_REPLY_MAX || 3),
         })
       ));

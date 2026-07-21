@@ -5,6 +5,8 @@ import {
   extractTextFromPdfBuffer,
   MAX_GUIDELINE_PDF_BYTES,
   normalizeExtractedGuidelineText,
+  structuredGuidelineText,
+  tableToMarkdown,
   validatePdfBuffer,
 } from '../dist/guideline-file-extractor.js';
 
@@ -56,10 +58,29 @@ test('validatePdfBuffer rejects oversized PDFs', () => {
   assert.throws(() => validatePdfBuffer(buffer), /too large/);
 });
 
+test('tableToMarkdown preserves rows, columns, and pipe characters', () => {
+  assert.equal(
+    tableToMarkdown([['Status', 'Action'], ['EQ', 'Join | ask for access']]),
+    '| Status | Action |\n| --- | --- |\n| EQ | Join \\| ask for access |'
+  );
+});
+
+test('structuredGuidelineText keeps page boundaries and detected tables', () => {
+  const result = structuredGuidelineText(
+    [{ num: 1, text: 'Access instructions' }],
+    [{ num: 1, tables: [[['State', 'Next step'], ['EQ', 'Request access']]] }]
+  );
+  assert.match(result.text, /## Page 1/);
+  assert.match(result.text, /\| EQ \| Request access \|/);
+  assert.equal(result.tables, 1);
+});
+
 test('extractTextFromPdfBuffer extracts selectable PDF text', async () => {
   const result = await extractTextFromPdfBuffer(minimalPdfWithText('Cursor access guideline'));
 
-  assert.equal(result.text, 'Cursor access guideline');
+  assert.equal(result.text, '## Page 1\n\nCursor access guideline');
   assert.equal(result.pages, 1);
-  assert.equal(result.characters, 23);
+  assert.equal(result.characters, result.text.length);
+  assert.equal(result.tables, 0);
+  assert.equal(result.chunks, 1);
 });

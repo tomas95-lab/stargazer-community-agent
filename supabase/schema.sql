@@ -1,5 +1,27 @@
 create extension if not exists pgcrypto;
 
+create table if not exists public.project_data_files (
+  project_key text not null,
+  file_path text not null,
+  content_type text not null check (content_type in ('json', 'text')),
+  content text not null default '',
+  size_bytes bigint not null default 0 check (size_bytes >= 0),
+  content_sha256 text not null default '',
+  last_write_reason text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key(project_key, file_path),
+  check (project_key ~ '^[a-z0-9][a-z0-9-]{1,63}$'),
+  check (file_path ~ '^(data|output)/[A-Za-z0-9._/-]+$'),
+  check (file_path !~ '(^|/)\\.\\.?(/|$)'),
+  check (octet_length(content) <= 5242880)
+);
+
+create index if not exists project_data_files_path_idx
+  on public.project_data_files(project_key, file_path text_pattern_ops);
+
+alter table public.project_data_files enable row level security;
+
 create table if not exists public.qm_projects (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
@@ -20,11 +42,23 @@ create table if not exists public.qm_projects (
   auto_reply_enabled boolean not null default false,
   min_confidence numeric not null default 0.5 check (min_confidence >= 0 and min_confidence <= 1),
   enabled boolean not null default true,
+  role text not null default 'owner' check (role in ('owner', 'admin', 'qm', 'viewer')),
+  status text not null default 'active' check (status in ('setup', 'active', 'paused', 'completed', 'archived')),
+  archived_at timestamptz,
+  settings jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 alter table public.qm_projects add column if not exists project_key text;
+alter table public.qm_projects add column if not exists role text not null default 'owner';
+alter table public.qm_projects add column if not exists status text not null default 'active';
+alter table public.qm_projects add column if not exists archived_at timestamptz;
+alter table public.qm_projects add column if not exists settings jsonb not null default '{}'::jsonb;
+
+update public.qm_projects
+set status = case when enabled then 'active' else 'paused' end
+where status = 'active';
 
 update public.qm_projects
 set project_key = case
@@ -53,6 +87,96 @@ end $$;
 
 create index if not exists qm_projects_owner_id_idx on public.qm_projects(owner_id);
 create index if not exists qm_projects_project_key_idx on public.qm_projects(project_key);
+create index if not exists qm_projects_status_idx on public.qm_projects(status);
+
+create table if not exists public.platform_audit_events (
+  id uuid primary key default gen_random_uuid(),
+  actor_id uuid references auth.users(id) on delete set null,
+  project_key text not null default '',
+  action text not null,
+  target_type text not null default '',
+  target_id text not null default '',
+  before_data jsonb,
+  after_data jsonb,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists platform_audit_events_project_idx on public.platform_audit_events(project_key, created_at desc);
+alter table public.platform_audit_events enable row level security;
+
+create table if not exists public.automation_run_locks (
+  job text not null,
+  project_key text not null,
+  slot text not null,
+  run_date text not null,
+  status text not null check (status in ('running', 'completed', 'error')),
+  started_at timestamptz not null default now(),
+  completed_at timestamptz,
+  error text,
+  primary key(job, project_key, slot, run_date)
+);
+
+alter table public.automation_run_locks enable row level security;
+
+create table if not exists public.automation_events (
+  id uuid primary key default gen_random_uuid(),
+  project_key text not null,
+  owner_id uuid references auth.users(id) on delete set null,
+  action text not null,
+  status text not null check (status in ('success', 'error', 'skipped')),
+  message text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  detail jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists automation_events_project_idx on public.automation_events(project_key, created_at desc);
+alter table public.automation_events enable row level security;
+
+create table if not exists public.ai_usage_events (
+  id uuid primary key default gen_random_uuid(),
+  project_key text not null,
+  owner_id uuid references auth.users(id) on delete set null,
+  feature text not null,
+  model text not null,
+  input_tokens integer not null default 0,
+  output_tokens integer not null default 0,
+  status text not null check (status in ('success', 'error', 'blocked')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ai_usage_events_owner_idx on public.ai_usage_events(owner_id, created_at desc);
+alter table public.ai_usage_events enable row level security;
+
+create table if not exists public.review_queue_status (
+  project_key text not null,
+  item_id text not null,
+  status text not null check (status in ('resolved', 'dismissed')),
+  note text not null default '',
+  updated_at timestamptz not null default now(),
+  primary key(project_key, item_id)
+);
+alter table public.review_queue_status enable row level security;
+
+create table if not exists public.scheduled_messages (
+  id uuid primary key,
+  project_key text not null,
+  owner_id uuid references auth.users(id) on delete set null,
+  message text not null,
+  channel_id text,
+  scheduled_date text not null,
+  scheduled_time text not null,
+  scheduled_for timestamptz not null,
+  status text not null check (status in ('pending', 'sent', 'cancelled', 'error')),
+  sent_at timestamptz,
+  discourse_message_id bigint,
+  error text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists scheduled_messages_due_idx on public.scheduled_messages(project_key, status, scheduled_for);
+alter table public.scheduled_messages enable row level security;
 
 alter table public.qm_projects enable row level security;
 

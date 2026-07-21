@@ -44,9 +44,9 @@ export function loadBotConfig(): BotConfig {
 
   return {
     communityBaseUrl: process.env.COMMUNITY_BASE_URL || 'https://community.outlier.ai',
-    communityCategoryId: process.env.COMMUNITY_CATEGORY_ID || '15895',
-    communityCategorySlug: process.env.COMMUNITY_CATEGORY_SLUG || 'stargazer-axiom',
-    communityChatChannelId: process.env.COMMUNITY_CHAT_CHANNEL_ID || '828853',
+    communityCategoryId: process.env.COMMUNITY_CATEGORY_ID || '',
+    communityCategorySlug: process.env.COMMUNITY_CATEGORY_SLUG || 'testing-project',
+    communityChatChannelId: process.env.COMMUNITY_CHAT_CHANNEL_ID || '',
     discourseApiKey: key,
     discourseApiClientId: process.env.DISCOURSE_API_CLIENT_ID || 'daily-thread-bot',
     discourseUsername: process.env.DISCOURSE_USERNAME || '',

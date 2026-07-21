@@ -90,7 +90,7 @@ const OUTPUT_DIR = path.resolve(__dirname, '../output/training');
 const PROJECT_MEMORY_FILE = path.resolve(__dirname, '../data/project-memory.json');
 const WAR_ROOM_MEETING_ID = '91510346485';
 const FINE_TUNE_SYSTEM_PROMPT = [
-  'You are a support assistant for the Stargazer community manager.',
+  'You are a support assistant analyzing the active project community manager.',
   'Answer in the manager style: concise, direct, operational, and supportive.',
   'Always write the user-facing reply in English.',
   'Never use the em dash character.',
@@ -636,7 +636,7 @@ function buildMemoryFacts(analysis: Omit<TrainingAnalysis, 'memoryFacts'>): Proj
     {
       id: 'manager-style-war-room',
       title: 'War Room support pattern',
-      body: 'When live support is relevant during Stargazer support hours after 07:15 PST on weekdays, tell contributors to join the War Room and then join the breakout room called Stargazer - Team. On weekends, say the War Room is closed and ask them to come back Monday between 07:15 and 15:00 PST.',
+      body: 'When live support is relevant, use only the active project guidelines and memory for War Room hours, links, and room names. Never carry schedule details from another project.',
       source,
     },
     {
@@ -660,7 +660,7 @@ function buildMemoryFacts(analysis: Omit<TrainingAnalysis, 'memoryFacts'>): Proj
     facts.push({
       id: 'learned-model-setup',
       title: 'Current model setup',
-      body: 'The project moved away from Qwen. Contributors should use Claude Sonnet 4.6 for Stargazer tasks and make sure their Cursor configuration follows the current project guidelines.',
+      body: 'Answer model setup questions only from the active project guidelines. Do not reuse a model choice learned from another project.',
       source,
     });
   }

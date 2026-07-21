@@ -1,10 +1,25 @@
 import { Router, Request, Response } from 'express';
-import { evaluateSupportMessage } from '../../src/community-agent';
+import { evaluateSupportMessage, fetchRecentCommunityMessages } from '../../src/community-agent';
 import { loadProjectLinks } from '../../src/links';
 import { appendOperationLog } from '../../src/operations-log';
 import { requireAdminToken } from '../auth';
 
 const router = Router();
+
+router.get('/recent-community', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const count = Math.max(1, Math.min(30, Number(req.query.count || 12)));
+    const messages = await fetchRecentCommunityMessages(count);
+    res.json({ messages: messages.map((item) => ({
+      id: item.id,
+      username: item.user?.username || 'unknown',
+      message: item.message || item.cooked || '',
+      createdAt: item.created_at,
+    })) });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';

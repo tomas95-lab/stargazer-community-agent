@@ -5,6 +5,7 @@ import { DiscourseClient } from './discourse-client';
 import { appendOperationLog } from './operations-log';
 import { assertProjectAutomationActive } from './project-context';
 import { APP_TIME_ZONE_LABEL, zonedTimeToUtc } from './timezone';
+import { runtimeDb, runtimeDbConfigured, runtimeScope, runtimeTableMissing } from './runtime-db';
 
 const FILE = 'data/scheduled-messages.json';
 
@@ -92,6 +93,29 @@ function sortMessages(messages: ScheduledMessage[]): ScheduledMessage[] {
 }
 
 async function readMessages(): Promise<ScheduledMessage[]> {
+  if (runtimeDbConfigured()) {
+    try {
+      const { data, error } = await runtimeDb().from('scheduled_messages').select('*')
+        .eq('project_key', runtimeScope().projectKey).order('scheduled_for', { ascending: true });
+      if (error) throw new Error(error.message);
+      return sortMessages((data || []).map((row) => ({
+        id: row.id,
+        message: row.message,
+        channelId: row.channel_id || undefined,
+        scheduledDate: row.scheduled_date,
+        scheduledTime: row.scheduled_time,
+        scheduledFor: row.scheduled_for,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        sentAt: row.sent_at || undefined,
+        messageId: row.discourse_message_id || undefined,
+        error: row.error || undefined,
+      })) as ScheduledMessage[]);
+    } catch (err) {
+      if (!runtimeTableMissing(err)) throw err;
+    }
+  }
   try {
     const messages = await readDataJSON<ScheduledMessage[]>(FILE);
     return Array.isArray(messages) ? sortMessages(messages) : [];
@@ -102,6 +126,31 @@ async function readMessages(): Promise<ScheduledMessage[]> {
 
 async function writeMessages(messages: ScheduledMessage[], reason: string): Promise<ScheduledMessage[]> {
   const sorted = sortMessages(messages);
+  if (runtimeDbConfigured()) {
+    try {
+      const scope = runtimeScope();
+      const { error } = await runtimeDb().from('scheduled_messages').upsert(sorted.map((item) => ({
+        id: item.id,
+        project_key: scope.projectKey,
+        owner_id: scope.ownerId,
+        message: item.message,
+        channel_id: item.channelId || null,
+        scheduled_date: item.scheduledDate,
+        scheduled_time: item.scheduledTime,
+        scheduled_for: item.scheduledFor,
+        status: item.status,
+        sent_at: item.sentAt || null,
+        discourse_message_id: item.messageId || null,
+        error: item.error || null,
+        created_at: item.createdAt,
+        updated_at: item.updatedAt,
+      })));
+      if (error) throw new Error(error.message);
+      return sorted;
+    } catch (err) {
+      if (!runtimeTableMissing(err)) throw err;
+    }
+  }
   await writeDataJSON(FILE, sorted, reason);
   return sorted;
 }
@@ -177,6 +226,15 @@ export async function deleteScheduledMessage(id: string): Promise<void> {
   const messages = await readMessages();
   const filtered = messages.filter((item) => item.id !== id);
   if (filtered.length === messages.length) throw new Error('Scheduled message not found.');
+  if (runtimeDbConfigured()) {
+    try {
+      const { error } = await runtimeDb().from('scheduled_messages').delete().eq('project_key', runtimeScope().projectKey).eq('id', id);
+      if (error) throw new Error(error.message);
+      return;
+    } catch (err) {
+      if (!runtimeTableMissing(err)) throw err;
+    }
+  }
   await writeMessages(filtered, `delete scheduled chat message ${id}`);
 }
 

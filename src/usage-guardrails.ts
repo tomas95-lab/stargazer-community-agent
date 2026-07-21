@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { readDataJSON, writeDataJSON } from './data-store';
 import { getProjectContext } from './project-context';
 import { appDateParts } from './timezone';
+import { runtimeDb, runtimeDbConfigured, runtimeScope, runtimeTableMissing } from './runtime-db';
 
 const FILE = 'output/ai-usage-state.json';
 const MAX_EVENTS = 1000;
@@ -79,6 +80,34 @@ function currentAiModel(): string {
 }
 
 async function readState(): Promise<AiUsageState> {
+  if (runtimeDbConfigured()) {
+    try {
+      const scope = runtimeScope();
+      let query = runtimeDb().from('ai_usage_events').select('*').eq('project_key', scope.projectKey)
+        .order('created_at', { ascending: false }).limit(MAX_EVENTS);
+      if (scope.ownerId) query = query.eq('owner_id', scope.ownerId);
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+      return {
+        events: (data || []).map((row) => ({
+          id: row.id,
+          at: row.created_at,
+          utcDate: appDateParts(new Date(row.created_at)).label,
+          argentinaDate: appDateParts(new Date(row.created_at)).label,
+          projectId: row.project_key,
+          ownerId: row.owner_id || undefined,
+          feature: row.feature,
+          model: row.model,
+          inputTokens: row.input_tokens,
+          outputTokens: row.output_tokens,
+          totalTokens: row.input_tokens + row.output_tokens,
+          status: row.status,
+        })) as AiUsageEvent[],
+      };
+    } catch (err) {
+      if (!runtimeTableMissing(err)) throw err;
+    }
+  }
   try {
     const state = await readDataJSON<AiUsageState>(FILE);
     return {
@@ -214,6 +243,26 @@ export async function recordAiUsage(input: {
   };
 
   try {
+    if (runtimeDbConfigured()) {
+      try {
+        const scope = runtimeScope();
+        const { error } = await runtimeDb().from('ai_usage_events').insert({
+          id: event.id,
+          project_key: scope.projectKey,
+          owner_id: scope.ownerId,
+          feature: event.feature,
+          model: event.model,
+          input_tokens: event.inputTokens,
+          output_tokens: event.outputTokens,
+          status: event.status,
+          created_at: event.at,
+        });
+        if (error) throw new Error(error.message);
+        return event;
+      } catch (err) {
+        if (!runtimeTableMissing(err)) throw err;
+      }
+    }
     const state = await readState();
     await writeState({ events: [event, ...state.events] });
     return event;

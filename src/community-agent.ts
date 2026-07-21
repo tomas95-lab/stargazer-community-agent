@@ -9,7 +9,7 @@ import { appendOperationLog } from './operations-log';
 import { findProjectGuidelineSnippets } from './project-guidelines';
 import { projectMemoryText } from './project-memory';
 import { loadProjectLinks } from './links';
-import { getProjectContext } from './project-context';
+import { getProjectContext, projectScheduleAllowsNow } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 import { resolveAnthropicRuntime } from './anthropic-runtime';
@@ -150,6 +150,7 @@ export function warRoomIsOpenDay(now = new Date()): boolean {
 }
 
 export function isWithinOperatingHours(now = new Date()): boolean {
+  if (getProjectContext().automationSettings) return projectScheduleAllowsNow(now);
   const startHour = Number(process.env.AGENT_PST_START_HOUR || process.env.AGENT_UTC_START_HOUR || '');
   const endHour = Number(process.env.AGENT_PST_END_HOUR || process.env.AGENT_UTC_END_HOUR || '');
   if (!Number.isFinite(startHour) || !Number.isFinite(endHour)) return true;
@@ -738,6 +739,17 @@ export async function evaluateSupportMessage(
   warRoomLink: string,
   canUseWarRoomLink: boolean,
 ): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'reacted' | 'needsHuman'>> {
+  const policy = getProjectContext().agentPolicy;
+  const blockedTopic = (policy?.blockedTopics || []).find((topic) => message.toLowerCase().includes(topic.toLowerCase()));
+  if (blockedTopic) {
+    return {
+      action: 'human',
+      confidence: 1,
+      reason: `Project approval policy requires human review for: ${blockedTopic}`,
+      reply: '',
+      guidelineSnippets: [],
+    };
+  }
   const snippets = await findProjectGuidelineSnippets(message, 4);
   const memory = await projectMemoryText(25);
   const anthropicRuntime = resolveAnthropicRuntime();
@@ -801,10 +813,11 @@ export async function evaluateSupportMessage(
   const rawReply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
   const nonEnglishReply = action === 'reply' && looksNonEnglish(rawReply);
   const hasKnowledgeSupport = snippets.length > 0 || memory.trim().length > 0;
+  const minimumConfidence = policy?.minConfidence ?? MIN_CONFIDENCE;
   const finalAction =
-    action === 'reply' && (!rawReply || confidence < MIN_CONFIDENCE || !hasKnowledgeSupport || nonEnglishReply)
+    action === 'reply' && (!rawReply || confidence < minimumConfidence || !hasKnowledgeSupport || nonEnglishReply)
       ? 'human'
-      : action === 'react' && confidence < MIN_CONFIDENCE
+      : action === 'react' && confidence < minimumConfidence
         ? 'ignore'
       : action;
   const rawReaction = typeof parsed.reaction === 'string' ? parsed.reaction.trim() : '';

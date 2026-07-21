@@ -1,15 +1,18 @@
 import { Link } from 'react-router-dom';
 import {
   IconCircleCheck,
+  IconArchive,
+  IconRestore,
   IconExternalLink,
   IconFolder,
+  IconDownload,
+  IconUpload,
   IconPlus,
   IconPlayerPause,
   IconPlayerPlay,
   IconRefresh,
-  IconTrash,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api, projectSelection, type QmProject } from '@/api';
 import { usePlatform } from '@/platform';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +27,8 @@ function ProjectRow({
   onSelect,
   onPause,
   onDelete,
+  onRestore,
+  onComplete,
 }: {
   project: QmProject;
   active: boolean;
@@ -32,7 +37,11 @@ function ProjectRow({
   onSelect: (project: QmProject) => void;
   onPause: (project: QmProject) => void;
   onDelete: (project: QmProject) => void;
+  onRestore: (project: QmProject) => void;
+  onComplete: (project: QmProject) => void;
 }) {
+  const canManage = project.role === 'owner' || project.role === 'admin';
+  const archived = project.status === 'archived';
   return (
     <div className="border-b border-border p-5 last:border-0">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -41,7 +50,8 @@ function ProjectRow({
             <IconFolder className="size-4 text-primary" />
             <h2 className="text-base font-semibold text-foreground">{project.projectName}</h2>
             {active && <Badge variant="secondary">active</Badge>}
-            <Badge variant={project.enabled ? 'outline' : 'secondary'}>{project.enabled ? 'active' : 'paused'}</Badge>
+            <Badge variant={project.enabled ? 'outline' : 'secondary'}>{project.status || (project.enabled ? 'active' : 'paused')}</Badge>
+            <Badge variant="outline">{project.role || 'owner'}</Badge>
           </div>
           <p className="mt-2 font-mono text-xs text-muted-foreground">{project.projectKey}</p>
           <div className="mt-3 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
@@ -62,10 +72,18 @@ function ProjectRow({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => onPause(project)} disabled={changingPause} variant="outline" size="sm">
-            {project.enabled ? <IconPlayerPause /> : <IconPlayerPlay />}
-            {project.enabled ? 'Pause project' : 'Resume project'}
-          </Button>
+          {canManage && !archived && (
+            <Button onClick={() => onPause(project)} disabled={changingPause} variant="outline" size="sm">
+              {project.enabled ? <IconPlayerPause /> : <IconPlayerPlay />}
+              {project.enabled ? 'Pause project' : 'Resume project'}
+            </Button>
+          )}
+          {canManage && !archived && project.status !== 'completed' && (
+            <Button onClick={() => onComplete(project)} disabled={changingPause} variant="outline" size="sm">
+              <IconCircleCheck />
+              Complete
+            </Button>
+          )}
           {!active && (
             <Button onClick={() => onSelect(project)} variant="outline" size="sm">
               <IconCircleCheck />
@@ -78,10 +96,17 @@ function ProjectRow({
               Settings
             </Link>
           </Button>
-          <Button onClick={() => onDelete(project)} disabled={deleting} variant="destructive" size="sm">
-            <IconTrash />
-            Delete
-          </Button>
+          {canManage && (archived ? (
+            <Button onClick={() => onRestore(project)} disabled={deleting} variant="outline" size="sm">
+              <IconRestore />
+              Restore
+            </Button>
+          ) : (
+            <Button onClick={() => onDelete(project)} disabled={deleting} variant="destructive" size="sm">
+              <IconArchive />
+              Archive
+            </Button>
+          ))}
         </div>
       </div>
     </div>
@@ -94,6 +119,7 @@ export default function Projects() {
   const [changingPauseId, setChangingPauseId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const importRef = useRef<HTMLInputElement>(null);
 
   const select = (project: QmProject) => {
     selectProject(project.id);
@@ -102,7 +128,7 @@ export default function Projects() {
 
   const deleteProject = async (project: QmProject) => {
     const confirmed = window.confirm(
-      `Delete ${project.projectName}? This removes this project connection and deletes project files when no other QM is using the same Project ID.`
+      `Archive ${project.projectName}? Automations will stop and the project can be restored later.`
     );
     if (!confirmed) return;
 
@@ -118,13 +144,71 @@ export default function Projects() {
       await refreshProjects();
       setMessage(
         result.removedProjectData
-          ? `${project.projectName} was deleted and its project data was removed.`
-          : `${project.projectName} was deleted. Shared project data is still in use or belongs to the legacy workspace.`
+          ? `${project.projectName} was archived.`
+          : `${project.projectName} was archived. Its data was preserved for recovery.`
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setDeletingId('');
+    }
+  };
+
+  const restoreProject = async (project: QmProject) => {
+    setDeletingId(project.id);
+    setError('');
+    try {
+      await api.restoreProject(project.id);
+      await refreshProjects();
+      setMessage(`${project.projectName} was restored in paused mode.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDeletingId('');
+    }
+  };
+
+  const completeProject = async (project: QmProject) => {
+    if (!window.confirm(`Mark ${project.projectName} as completed? All automations will stop.`)) return;
+    setChangingPauseId(project.id);
+    setError('');
+    try {
+      await api.setProjectStatus(project.id, 'completed');
+      await refreshProjects();
+      setMessage(`${project.projectName} is completed and its automations are stopped.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setChangingPauseId('');
+    }
+  };
+
+  const exportCurrentProject = async () => {
+    if (!currentProject) return;
+    try {
+      const exported = await api.exportProject(currentProject.id);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json' }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${currentProject.projectKey}-project.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const importProject = async (file: File) => {
+    setError('');
+    try {
+      const parsed = JSON.parse(await file.text()) as { project?: Parameters<typeof api.createProject>[0] };
+      if (!parsed.project) throw new Error('Invalid project export file.');
+      const result = await api.createProject(parsed.project);
+      await refreshProjects();
+      selectProject(result.project.id);
+      setMessage(`${result.project.projectName} was imported.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -162,6 +246,17 @@ export default function Projects() {
           <p className="mt-2 text-sm text-muted-foreground">Manage the projects connected to this QM workspace.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <input ref={importRef} className="hidden" type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importProject(file); event.target.value = ''; }} />
+          <Button onClick={() => importRef.current?.click()} variant="outline">
+            <IconUpload />
+            Import
+          </Button>
+          {currentProject && (
+            <Button onClick={() => void exportCurrentProject()} variant="outline">
+              <IconDownload />
+              Export
+            </Button>
+          )}
           <Button onClick={() => void refreshProjects()} disabled={loading} variant="outline">
             <IconRefresh />
             Refresh
@@ -215,6 +310,8 @@ export default function Projects() {
               onSelect={select}
               onPause={togglePause}
               onDelete={deleteProject}
+              onRestore={restoreProject}
+              onComplete={completeProject}
             />
           ))
         ) : (
@@ -229,6 +326,7 @@ export default function Projects() {
           </div>
         )}
       </section>
+
     </div>
   );
 }

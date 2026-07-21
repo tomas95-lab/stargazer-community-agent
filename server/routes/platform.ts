@@ -4,14 +4,22 @@ import {
   createUserProject,
   deleteUserProject,
   getActiveUserProject,
+  getSharedProjectSummary,
   getUserAiKey,
+  getUserProject,
+  getSupabaseAdmin,
   isPlatformConfigured,
   listUserProjects,
+  listProjectMembers,
   QmProjectInput,
+  projectBotConfig,
   saveUserAiKey,
+  restoreUserProject,
   setProjectAutomationPaused,
+  setProjectLifecycleStatus,
   toPublicProject,
   updateUserProject,
+  updateProjectMemberRole,
 } from '../platform-store';
 import {
   base64ToBuffer,
@@ -56,15 +64,38 @@ function projectInput(body: unknown): QmProjectInput {
       ? Number(raw.minConfidence)
       : undefined,
     enabled: typeof raw.enabled === 'boolean' ? raw.enabled : undefined,
+    status: raw.status === 'setup' || raw.status === 'active' || raw.status === 'paused' || raw.status === 'completed' || raw.status === 'archived'
+      ? raw.status
+      : undefined,
+    settings: raw.settings && typeof raw.settings === 'object' ? raw.settings as Record<string, unknown> : undefined,
   };
 }
 
-router.get('/status', (_req: Request, res: Response) => {
+router.get('/status', async (_req: Request, res: Response) => {
+  let schemaReady = false;
+  let schemaMessage = '';
+  if (isPlatformConfigured()) {
+    try {
+      const [projects, locks, events, dataFiles] = await Promise.all([
+        getSupabaseAdmin().from('qm_projects').select('role,status,settings').limit(1),
+        getSupabaseAdmin().from('automation_run_locks').select('job', { head: true, count: 'exact' }),
+        getSupabaseAdmin().from('automation_events').select('id', { head: true, count: 'exact' }),
+        getSupabaseAdmin().from('project_data_files').select('file_path').limit(1),
+      ]);
+      const error = projects.error || locks.error || events.error || dataFiles.error;
+      schemaReady = !error;
+      schemaMessage = error?.message || '';
+    } catch (err) {
+      schemaMessage = err instanceof Error ? err.message : String(err);
+    }
+  }
   res.json({
     configured: isPlatformConfigured(),
     supabaseUrlConfigured: Boolean(process.env.SUPABASE_URL),
     secretConfigured: Boolean(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
     encryptionConfigured: Boolean(process.env.PLATFORM_ENCRYPTION_KEY || process.env.SUPABASE_JWT_SECRET),
+    schemaReady,
+    schemaMessage,
   });
 });
 
@@ -142,6 +173,89 @@ router.post('/projects', requirePlatformUser, async (req: Request, res: Response
   }
 });
 
+router.get('/projects/shared/:projectKey', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const project = await getSharedProjectSummary(routeParam(req.params.projectKey));
+    res.json({ project });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const project = await getUserProject(authReq.authUser!.id, routeParam(req.params.id));
+    if (!project) {
+      res.status(404).json({ error: 'Project not found.' });
+      return;
+    }
+    const aiKey = await getUserAiKey(authReq.authUser!.id);
+    const config = projectBotConfig(project);
+    let discourseReachable = false;
+    let discourseIdentity = '';
+    let discourseError = '';
+    try {
+      const response = await fetch(`${config.communityBaseUrl}/session/current.json`, {
+        headers: { 'User-Api-Key': config.discourseApiKey, 'User-Api-Client-Id': config.discourseApiClientId },
+        signal: AbortSignal.timeout(6_000),
+      });
+      discourseReachable = response.ok;
+      if (response.ok) {
+        const body = await response.json() as { current_user?: { username?: string } };
+        discourseIdentity = body.current_user?.username || '';
+      } else discourseError = `Discourse returned ${response.status}.`;
+    } catch (err) {
+      discourseError = err instanceof Error ? err.message : String(err);
+    }
+
+    const checks = [
+      { id: 'discourse', label: 'Discourse connection', ok: discourseReachable, detail: discourseIdentity || discourseError || 'Not connected' },
+      { id: 'category', label: 'Community category', ok: Boolean(config.communityCategoryId), detail: config.communityCategoryId || 'Missing category ID' },
+      { id: 'channel', label: 'Community channel', ok: Boolean(config.communityChatChannelId), detail: config.communityChatChannelId || 'Missing channel ID' },
+      { id: 'username', label: 'Discourse identity', ok: Boolean(project.discourse_username), detail: project.discourse_username || 'Missing username' },
+      { id: 'guidelines', label: 'Project guidelines', ok: project.project_guidelines.trim().length >= 100, detail: `${project.project_guidelines.length} characters` },
+      { id: 'claude', label: 'Claude API key', ok: Boolean(aiKey?.anthropic_api_key_ciphertext), detail: aiKey?.anthropic_api_key_ciphertext ? aiKey.anthropic_model : 'Not configured' },
+      { id: 'automation', label: 'Project automation', ok: project.enabled && project.status !== 'archived', detail: project.status || (project.enabled ? 'active' : 'paused') },
+    ];
+    res.json({ projectId: project.id, generatedAt: new Date().toISOString(), healthy: checks.every((check) => check.ok), checks });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/projects/:id/export', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const project = await getUserProject(authReq.authUser!.id, routeParam(req.params.id));
+    if (!project) {
+      res.status(404).json({ error: 'Project not found.' });
+      return;
+    }
+    res.json({
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      project: {
+        projectKey: project.project_key,
+        projectName: project.project_name,
+        communityBaseUrl: project.community_base_url,
+        categoryId: project.community_category_id,
+        categorySlug: project.community_category_slug,
+        channelId: project.community_chat_channel_id,
+        discourseApiClientId: project.discourse_api_client_id,
+        projectGuidelines: project.project_guidelines,
+        warRoomLink: project.war_room_link,
+        agentMode: project.agent_mode,
+        autoReplyEnabled: project.auto_reply_enabled,
+        minConfidence: project.min_confidence,
+        settings: project.settings || {},
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 router.put('/projects/:id', requirePlatformUser, async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthenticatedRequest;
@@ -161,6 +275,57 @@ router.post('/projects/:id/pause', requirePlatformUser, async (req: Request, res
     const project = await setProjectAutomationPaused(authReq.authUser!.id, routeParam(req.params.id), paused);
     const aiKey = await getUserAiKey(authReq.authUser!.id);
     res.json({ project: toPublicProject(project, aiKey) });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/projects/:id/status', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const status = req.body?.status;
+    if (!['setup', 'active', 'paused', 'completed', 'archived'].includes(status)) {
+      res.status(400).json({ error: 'Invalid project status.' });
+      return;
+    }
+    const project = await setProjectLifecycleStatus(authReq.authUser!.id, routeParam(req.params.id), status);
+    const aiKey = await getUserAiKey(authReq.authUser!.id);
+    res.json({ project: toPublicProject(project, aiKey) });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/projects/:id/restore', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const project = await restoreUserProject(authReq.authUser!.id, routeParam(req.params.id));
+    const aiKey = await getUserAiKey(authReq.authUser!.id);
+    res.json({ project: toPublicProject(project, aiKey) });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/projects/:id/members', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    res.json({ members: await listProjectMembers(authReq.authUser!.id, routeParam(req.params.id)) });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.patch('/projects/:id/members/:memberId', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const role = req.body?.role;
+    if (!['owner', 'admin', 'qm', 'viewer'].includes(role)) {
+      res.status(400).json({ error: 'Invalid project role.' });
+      return;
+    }
+    await updateProjectMemberRole(authReq.authUser!.id, routeParam(req.params.id), routeParam(req.params.memberId), role);
+    res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
   }

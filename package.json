@@ -22,7 +22,9 @@
     "scheduler:setup:cron-job-org": "node scripts/setup-cron-job-org.mjs",
     "ai:respond": "node node_modules/tsx/dist/cli.mjs src/claude-responder.ts",
     "training:scan": "node node_modules/tsx/dist/cli.mjs src/manager-training-scan.ts",
-    "guidelines:extract": "node scripts/extract-guidelines.mjs"
+    "guidelines:extract": "node scripts/extract-guidelines.mjs",
+    "storage:migrate": "node node_modules/tsx/dist/cli.mjs src/migrate-data-store.ts",
+    "storage:verify": "node node_modules/tsx/dist/cli.mjs src/migrate-data-store.ts --verify"
   },
   "keywords": [],
   "license": "PRIVATE",

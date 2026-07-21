@@ -19,3 +19,10 @@ export async function getSupabaseAccessToken(): Promise<string> {
   const { data } = await supabase.auth.getSession()
   return data.session?.access_token || ""
 }
+
+export async function refreshSupabaseAccessToken(): Promise<string> {
+  if (!supabase) return ""
+  const { data, error } = await supabase.auth.refreshSession()
+  if (error) return ""
+  return data.session?.access_token || ""
+}

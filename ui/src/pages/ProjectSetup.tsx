@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react"
-import type { ChangeEvent, FormEvent, ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import type { ChangeEvent, DragEvent, FormEvent, ReactNode } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { IconCheck, IconExternalLink, IconFileText, IconLoader2, IconRefresh, IconShieldCheck } from "@tabler/icons-react"
+import { IconCheck, IconExternalLink, IconFileText, IconFileTypePdf, IconLoader2, IconRefresh, IconSearch, IconShieldCheck, IconUpload, IconX } from "@tabler/icons-react"
 
 import { api, projectSelection, type DiscourseAuthStatus, type QmProjectInput } from "@/api"
 import { useAuth } from "@/auth"
@@ -42,6 +42,16 @@ interface ProjectFormState {
 }
 
 type PersistedProjectFormState = Omit<ProjectFormState, "discourseApiKey" | "anthropicApiKey">
+
+interface GuidelinesFileStatus {
+  name: string
+  size: number
+  pages: number
+  characters: number
+  tables: number
+  chunks: number
+  warnings: string[]
+}
 
 interface ProjectSetupDraft {
   version: 1
@@ -196,10 +206,14 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   const [pending, setPending] = useState(false)
   const [connectingDiscourse, setConnectingDiscourse] = useState(false)
   const [extractingGuidelines, setExtractingGuidelines] = useState(false)
+  const [guidelinesFile, setGuidelinesFile] = useState<GuidelinesFileStatus | null>(null)
+  const [draggingGuidelines, setDraggingGuidelines] = useState(false)
+  const [lookingUpProject, setLookingUpProject] = useState(false)
   const [discourseStatus, setDiscourseStatus] = useState<DiscourseAuthStatus | null>(null)
   const [activeDraftKey, setActiveDraftKey] = useState("")
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
+  const guidelinesInputRef = useRef<HTMLInputElement>(null)
 
   const editing = Boolean(activeProject)
 
@@ -267,6 +281,40 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     setForm((current) => ({ ...current, [key]: value }))
   }
 
+  async function lookupSharedProject() {
+    const projectKey = form.projectKey.trim()
+    if (!projectKey || editing) return
+    setLookingUpProject(true)
+    setError("")
+    setMessage("")
+    try {
+      const { project } = await api.findSharedProject(projectKey)
+      if (!project) {
+        setMessage("This is a new Project ID. Complete the project configuration below.")
+        return
+      }
+      setForm((current) => ({
+        ...current,
+        projectKey: project.projectKey,
+        projectName: project.projectName,
+        communityBaseUrl: project.communityBaseUrl,
+        categoryId: project.categoryId,
+        categorySlug: project.categorySlug,
+        channelId: project.channelId,
+        projectGuidelines: project.projectGuidelines,
+        warRoomLink: project.warRoomLink,
+        agentMode: project.agentMode,
+        autoReplyEnabled: project.autoReplyEnabled,
+        minConfidence: String(project.minConfidence),
+      }))
+      setMessage(`Existing project found: ${project.projectName}. Shared configuration loaded.`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLookingUpProject(false)
+    }
+  }
+
   async function fileToBase64(file: File): Promise<string> {
     const bytes = new Uint8Array(await file.arrayBuffer())
     let binary = ""
@@ -277,35 +325,68 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     return window.btoa(binary)
   }
 
-  async function readGuidelinesFile(event: ChangeEvent<HTMLInputElement>) {
-    const input = event.currentTarget
-    const file = event.target.files?.[0]
-    if (!file) return
-
+  async function processGuidelinesPdf(file: File) {
     setError("")
     setMessage("")
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
+    if (!isPdf) {
+      setError("Project guidelines must be uploaded as a PDF.")
+      return
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      setError("The PDF is too large. Upload a PDF up to 12 MB.")
+      return
+    }
     setExtractingGuidelines(true)
 
     try {
-      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
-        const result = await api.extractGuidelinesFromPdf({
-          fileName: file.name,
-          mimeType: file.type || "application/pdf",
-          base64: await fileToBase64(file),
-        })
-        update("projectGuidelines", result.text)
-        setMessage(`Extracted ${result.characters.toLocaleString()} characters from ${file.name}.`)
-      } else {
-        const text = await file.text()
-        update("projectGuidelines", text)
-        setMessage(`Loaded ${file.name}.`)
-      }
+      const result = await api.extractGuidelinesFromPdf({
+        fileName: file.name,
+        mimeType: file.type || "application/pdf",
+        base64: await fileToBase64(file),
+      })
+      update("projectGuidelines", result.text)
+      setGuidelinesFile({
+        name: file.name,
+        size: file.size,
+        pages: result.pages,
+        characters: result.characters,
+        tables: result.tables,
+        chunks: result.chunks,
+        warnings: result.warnings,
+      })
+      setMessage(`Project guidelines extracted from ${file.name}.`)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setExtractingGuidelines(false)
-      input.value = ""
     }
+  }
+
+  async function readGuidelinesFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (file) await processGuidelinesPdf(file)
+    event.currentTarget.value = ""
+  }
+
+  function dropGuidelinesFile(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    setDraggingGuidelines(false)
+    if (extractingGuidelines) return
+    const file = event.dataTransfer.files?.[0]
+    if (file) void processGuidelinesPdf(file)
+  }
+
+  function clearGuidelinesFile() {
+    setGuidelinesFile(null)
+    update("projectGuidelines", "")
+    setMessage("Project guidelines removed.")
+  }
+
+  function formatFileSize(bytes: number): string {
+    return bytes >= 1024 * 1024
+      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(bytes / 1024))} KB`
   }
 
   async function connectDiscourse() {
@@ -457,15 +538,23 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="projectKey">Project ID</Label>
-                  <Input
-                    id="projectKey"
-                    value={form.projectKey}
-                    onChange={(event) => update("projectKey", event.target.value)}
-                    placeholder="project-id-from-your-team"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="projectKey"
+                      value={form.projectKey}
+                      onChange={(event) => update("projectKey", event.target.value)}
+                      placeholder="project-id-from-your-team"
+                      required
+                    />
+                    {!editing ? (
+                      <Button type="button" variant="outline" onClick={() => void lookupSharedProject()} disabled={lookingUpProject || !form.projectKey.trim()}>
+                        {lookingUpProject ? <IconLoader2 className="animate-spin" /> : <IconSearch />}
+                        Find
+                      </Button>
+                    ) : null}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Shared by every QM in the same community project.
+                    Use the same ID as the other QMs to load and share that project.
                   </p>
                 </div>
                 <div className="grid gap-2">
@@ -609,30 +698,66 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
               </div>
 
               <div className="grid gap-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                  <div className="grid gap-1">
-                    <Label htmlFor="projectGuidelines">Project guidelines and information</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Paste guidelines or upload a PDF, text, markdown, CSV or JSON file for agent context.
-                    </p>
+                <div className="grid gap-1">
+                  <Label htmlFor="projectGuidelinesPdf">Project guidelines</Label>
+                  <p className="text-sm text-muted-foreground">The agent uses the extracted PDF text as project context.</p>
+                </div>
+
+                <div
+                  className={`flex min-h-36 flex-col items-center justify-center gap-3 rounded-md border border-dashed px-6 py-5 text-center transition-colors ${draggingGuidelines ? "border-primary bg-primary/5" : "border-border bg-muted/20"}`}
+                  onDragEnter={(event) => { event.preventDefault(); setDraggingGuidelines(true) }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDraggingGuidelines(false) }}
+                  onDrop={dropGuidelinesFile}
+                >
+                  {extractingGuidelines ? <IconLoader2 className="size-8 animate-spin text-primary" /> : <IconFileTypePdf className="size-8 text-primary" />}
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{extractingGuidelines ? "Extracting PDF text" : "Drop the guidelines PDF here"}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">PDF with selectable text, up to 12 MB</p>
                   </div>
-                  <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground">
-                    {extractingGuidelines ? <IconLoader2 className="size-4 animate-spin" /> : <IconFileText className="size-4" />}
-                    {extractingGuidelines ? "Extracting" : "Upload file"}
-                    <input
-                      className="sr-only"
-                      type="file"
-                      accept=".pdf,.txt,.md,.markdown,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json"
-                      onChange={readGuidelinesFile}
-                      disabled={extractingGuidelines}
-                    />
-                  </label>
+                  <Button type="button" variant="outline" onClick={() => guidelinesInputRef.current?.click()} disabled={extractingGuidelines}>
+                    <IconUpload />
+                    {guidelinesFile ? "Replace PDF" : "Choose PDF"}
+                  </Button>
+                  <input
+                    ref={guidelinesInputRef}
+                    id="projectGuidelinesPdf"
+                    className="sr-only"
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={readGuidelinesFile}
+                    disabled={extractingGuidelines}
+                  />
+                </div>
+
+                {guidelinesFile ? (
+                  <div className="flex min-w-0 items-center gap-3 rounded-md border bg-background px-3 py-2.5">
+                    <IconFileTypePdf className="size-5 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{guidelinesFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(guidelinesFile.size)}, {guidelinesFile.pages} pages, {guidelinesFile.tables} tables, {guidelinesFile.chunks} context sections
+                      </p>
+                      {guidelinesFile.warnings.length ? <p className="mt-1 text-xs text-warning">{guidelinesFile.warnings[0]}</p> : null}
+                    </div>
+                    <Button type="button" size="icon" variant="ghost" onClick={clearGuidelinesFile} title="Remove guidelines">
+                      <IconX />
+                    </Button>
+                  </div>
+                ) : null}
+
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="projectGuidelines">Extracted agent context</Label>
+                  {form.projectGuidelines && !guidelinesFile ? (
+                    <span className="text-xs text-muted-foreground">{form.projectGuidelines.length.toLocaleString()} characters</span>
+                  ) : null}
                 </div>
                 <Textarea
                   id="projectGuidelines"
                   className="min-h-64 font-mono text-sm"
                   value={form.projectGuidelines}
                   onChange={(event) => update("projectGuidelines", event.target.value)}
+                  placeholder="Extracted PDF content appears here. You can also paste or edit project context directly."
                 />
               </div>
 
