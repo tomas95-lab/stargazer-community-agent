@@ -12,7 +12,7 @@
         "username": "alex.demo",
         "name": "Alex Morgan"
       },
-      "created_at": "2026-07-22T15:42:52.496Z"
+      "created_at": "2026-07-22T15:42:52.499Z"
     },
     {
       "id": 81002,
@@ -24,7 +24,7 @@
         "username": "priya.demo",
         "name": "Priya Shah"
       },
-      "created_at": "2026-07-22T16:15:52.496Z"
+      "created_at": "2026-07-22T16:15:52.499Z"
     },
     {
       "id": 81003,
@@ -36,7 +36,7 @@
         "username": "marco.demo",
         "name": "Marco Silva"
       },
-      "created_at": "2026-07-22T16:42:52.496Z"
+      "created_at": "2026-07-22T16:42:52.499Z"
     },
     {
       "id": 81004,
@@ -48,7 +48,7 @@
         "name": "Demo QM",
         "staff": true
       },
-      "created_at": "2026-07-22T17:07:52.496Z"
+      "created_at": "2026-07-22T17:07:52.499Z"
     }
   ],
   "dms": [
@@ -58,7 +58,7 @@
       "messageId": 82001,
       "username": "sofia.demo",
       "name": "Sofia Chen",
-      "createdAt": "2026-07-22T16:27:52.496Z",
+      "createdAt": "2026-07-22T16:27:52.499Z",
       "text": "Hi! I finished the qualification yesterday.",
       "peers": [
         {
@@ -80,7 +80,7 @@
       "messageId": 82002,
       "username": "sofia.demo",
       "name": "Sofia Chen",
-      "createdAt": "2026-07-22T16:30:52.496Z",
+      "createdAt": "2026-07-22T16:30:52.499Z",
       "text": "My project dashboard still says pending. Is there another onboarding step?",
       "peers": [
         {
@@ -102,7 +102,7 @@
       "messageId": 82003,
       "username": "omar.demo",
       "name": "Omar Diaz",
-      "createdAt": "2026-07-22T16:55:52.496Z",
+      "createdAt": "2026-07-22T16:55:52.499Z",
       "text": "Can you explain why a payment is missing from my account?",
       "peers": [
         {
