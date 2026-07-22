@@ -120,7 +120,7 @@ async function dmCronTargets(req: Request): Promise<ProjectContext[]> {
   return [await legacyContext(), ...(await Promise.all(rows.map(projectRuntimeContextForRow)))];
 }
 
-async function runInContext<T>(context: ProjectContext, fn: () => Promise<T>): Promise<T> {
+async function runInContext<T>(context: ProjectContext, fn: () => T | Promise<T>): Promise<T> {
   return runWithProjectContext(context, fn);
 }
 
