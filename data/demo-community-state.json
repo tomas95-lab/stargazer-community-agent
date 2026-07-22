@@ -1,0 +1,122 @@
+{
+  "date": "2026-07-22",
+  "nextMessageId": 93000,
+  "community": [
+    {
+      "id": 81001,
+      "message": "I completed all onboarding courses, but my dashboard still shows EQ. What should I check next?",
+      "chat_channel_id": 91001,
+      "thread_id": 81001,
+      "user": {
+        "id": 101,
+        "username": "alex.demo",
+        "name": "Alex Morgan"
+      },
+      "created_at": "2026-07-22T15:42:52.496Z"
+    },
+    {
+      "id": 81002,
+      "message": "Where can I find the task instructions, and what should I review before submitting my first task?",
+      "chat_channel_id": 91001,
+      "thread_id": 81002,
+      "user": {
+        "id": 102,
+        "username": "priya.demo",
+        "name": "Priya Shah"
+      },
+      "created_at": "2026-07-22T16:15:52.496Z"
+    },
+    {
+      "id": 81003,
+      "message": "Why was my latest payment lower than I expected? Can you check my account?",
+      "chat_channel_id": 91001,
+      "thread_id": 81003,
+      "user": {
+        "id": 103,
+        "username": "marco.demo",
+        "name": "Marco Silva"
+      },
+      "created_at": "2026-07-22T16:42:52.496Z"
+    },
+    {
+      "id": 81004,
+      "message": "Hey team, the optional calibration session starts in one hour. The recording will be shared afterward.",
+      "chat_channel_id": 91001,
+      "user": {
+        "id": 999,
+        "username": "demo.qm",
+        "name": "Demo QM",
+        "staff": true
+      },
+      "created_at": "2026-07-22T17:07:52.496Z"
+    }
+  ],
+  "dms": [
+    {
+      "channelId": 92001,
+      "channelTitle": "Sofia Chen and Demo QM",
+      "messageId": 82001,
+      "username": "sofia.demo",
+      "name": "Sofia Chen",
+      "createdAt": "2026-07-22T16:27:52.496Z",
+      "text": "Hi! I finished the qualification yesterday.",
+      "peers": [
+        {
+          "id": 100,
+          "username": "sofia.demo",
+          "name": "Sofia Chen"
+        },
+        {
+          "id": 999,
+          "username": "demo.qm",
+          "name": "Demo QM"
+        }
+      ],
+      "incoming": true
+    },
+    {
+      "channelId": 92001,
+      "channelTitle": "Sofia Chen and Demo QM",
+      "messageId": 82002,
+      "username": "sofia.demo",
+      "name": "Sofia Chen",
+      "createdAt": "2026-07-22T16:30:52.496Z",
+      "text": "My project dashboard still says pending. Is there another onboarding step?",
+      "peers": [
+        {
+          "id": 100,
+          "username": "sofia.demo",
+          "name": "Sofia Chen"
+        },
+        {
+          "id": 999,
+          "username": "demo.qm",
+          "name": "Demo QM"
+        }
+      ],
+      "incoming": true
+    },
+    {
+      "channelId": 92002,
+      "channelTitle": "Omar Diaz and Demo QM",
+      "messageId": 82003,
+      "username": "omar.demo",
+      "name": "Omar Diaz",
+      "createdAt": "2026-07-22T16:55:52.496Z",
+      "text": "Can you explain why a payment is missing from my account?",
+      "peers": [
+        {
+          "id": 90,
+          "username": "omar.demo",
+          "name": "Omar Diaz"
+        },
+        {
+          "id": 999,
+          "username": "demo.qm",
+          "name": "Demo QM"
+        }
+      ],
+      "incoming": true
+    }
+  ]
+}
