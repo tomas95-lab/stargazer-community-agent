@@ -1,1 +1,58 @@
-[]
+[
+  {
+    "date": "2026-07-20",
+    "title": "Testing Project Daily Thread",
+    "topic": "Prompt Clarity",
+    "reminderTitle": "Make every requirement explicit",
+    "reminderBody": "The task prompt should clearly describe the expected behavior so contributors do not need to guess hidden requirements.",
+    "goodExample": "Update the checkout form so the submit button remains disabled until all required fields contain valid values.",
+    "badExample": "Improve the checkout form and make it work better.",
+    "quickRule": "If it will be evaluated, it should be clearly stated.",
+    "tags": [
+      "daily_project_announcements",
+      "testing_project"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": "",
+      "invitees": []
+    }
+  },
+  {
+    "date": "2026-07-21",
+    "title": "Testing Project Alignment Day",
+    "topic": "Behavioral Testing",
+    "reminderTitle": "Test behavior, not implementation",
+    "reminderBody": "Tests should verify the result experienced by the user rather than checking for specific function names, files, or code patterns.",
+    "goodExample": "The test submits the form and verifies that a success message appears.",
+    "badExample": "The test checks whether the source file contains the string submitForm.",
+    "quickRule": "A test should fail when the behavior is broken, not when the implementation looks different.",
+    "tags": [
+      "daily_project_announcements",
+      "mandatory_alignment"
+    ],
+    "webinar": {
+      "enabled": true,
+      "mandatory": true,
+      "timeLabel": "12:00 PM ARG",
+      "link": "https://example.com/testing-webinar",
+      "invitees": [
+        "[test.contributor1@example.com](mailto:test.contributor1@example.com)",
+        "[test.contributor2@example.com](mailto:test.contributor2@example.com)"
+      ]
+    }
+  },
+  {
+    "date": "2026-07-22",
+    "title": "Testing Project Quality Reminder",
+    "topic": "Rubric Atomicity",
+    "reminderTitle": "Keep each criterion focused",
+    "reminderBody": "Each rubric criterion should evaluate one clear and independently measurable requirement.",
+    "goodExample": "The cart total updates after the user removes an item.",
+    "badExample": "The cart works correctly, looks good, updates totals, and supports checkout.",
+    "quickRule": "If one part can pass while another fails, split the criterion.",
+    "tags": []
+  }
+]
