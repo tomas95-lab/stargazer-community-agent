@@ -10,6 +10,8 @@ output/*.png
 output/*.html
 output/*.log
 output/training/
+data/demo-community-state.json
+output/projects/outlier-community-demo/
 !output/.gitkeep
 ui/node_modules/
 ui/dist/
