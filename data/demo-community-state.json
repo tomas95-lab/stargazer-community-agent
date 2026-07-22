@@ -1,6 +1,6 @@
 {
   "date": "2026-07-22",
-  "nextMessageId": 93000,
+  "nextMessageId": 93001,
   "community": [
     {
       "id": 81001,
@@ -49,6 +49,20 @@
         "staff": true
       },
       "created_at": "2026-07-22T17:07:52.499Z"
+    },
+    {
+      "id": 93000,
+      "message": "Try refreshing your dashboard and confirming that the Aurora project is selected in your workspace. If the status still shows EQ after 24 hours, please reply with your username and we'll escalate to a QM for further review.",
+      "chat_channel_id": 91001,
+      "thread_id": 81001,
+      "in_reply_to_id": 81001,
+      "user": {
+        "id": 999,
+        "username": "demo.qm",
+        "name": "Demo QM",
+        "staff": true
+      },
+      "created_at": "2026-07-22T17:43:58.683Z"
     }
   ],
   "dms": [
