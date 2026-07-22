@@ -167,6 +167,38 @@ export interface CommsTemplate {
   body: string;
 }
 
+export interface CommsImportError {
+  index: number;
+  path: string;
+  message: string;
+}
+
+export interface CommsImportSchema {
+  shape: string;
+  requiredFields: string[];
+  optionalFields: string[];
+  categories: string[];
+  tones: string[];
+  audiences: string[];
+  example: CommsTemplate[];
+}
+
+export interface CommsImportValidation {
+  ok: boolean;
+  templates: CommsTemplate[];
+  errors: CommsImportError[];
+}
+
+export interface CommsImportResult {
+  ok: boolean;
+  mode: 'append' | 'replace';
+  imported: number;
+  created: number;
+  updated: number;
+  total: number;
+  templates: CommsTemplate[];
+}
+
 export type ScheduledMessageStatus = 'pending' | 'sent' | 'cancelled' | 'error';
 
 export interface ScheduledMessage {
@@ -835,6 +867,17 @@ export const api = {
   getCommsTemplates: (category?: string) =>
     request<CommsTemplate[]>(`/comms/templates${category ? `?category=${category}` : ''}`),
   getCommsTemplate: (id: string) => request<CommsTemplate>(`/comms/templates/${id}`),
+  getCommsImportSchema: () => request<CommsImportSchema>('/comms/templates/import-schema'),
+  validateCommsImport: (payload: unknown) =>
+    request<CommsImportValidation>('/comms/templates/import/validate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  importComms: (payload: unknown, mode: 'append' | 'replace') =>
+    request<CommsImportResult>('/comms/templates/import', {
+      method: 'POST',
+      body: JSON.stringify({ payload, mode }),
+    }),
   createCommsTemplate: (template: CommsTemplate) =>
     request<CommsTemplate>('/comms/templates', {
       method: 'POST',

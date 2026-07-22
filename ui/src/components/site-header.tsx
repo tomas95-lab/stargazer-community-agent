@@ -1,5 +1,5 @@
 import { useLocation } from "react-router-dom"
-import { CircleDot, FolderKanban } from "lucide-react"
+import { CircleDot, FlaskConical, FolderKanban } from "lucide-react"
 
 import { ContextualGuide } from "@/components/contextual-guide"
 import { CommandPalette } from "@/components/command-palette"
@@ -7,6 +7,7 @@ import { NotificationBell } from "@/components/notification-bell"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { guideForPath } from "@/lib/workspace-guides"
 import { usePlatform } from "@/platform"
 
@@ -27,6 +28,9 @@ export function SiteHeader() {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          {currentProject?.settings?.demoMode === true ? (
+            <Badge variant="secondary" className="hidden gap-1.5 sm:flex"><FlaskConical className="size-3.5" />Demo mode</Badge>
+          ) : null}
           <CommandPalette />
           {currentProject ? (
             <Select value={currentProject.id} onValueChange={selectProject}>

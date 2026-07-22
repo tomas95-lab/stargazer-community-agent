@@ -15,6 +15,8 @@ import { evaluateSupportMessage } from './community-agent';
 import { loadProjectLinks } from './links';
 import { appDateParts, appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
 import { assertProjectAutomationActive } from './project-context';
+import { appendDemoDmReply, demoDmMessages, demoDmReview } from './demo-mode';
+import { isDemoMode } from './project-context';
 
 const DEFAULT_MESSAGE_COUNT = Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50);
 const DM_CHANNEL_SCAN_CAP = 5;
@@ -382,6 +384,7 @@ function dmAutoReplyKey(channelId: number, lastIncomingMessageId: number): strin
 }
 
 export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise<DmReviewResult> {
+  if (isDemoMode()) return demoDmReview(options.now || new Date());
   const { client, ownUsername } = createClient();
   const window = getUtcDayWindow(options.now || new Date());
   const messageCount = options.messageCount ?? DEFAULT_MESSAGE_COUNT;
@@ -508,6 +511,17 @@ export async function sendDirectMessageReply(channelId: number, message: string)
   const trimmed = message.trim();
   if (!Number.isFinite(channelId) || channelId <= 0) throw new Error('Invalid DM channel ID');
   if (!trimmed) throw new Error('Reply message is required');
+
+  if (isDemoMode()) {
+    const messageId = await appendDemoDmReply(channelId, trimmed);
+    await appendOperationLog({
+      action: 'dm_reply',
+      status: 'success',
+      message: `Simulated DM reply to channel ${channelId}.`,
+      metadata: { channelId, messageId, demoMode: true },
+    });
+    return { ok: true, channelId, messageId };
+  }
 
   const { client } = createClient();
   const response = await client.sendChatMessage(String(channelId), trimmed);
@@ -662,6 +676,11 @@ export async function draftDirectMessageReply(
   options: Pick<DmReviewOptions, 'messageCount' | 'now'> = {}
 ): Promise<DmDraftResult> {
   if (!Number.isFinite(channelId) || channelId <= 0) throw new Error('Invalid DM channel ID');
+
+  if (isDemoMode()) {
+    const messages = await demoDmMessages(channelId);
+    return evaluateDirectMessageThread(channelId, messages, options.now || new Date(), true);
+  }
 
   const { client, ownUsername } = createClient();
   const window = getUtcDayWindow(options.now || new Date());

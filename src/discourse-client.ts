@@ -166,6 +166,8 @@ export class DiscourseClient {
   }
 
   private async request<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
+    const method = (init?.method || 'GET').toUpperCase();
+    if (!['GET', 'HEAD'].includes(method)) assertExternalWriteAllowed();
     const res = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: {
@@ -176,7 +178,6 @@ export class DiscourseClient {
 
     if (!res.ok) {
       const body = await res.text();
-      const method = (init?.method || 'GET').toUpperCase();
       if (res.status === 429 && method === 'GET' && attempt < this.rateLimitRetryCount()) {
         await this.sleep(this.parseRateLimitWaitMs(res, body));
         return this.request<T>(path, init, attempt + 1);
@@ -301,3 +302,4 @@ export class DiscourseClient {
     return `${this.baseUrl}/t/${slug}/${topicId}`;
   }
 }
+import { assertExternalWriteAllowed } from './project-context';

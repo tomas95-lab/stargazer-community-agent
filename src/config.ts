@@ -34,8 +34,9 @@ export interface BotConfig {
 }
 
 export function loadBotConfig(): BotConfig {
-  const runtimeConfig = getProjectContext().botConfig;
-  if (runtimeConfig?.discourseApiKey) {
+  const context = getProjectContext();
+  const runtimeConfig = context.botConfig;
+  if (runtimeConfig && (runtimeConfig.discourseApiKey || context.demoMode)) {
     return runtimeConfig;
   }
 

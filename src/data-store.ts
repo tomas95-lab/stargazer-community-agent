@@ -9,7 +9,7 @@ import {
   writeFile as writeGitHubFile,
   writeJSON as writeGitHubJSON,
 } from './github-storage';
-import { projectScopedDataPath } from './project-context';
+import { getProjectContext, projectScopedDataPath } from './project-context';
 import {
   DataFileNotFoundError,
   deleteSupabaseDataPath,
@@ -34,6 +34,8 @@ function requestedMode(): string {
 
 export function activeDataStore(): DataStoreMode {
   const requested = requestedMode();
+  const platformProject = Boolean(getProjectContext().ownerId);
+  if (platformProject && supabaseDataStoreConfigured()) return 'supabase';
   if (requested === 'supabase') return 'supabase';
   if (requested === 'github') return 'github';
   if (requested === 'local') return 'local';

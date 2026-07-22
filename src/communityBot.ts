@@ -1,6 +1,8 @@
 import { BotConfig } from './config';
 import { DiscourseClient } from './discourse-client';
 import { assertProjectAutomationActive } from './project-context';
+import { isDemoMode } from './project-context';
+import { appendDemoCommunityMessage } from './demo-mode';
 
 export class CommunityBot {
   private config: BotConfig;
@@ -19,6 +21,10 @@ export class CommunityBot {
 
   async publishDailyThread(title: string, body: string, tags?: string[]): Promise<string> {
     assertProjectAutomationActive();
+    if (isDemoMode()) {
+      const id = await appendDemoCommunityMessage(`${title}\n\n${body}`);
+      return `https://demo.community.local/t/${id}`;
+    }
     const data = await this.client.createTopic({
       title,
       raw: body,
@@ -34,7 +40,8 @@ export class CommunityBot {
   async postAnnouncementToChat(announcement: string): Promise<void> {
     try {
       assertProjectAutomationActive();
-      await this.client.sendChatMessage(this.config.communityChatChannelId, announcement);
+      if (isDemoMode()) await appendDemoCommunityMessage(announcement);
+      else await this.client.sendChatMessage(this.config.communityChatChannelId, announcement);
       console.log('✅ Announcement posted to chat');
     } catch (err) {
       console.log(`⚠️  ${err instanceof Error ? err.message : String(err)}`);

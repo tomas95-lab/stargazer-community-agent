@@ -4,14 +4,18 @@ import {
   createProjectCommsTemplate,
   deleteProjectCommsTemplate,
   loadProjectCommsTemplates,
+  saveProjectCommsTemplates,
   updateProjectCommsTemplate,
 } from '../../src/comms/template-store';
+import { COMMS_JSON_EXAMPLE, mergeCommsTemplates, validateCommsPayload } from '../../src/comms/template-import';
 import { requireAdminToken } from '../auth';
 import { loadBotConfig } from '../../src/config';
 import { DiscourseClient } from '../../src/discourse-client';
 import { readDataJSON, writeDataJSON } from '../../src/data-store';
 import { appendOperationLog } from '../../src/operations-log';
 import { assertProjectAutomationActive } from '../../src/project-context';
+import { isDemoMode } from '../../src/project-context';
+import { appendDemoCommunityMessage } from '../../src/demo-mode';
 import {
   cancelScheduledMessage,
   createScheduledMessage,
@@ -44,6 +48,57 @@ router.get('/templates', async (_req: Request, res: Response) => {
     } else {
       res.json(templates);
     }
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.get('/templates/import-schema', (_req: Request, res: Response) => {
+  res.json({
+    shape: 'Comms JSON must be an array of templates or an object with a "templates" array.',
+    requiredFields: ['id', 'category', 'name', 'defaultTone', 'body'],
+    optionalFields: ['description', 'supportedTones', 'audience', 'variables'],
+    categories: ['urgent_alert', 'webinar_alignment', 'war_room', 'throttle_quality', 'reviewer_qma_allocation', 'onboarding', 'access_cursor_setup', 'quality_feedback_escalation', 'daily_thread_announcement', 'custom'],
+    tones: ['friendly', 'firm', 'urgent', 'formal', 'slack_casual'],
+    audiences: ['all_contributors', 'reviewers_only', 'qma_only', 'invited_contributors', 'new_contributors', 'throttled_contributors', 'specific_users'],
+    example: COMMS_JSON_EXAMPLE,
+  });
+});
+
+router.post('/templates/import/validate', requireAdminToken, (req: Request, res: Response) => {
+  res.json(validateCommsPayload(req.body));
+});
+
+router.post('/templates/import', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body as Record<string, unknown> : {};
+    const mode = body.mode === 'replace' ? 'replace' : 'append';
+    const payload = body.payload ?? body.templates ?? req.body;
+    const validation = validateCommsPayload(payload);
+    if (!validation.ok) {
+      res.status(422).json(validation);
+      return;
+    }
+    const current = await loadProjectCommsTemplates();
+    const merged = mergeCommsTemplates(current, validation.templates, mode);
+    await saveProjectCommsTemplates(merged.templates, mode === 'replace' ? 'replace comms from JSON import' : 'import comms from JSON');
+    await appendOperationLog({
+      action: 'import_comms_json',
+      status: 'success',
+      message: mode === 'replace'
+        ? `Replaced comms with ${validation.templates.length} imported templates`
+        : `Imported ${validation.templates.length} comms templates`,
+      metadata: { mode, created: merged.created, updated: merged.updated, total: merged.templates.length },
+    });
+    res.json({
+      ok: true,
+      mode,
+      imported: validation.templates.length,
+      created: merged.created,
+      updated: merged.updated,
+      total: merged.templates.length,
+      templates: merged.templates,
+    });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -146,17 +201,18 @@ router.post('/send', requireAdminToken, async (req: Request, res: Response) => {
   try {
     assertProjectAutomationActive();
     const config = loadBotConfig();
-    const client = new DiscourseClient({
-      baseUrl: config.communityBaseUrl,
-      apiKey: config.discourseApiKey,
-      apiClientId: config.discourseApiClientId,
-    });
-    const data = await client.sendChatMessage(channelId || config.communityChatChannelId, message);
+    const data = isDemoMode()
+      ? { message_id: await appendDemoCommunityMessage(message) }
+      : await new DiscourseClient({
+          baseUrl: config.communityBaseUrl,
+          apiKey: config.discourseApiKey,
+          apiClientId: config.discourseApiClientId,
+        }).sendChatMessage(channelId || config.communityChatChannelId, message);
     await appendOperationLog({
       action: 'send_chat_message',
       status: 'success',
-      message: 'Sent chat message',
-      metadata: { channelId: channelId || config.communityChatChannelId, messageLength: message.length },
+      message: isDemoMode() ? 'Simulated Community chat message' : 'Sent chat message',
+      metadata: { channelId: channelId || config.communityChatChannelId, messageLength: message.length, demoMode: isDemoMode() },
     });
     res.json({ ok: true, message_id: data.message_id || data.id || 0 });
   } catch (err) {

@@ -34,8 +34,9 @@ export default function Login() {
 
     setPending(true)
     setError("")
+    const loginEmail = email.trim().toLowerCase() === "testing" ? "testing@demo.local" : email.trim()
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: loginEmail,
       password,
     })
     setPending(false)
@@ -71,11 +72,11 @@ export default function Login() {
           ) : (
             <form className="grid gap-4" onSubmit={submit}>
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email or demo username</Label>
                 <Input
                   id="email"
-                  type="email"
-                  autoComplete="email"
+                  type="text"
+                  autoComplete="username"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required

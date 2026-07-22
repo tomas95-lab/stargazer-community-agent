@@ -1,0 +1,49 @@
+[
+  {
+    "id": "aurora_welcome",
+    "category": "onboarding",
+    "name": "Aurora Welcome",
+    "description": "Welcome contributors to the fictitious Aurora project.",
+    "defaultTone": "friendly",
+    "supportedTones": ["friendly", "slack_casual"],
+    "audience": ["new_contributors"],
+    "variables": [
+      {
+        "key": "guidelinesLink",
+        "label": "Guidelines link",
+        "required": true,
+        "defaultValue": "https://example.com/aurora-guidelines"
+      }
+    ],
+    "body": "Hi and welcome to Aurora!\n\nBefore starting, please review the project guidelines:\n{{guidelinesLink}}\n\nThis is a fictitious demo workspace, so no real contributor action is required."
+  },
+  {
+    "id": "aurora_quality_reminder",
+    "category": "quality_feedback_escalation",
+    "name": "Aurora Quality Reminder",
+    "description": "Remind the demo team to validate work before submission.",
+    "defaultTone": "firm",
+    "supportedTones": ["friendly", "firm", "formal"],
+    "audience": ["all_contributors"],
+    "variables": [],
+    "body": "Aurora team, please review the rubric and run every required validation check before submitting. Confirm that all requested artifacts are attached and that your notes describe observable results."
+  },
+  {
+    "id": "aurora_demo_update",
+    "category": "custom",
+    "name": "Aurora Demo Update",
+    "description": "General-purpose project update for the demo workspace.",
+    "defaultTone": "slack_casual",
+    "supportedTones": ["friendly", "formal", "slack_casual"],
+    "audience": ["all_contributors"],
+    "variables": [
+      {
+        "key": "updateMessage",
+        "label": "Update message",
+        "required": true,
+        "placeholder": "Enter a fictitious project update"
+      }
+    ],
+    "body": "Hey Aurora team,\n\n{{updateMessage}}\n\nThanks for checking the demo update."
+  }
+]

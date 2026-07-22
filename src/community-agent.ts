@@ -14,6 +14,8 @@ import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 import { resolveAnthropicRuntime } from './anthropic-runtime';
 import { appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
+import { appendDemoCommunityReply, demoCommunityMessages } from './demo-mode';
+import { isDemoMode } from './project-context';
 
 const MAX_ANSWERS = parseInt(process.env.RESPONDER_MAX_ANSWERS || process.env.AGENT_MAX_ANSWERS || '4', 10);
 const MESSAGE_COUNT = parseInt(process.env.AGENT_MESSAGE_COUNT || '50', 10);
@@ -127,6 +129,7 @@ function createClient(): { client: DiscourseClient; channelId: string } {
 }
 
 export async function fetchRecentCommunityMessages(count = 20): Promise<DiscourseChatMessage[]> {
+  if (isDemoMode()) return demoCommunityMessages(count);
   const { client, channelId } = createClient();
   return client.readChatMessages(channelId, count);
 }
@@ -378,9 +381,16 @@ function isFirstVisibleFollowup(
   candidateReply: CommunityAgentItem,
   orderedItems: CommunityAgentItem[],
 ): boolean {
+  const sameConversation = (item: CommunityAgentItem): boolean => {
+    if (question.threadId !== undefined && question.threadId !== null) {
+      return item.threadId === question.threadId;
+    }
+    return item.threadId === undefined || item.threadId === null;
+  };
   const first = orderedItems.find((item) => {
     if (item.id === question.id) return false;
     if (messageTime(item) <= messageTime(question)) return false;
+    if (!sameConversation(item)) return false;
     if (item.username.toLowerCase() === question.username.toLowerCase()) return false;
     if (shouldIgnoreMessage(item.message)) return false;
     return true;
@@ -404,8 +414,16 @@ function replyEvidenceFor(
     candidateReply.replyToChatMessageId !== undefined &&
     candidateReply.replyToChatMessageId === question.chatMessageId;
   const mention = mentionsAuthor(candidateReply.message, question.username);
-  const staffFollowup = candidateReply.isStaff === true && hasAnswerSignal(candidateReply.message);
+  const sameThread = question.threadId !== undefined
+    && question.threadId !== null
+    && candidateReply.threadId === question.threadId;
+  const unthreadedConversation = !question.threadId && !candidateReply.threadId;
+  const staffFollowup =
+    candidateReply.isStaff === true &&
+    (sameThread || unthreadedConversation) &&
+    hasAnswerSignal(candidateReply.message);
   const nearbyFollowup =
+    (sameThread || unthreadedConversation) &&
     isFirstVisibleFollowup(question, candidateReply, orderedItems) &&
     minutesBetween(question, candidateReply) <= REPLY_LOOKAHEAD_MINUTES &&
     hasAnswerSignal(candidateReply.message);
@@ -573,7 +591,10 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
 
   if (options.includeCommunity) {
     try {
-      const messages = await readCommunityMessagesForOptions(client, channelId, options, window);
+      const demo = isDemoMode();
+      const messages = demo
+        ? await demoCommunityMessages(options.messageCount)
+        : await readCommunityMessagesForOptions(client, channelId, options, window);
       const seenMessageIds = new Set<number>();
       const threadRoots = new Map<number, number>();
       for (const msg of messages) {
@@ -595,7 +616,7 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
         });
       }
 
-      const threadIds = Array.from(threadRoots.keys()).slice(0, Math.max(0, THREAD_SCAN_LIMIT));
+      const threadIds = demo ? [] : Array.from(threadRoots.keys()).slice(0, Math.max(0, THREAD_SCAN_LIMIT));
       for (const threadId of threadIds) {
         try {
           const threadMessages = await client.readChatThreadMessages(channelId, threadId, THREAD_MESSAGE_COUNT);
@@ -964,10 +985,14 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       let posted = false;
       let reacted = false;
       if (post && decision.action === 'reply') {
-        posted = await postDecision(client, channelId, decision.reply, item);
+        posted = isDemoMode()
+          ? Boolean(await appendDemoCommunityReply(decision.reply, item))
+          : await postDecision(client, channelId, decision.reply, item);
       }
       if (react && decision.action === 'react') {
-        reacted = await reactToDecision(client, channelId, item, decision.reaction || DEFAULT_REACTION_EMOJI);
+        reacted = isDemoMode()
+          ? true
+          : await reactToDecision(client, channelId, item, decision.reaction || DEFAULT_REACTION_EMOJI);
       }
 
       decisions.push({

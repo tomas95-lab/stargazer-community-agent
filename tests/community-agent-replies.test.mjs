@@ -10,6 +10,7 @@ function item(overrides) {
     message: overrides.message,
     createdAt: overrides.createdAt,
     chatMessageId: overrides.chatMessageId,
+    threadId: overrides.threadId,
     replyToChatMessageId: overrides.replyToChatMessageId,
     isStaff: overrides.isStaff,
   };
@@ -136,6 +137,30 @@ test('annotateProbableReplies does not mark announcement thread roots as answere
         },
       ],
     },
+  ]);
+
+  assert.deepEqual(annotated[0].probableReplies, []);
+});
+
+test('annotateProbableReplies does not treat a staff message in another thread as an answer', () => {
+  const annotated = annotateProbableReplies([
+    item({
+      id: 'community:50',
+      username: 'learner',
+      message: 'What should I do after completing onboarding?',
+      createdAt: '2026-07-22T14:00:00.000Z',
+      chatMessageId: 50,
+      threadId: 50,
+    }),
+    item({
+      id: 'community:51',
+      username: 'qm',
+      message: 'You can join the optional session using this link.',
+      createdAt: '2026-07-22T14:05:00.000Z',
+      chatMessageId: 51,
+      threadId: 51,
+      isStaff: true,
+    }),
   ]);
 
   assert.deepEqual(annotated[0].probableReplies, []);

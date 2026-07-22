@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { NextFunction, Router, Request, Response } from 'express';
 import { AuthenticatedRequest, requirePlatformUser } from '../auth';
 import {
   createUserProject,
@@ -31,6 +31,15 @@ import {
 } from '../../src/guideline-file-extractor';
 
 const router = Router();
+
+router.use((req: Request, res: Response, next: NextFunction) => {
+  const user = (req as AuthenticatedRequest).authUser;
+  if (user?.isDemo && !['GET', 'HEAD'].includes(req.method.toUpperCase())) {
+    res.status(403).json({ error: 'Demo accounts cannot change platform or project configuration.' });
+    return;
+  }
+  next();
+});
 
 function routeParam(value: unknown): string {
   return Array.isArray(value) ? String(value[0] || '') : String(value || '');
@@ -182,6 +191,10 @@ router.post('/projects', requirePlatformUser, async (req: Request, res: Response
 
 router.get('/projects/shared/:projectKey', requirePlatformUser, async (req: Request, res: Response) => {
   try {
+    if ((req as AuthenticatedRequest).authUser?.isDemo) {
+      res.json({ project: null });
+      return;
+    }
     const project = await getSharedProjectSummary(routeParam(req.params.projectKey));
     res.json({ project });
   } catch (err) {
@@ -199,6 +212,19 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
     }
     const aiKey = await getUserAiKey(authReq.authUser!.id);
     const config = await projectBotConfigForRow(project);
+    if (project.settings?.demoMode === true) {
+      const checks = [
+        { id: 'demo', label: 'Demo isolation', ok: true, detail: 'Synthetic Community data, external writes blocked' },
+        { id: 'category', label: 'Simulated category', ok: true, detail: config.communityCategoryId },
+        { id: 'channel', label: 'Simulated channel', ok: true, detail: config.communityChatChannelId },
+        { id: 'username', label: 'Demo identity', ok: true, detail: project.discourse_username },
+        { id: 'guidelines', label: 'Project guidelines', ok: project.project_guidelines.trim().length >= 100, detail: `${project.project_guidelines.length} characters` },
+        { id: 'claude', label: 'Claude API key', ok: Boolean(aiKey?.anthropic_api_key_ciphertext), detail: aiKey?.anthropic_api_key_ciphertext ? `${aiKey.anthropic_model}, daily limits enforced` : 'Not configured' },
+        { id: 'automation', label: 'External automation', ok: true, detail: 'Disabled for Demo Mode' },
+      ];
+      res.json({ projectId: project.id, generatedAt: new Date().toISOString(), healthy: checks.every((check) => check.ok), checks });
+      return;
+    }
     let discourseReachable = false;
     let discourseIdentity = '';
     let discourseError = '';

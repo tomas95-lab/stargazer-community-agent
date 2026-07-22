@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react"
 import type { CSSProperties, ReactNode } from "react"
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom"
+import { FlaskConical } from "lucide-react"
 
 import { AuthProvider, useAuth } from "@/auth"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -117,6 +118,12 @@ function WorkspaceRoutes() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 py-5 md:gap-6 md:py-7">
+              {currentProject?.settings?.demoMode === true ? (
+                <div className="mx-4 flex items-start gap-3 rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm lg:mx-6">
+                  <FlaskConical className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <div><p className="font-medium">Isolated Demo Mode</p><p className="mt-0.5 text-xs text-muted-foreground">Community members, messages, channels, and posts are simulated. Claude is live, while every external Discourse write is blocked.</p></div>
+                </div>
+              ) : null}
               <Suspense fallback={<PageLoading />}>
               <Routes key={currentProject?.id || "default-project"}>
                 <Route path="/" element={<Dashboard />} />

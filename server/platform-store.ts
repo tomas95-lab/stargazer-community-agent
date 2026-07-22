@@ -18,6 +18,7 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   name: string;
+  isDemo?: boolean;
 }
 
 export interface QmProjectRow {
@@ -374,6 +375,7 @@ export async function getUserFromAccessToken(accessToken: string): Promise<Authe
     id: data.user.id,
     email: data.user.email || '',
     name: userName(data.user),
+    isDemo: data.user.app_metadata?.demo_account === true,
   };
 }
 
@@ -608,7 +610,7 @@ export async function listEnabledProjectConnections(): Promise<QmProjectRow[]> {
     .order('created_at', { ascending: true });
 
   if (error) throw new Error(error.message);
-  return (data || []) as QmProjectRow[];
+  return ((data || []) as QmProjectRow[]).filter((row) => row.settings?.demoMode !== true);
 }
 
 export async function projectAutomationPaused(projectKey: string): Promise<boolean> {
@@ -1178,12 +1180,14 @@ export function projectRuntimeContext(
   const anthropicApiKey = text(aiKey?.anthropic_api_key_ciphertext)
     ? decryptSecret(aiKey!.anthropic_api_key_ciphertext)
     : '';
+  const demoMode = row.settings?.demoMode === true;
 
   return {
     projectId: projectKeyFromRow(row),
     source: 'header',
     projectName: row.project_name,
     ownerId: row.owner_id,
+    demoMode,
     automationPaused: row.enabled === false,
     automationSettings: {
       ...(row.settings && typeof row.settings === 'object' ? row.settings : {}),
@@ -1201,6 +1205,7 @@ export function projectRuntimeContext(
       anthropicModel: anthropicModel(aiKey?.anthropic_model),
       dailyTokenLimit: positiveIntOrNull(aiKey?.ai_daily_token_limit),
       dailyCallLimit: positiveIntOrNull(aiKey?.ai_daily_call_limit),
+      enforceLimits: demoMode || row.settings?.aiLimitsEnforced === true,
     },
     ...(text(row.project_guidelines) ? { projectGuidelines: text(row.project_guidelines) } : {}),
     ...(Object.keys(projectLinks).length > 0 ? { projectLinks } : {}),

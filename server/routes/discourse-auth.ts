@@ -4,7 +4,7 @@ import {
   privateDecrypt,
   randomBytes,
 } from 'crypto';
-import { Router, Request, Response } from 'express';
+import { NextFunction, Router, Request, Response } from 'express';
 import { AuthenticatedRequest, requirePlatformUser } from '../auth';
 import {
   decryptSecret,
@@ -15,6 +15,14 @@ import {
 } from '../platform-store';
 
 const router = Router();
+
+router.use((req: Request, res: Response, next: NextFunction) => {
+  if ((req as AuthenticatedRequest).authUser?.isDemo && req.method.toUpperCase() !== 'GET') {
+    res.status(403).json({ error: 'Demo accounts cannot connect external Discourse credentials.' });
+    return;
+  }
+  next();
+});
 
 const ATTEMPTS_TABLE = 'discourse_auth_attempts';
 const USER_KEYS_TABLE = 'user_discourse_keys';

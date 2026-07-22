@@ -38,6 +38,7 @@ export interface RuntimeAiConfig {
   anthropicModel?: string;
   dailyTokenLimit?: number | null;
   dailyCallLimit?: number | null;
+  enforceLimits?: boolean;
 }
 
 export interface RuntimeAutomationSettings {
@@ -70,6 +71,7 @@ export interface ProjectContext {
   automationPaused?: boolean;
   automationSettings?: RuntimeAutomationSettings;
   agentPolicy?: RuntimeAgentPolicy;
+  demoMode?: boolean;
 }
 
 const storage = new AsyncLocalStorage<ProjectContext>();
@@ -132,6 +134,16 @@ export function getCurrentProjectId(): string {
 export function assertProjectAutomationActive(): void {
   if (getProjectContext().automationPaused) {
     throw new Error('This project is paused. Resume it from Projects before sending or publishing messages.');
+  }
+}
+
+export function isDemoMode(): boolean {
+  return getProjectContext().demoMode === true;
+}
+
+export function assertExternalWriteAllowed(): void {
+  if (isDemoMode()) {
+    throw new Error('Demo Mode blocks external Community writes. Use the simulated Community workspace instead.');
   }
 }
 

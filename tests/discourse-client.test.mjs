@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DiscourseClient } from '../dist/discourse-client.js';
+import { runWithProjectContext } from '../dist/project-context.js';
 
 test('DiscourseClient normalizes base URL for topic links', () => {
   const client = new DiscourseClient({
@@ -42,6 +43,34 @@ test('DiscourseClient can send a chat message as a threaded reply', async () => 
       in_reply_to_id: 123,
       thread_id: 999,
     });
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test('DiscourseClient blocks external writes in Demo Mode before fetch', async () => {
+  const previousFetch = global.fetch;
+  let fetchCalled = false;
+  global.fetch = async () => {
+    fetchCalled = true;
+    throw new Error('fetch should not run');
+  };
+
+  try {
+    const client = new DiscourseClient({
+      baseUrl: 'https://community.example/',
+      apiKey: 'key',
+      apiClientId: 'client',
+    });
+
+    await assert.rejects(
+      runWithProjectContext(
+        { projectId: 'outlier-community-demo', source: 'header', demoMode: true },
+        () => client.sendChatMessage('42', 'This must stay simulated'),
+      ),
+      /Demo Mode blocks external Community writes/,
+    );
+    assert.equal(fetchCalled, false);
   } finally {
     global.fetch = previousFetch;
   }

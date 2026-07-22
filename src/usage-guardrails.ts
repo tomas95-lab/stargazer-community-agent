@@ -146,7 +146,7 @@ function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
   const totalTokens = inputTokens + outputTokens;
   const dailyTokenLimit = numericLimit(context.aiConfig?.dailyTokenLimit, 'AI_DAILY_TOKEN_LIMIT');
   const dailyCallLimit = numericLimit(context.aiConfig?.dailyCallLimit, 'AI_DAILY_CALL_LIMIT');
-  const enforce = process.env.AI_GUARDRAILS_ENFORCE === 'true';
+  const enforce = context.aiConfig?.enforceLimits === true || process.env.AI_GUARDRAILS_ENFORCE === 'true';
   const warnings: string[] = [];
 
   if (dailyTokenLimit && totalTokens >= Math.floor(dailyTokenLimit * 0.8)) {

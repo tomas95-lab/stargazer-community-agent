@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ComponentType } from 'react';
+import type { ChangeEvent, ComponentType } from 'react';
 import {
   AlertTriangle,
   CalendarClock,
+  CheckCircle2,
   ClipboardCheck,
+  FileJson,
   GraduationCap,
   Headphones,
   KeyRound,
@@ -15,10 +17,12 @@ import {
   Save,
   SlidersHorizontal,
   Trash2,
+  Upload,
   Users,
   X,
+  XCircle,
 } from 'lucide-react';
-import { api, type CommsTemplate, type ScheduledMessage, type TemplateVariable } from '../api';
+import { api, type CommsImportError, type CommsImportSchema, type CommsTemplate, type ScheduledMessage, type TemplateVariable } from '../api';
 import CommsForm from '../components/CommsForm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -114,6 +118,143 @@ function syncVariables(body: string, current: TemplateVariable[]): TemplateVaria
       defaultValue: '',
     };
   });
+}
+
+function CommsImportErrors({ errors }: { errors: CommsImportError[] }) {
+  if (!errors.length) return null;
+  return (
+    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-destructive">
+        <XCircle className="size-4" />
+        Fix these JSON issues
+      </div>
+      <div className="max-h-44 overflow-auto">
+        {errors.map((error, index) => (
+          <p key={`${error.index}-${error.path}-${index}`} className="text-sm text-destructive">
+            {error.index >= 0 ? `Template ${error.index + 1}` : 'JSON'} / {error.path}: {error.message}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CommsImportPanel({ onImported }: { onImported: () => void }) {
+  const [schema, setSchema] = useState<CommsImportSchema | null>(null);
+  const [jsonText, setJsonText] = useState('');
+  const [mode, setMode] = useState<'append' | 'replace'>('append');
+  const [errors, setErrors] = useState<CommsImportError[]>([]);
+  const [validCount, setValidCount] = useState<number | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    api.getCommsImportSchema()
+      .then((result) => {
+        setSchema(result);
+        setJsonText(JSON.stringify(result.example, null, 2));
+      })
+      .catch((err) => setErrors([{ index: -1, path: '$', message: err instanceof Error ? err.message : String(err) }]));
+  }, []);
+
+  const parse = () => {
+    try {
+      return { payload: JSON.parse(jsonText), error: '' };
+    } catch (err) {
+      return { payload: null, error: err instanceof Error ? err.message : String(err) };
+    }
+  };
+
+  const validate = async () => {
+    setValidating(true);
+    setMessage('');
+    const parsed = parse();
+    if (parsed.error) {
+      setErrors([{ index: -1, path: '$', message: parsed.error }]);
+      setValidCount(null);
+      setValidating(false);
+      return false;
+    }
+    try {
+      const result = await api.validateCommsImport(parsed.payload);
+      setErrors(result.errors);
+      setValidCount(result.ok ? result.templates.length : null);
+      return result.ok;
+    } catch (err) {
+      setErrors([{ index: -1, path: '$', message: err instanceof Error ? err.message : String(err) }]);
+      setValidCount(null);
+      return false;
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const importTemplates = async () => {
+    if (!(await validate())) return;
+    setImporting(true);
+    const parsed = parse();
+    try {
+      const result = await api.importComms(parsed.payload, mode);
+      setMessage(`${result.imported} templates imported. Created ${result.created}, updated ${result.updated}. Total: ${result.total}.`);
+      onImported();
+    } catch (err) {
+      setErrors([{ index: -1, path: '$', message: err instanceof Error ? err.message : String(err) }]);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const loadFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setJsonText(await file.text());
+    setErrors([]);
+    setValidCount(null);
+    setMessage(`Loaded ${file.name}.`);
+    event.currentTarget.value = '';
+  };
+
+  return (
+    <Card className="p-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2"><FileJson className="size-5 text-primary" /><h2 className="text-lg font-semibold">Import comms JSON</h2></div>
+          <p className="mt-1 text-sm text-muted-foreground">Templates are created or updated by their unique ID.</p>
+        </div>
+        <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground">
+          <Upload className="size-4" />Upload JSON
+          <input className="sr-only" type="file" accept=".json,application/json" onChange={loadFile} />
+        </label>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]">
+        <div className="grid gap-3">
+          <Textarea className="min-h-80 font-mono text-xs" value={jsonText} onChange={(event) => { setJsonText(event.target.value); setErrors([]); setValidCount(null); setMessage(''); }} />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-3 text-sm">
+              <label className="flex items-center gap-2"><input type="radio" checked={mode === 'append'} onChange={() => setMode('append')} />Add/update by ID</label>
+              <label className="flex items-center gap-2"><input type="radio" checked={mode === 'replace'} onChange={() => setMode('replace')} />Replace all</label>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => void validate()} disabled={validating || !jsonText.trim()}>{validating ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}Validate</Button>
+              <Button type="button" onClick={() => void importTemplates()} disabled={importing || !jsonText.trim()}>{importing ? <Loader2 className="animate-spin" /> : <Upload />}Import</Button>
+            </div>
+          </div>
+          <CommsImportErrors errors={errors} />
+          {validCount !== null && !errors.length ? <div className="flex items-center gap-2 rounded-md border border-success/30 bg-success/5 p-3 text-sm text-success"><CheckCircle2 className="size-4" />Valid JSON. {validCount} templates ready.</div> : null}
+          {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+        </div>
+        <div className="rounded-md border bg-muted/30 p-3">
+          <p className="mb-2 text-sm font-medium">Expected structure</p>
+          <div className="mb-3 grid gap-1 text-xs text-muted-foreground">
+            {schema?.requiredFields.map((field) => <span key={field}>{field}: required</span>)}
+            <span>supportedTones: optional string[]</span><span>audience: optional string[]</span><span>variables: optional object[]</span>
+          </div>
+          <pre className="max-h-80 overflow-auto rounded-md bg-background p-3 text-xs text-muted-foreground">{JSON.stringify(schema?.example || [], null, 2)}</pre>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 function TemplateEditor({
@@ -488,6 +629,7 @@ export default function CommsAutomator() {
   const [scheduledError, setScheduledError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showImport, setShowImport] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -640,11 +782,19 @@ export default function CommsAutomator() {
                 <ActiveIcon className="size-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">{title}</h2>
               </div>
-              <Button type="button" onClick={() => setEditingTemplate(null)}>
-                <Plus className="size-4" />
-                New template
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" onClick={() => setShowImport((current) => !current)}>
+                  <FileJson className="size-4" />
+                  Import JSON
+                </Button>
+                <Button type="button" onClick={() => setEditingTemplate(null)}>
+                  <Plus className="size-4" />
+                  New template
+                </Button>
+              </div>
             </div>
+
+            {showImport ? <CommsImportPanel onImported={load} /> : null}
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
 

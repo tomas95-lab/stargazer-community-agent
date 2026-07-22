@@ -15,9 +15,11 @@ const projectData = path.resolve('data/projects', projectId);
 const projectOutput = path.resolve('output/projects', projectId);
 
 async function withLocalProject(fn) {
+  const previousBackend = process.env.STORAGE_BACKEND;
   const previousStore = process.env.DATA_STORE;
   const previousApiKey = process.env.DISCOURSE_API_KEY;
   const previousChannel = process.env.COMMUNITY_CHAT_CHANNEL_ID;
+  process.env.STORAGE_BACKEND = 'local';
   process.env.DATA_STORE = 'local';
   process.env.DISCOURSE_API_KEY = 'test-key';
   process.env.COMMUNITY_CHAT_CHANNEL_ID = '42';
@@ -28,6 +30,8 @@ async function withLocalProject(fn) {
   } finally {
     await fs.rm(projectData, { recursive: true, force: true });
     await fs.rm(projectOutput, { recursive: true, force: true });
+    if (previousBackend === undefined) delete process.env.STORAGE_BACKEND;
+    else process.env.STORAGE_BACKEND = previousBackend;
     if (previousStore === undefined) delete process.env.DATA_STORE;
     else process.env.DATA_STORE = previousStore;
     if (previousApiKey === undefined) delete process.env.DISCOURSE_API_KEY;

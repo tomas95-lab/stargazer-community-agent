@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { projectKeyForDataPath } from '../dist/supabase-data-store.js';
 import { activeDataStore } from '../dist/data-store.js';
+import { runWithProjectContext } from '../dist/project-context.js';
 
 test('Supabase data paths resolve explicit project folders', () => {
   assert.equal(projectKeyForDataPath('data/projects/alpha-project/topics.json'), 'alpha-project');
@@ -29,5 +30,31 @@ test('the new storage backend setting overrides the legacy data store setting', 
     else process.env.STORAGE_BACKEND = previousBackend;
     if (previousLegacy === undefined) delete process.env.DATA_STORE;
     else process.env.DATA_STORE = previousLegacy;
+  }
+});
+
+test('authenticated platform projects use Supabase despite a legacy GitHub setting', () => {
+  const previous = {
+    backend: process.env.STORAGE_BACKEND,
+    legacy: process.env.DATA_STORE,
+    url: process.env.SUPABASE_URL,
+    secret: process.env.SUPABASE_SECRET_KEY,
+  };
+  try {
+    delete process.env.STORAGE_BACKEND;
+    process.env.DATA_STORE = 'github';
+    process.env.SUPABASE_URL = 'https://demo.supabase.co';
+    process.env.SUPABASE_SECRET_KEY = 'demo-secret';
+    const store = runWithProjectContext(
+      { projectId: 'demo-project', ownerId: 'demo-user', source: 'header' },
+      () => activeDataStore(),
+    );
+    assert.equal(store, 'supabase');
+  } finally {
+    const restore = (key, value) => value === undefined ? delete process.env[key] : process.env[key] = value;
+    restore('STORAGE_BACKEND', previous.backend);
+    restore('DATA_STORE', previous.legacy);
+    restore('SUPABASE_URL', previous.url);
+    restore('SUPABASE_SECRET_KEY', previous.secret);
   }
 });

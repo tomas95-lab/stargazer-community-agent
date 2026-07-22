@@ -1,0 +1,22 @@
+[
+  {
+    "date": "2026-07-23",
+    "title": "Demo Topic: Testing the Daily Workflow",
+    "topic": "Demo Quality Check",
+    "reminderTitle": "This is a fictitious testing reminder",
+    "reminderBody": "Today we are testing the daily topic workflow in the Aurora Community Demo. No action is required and no real contributor information should be used.",
+    "badExample": "Using real project details, contributor names, or production links during a demo.",
+    "goodExample": "Using fictional names, placeholder links, and clearly labeled demo content.",
+    "quickRule": "Keep every demo message fictional and easy to identify.",
+    "tags": [
+      "demo_project_announcements"
+    ],
+    "webinar": {
+      "enabled": false,
+      "mandatory": false,
+      "timeLabel": "",
+      "link": "",
+      "invitees": []
+    }
+  }
+]
