@@ -132,17 +132,17 @@ export const workspaceGuides: WorkspaceGuide[] = [
     group: "Project",
     icon: FolderKanban,
     steps: ["Select the project you want to operate.", "Check its credentials and status.", "Pause or archive it when automation must stop."],
-    tips: ["QMs using the same Project ID share project content.", "API keys remain private to each QM."],
+    tips: ["QMs using the same Project ID share project content.", "Discourse access remains private to each QM. Gemini is provided by the platform."],
   },
   {
     path: "/project",
     title: "Project setup",
     shortTitle: "Project setup",
-    description: "Manage Community identifiers, personal credentials, AI limits, and the project's knowledge source.",
+    description: "Manage Community identifiers, personal Discourse access, and the project's knowledge source.",
     group: "Project",
     icon: SlidersHorizontal,
     steps: ["Connect your own Discourse account.", "Verify category, channel, and username.", "Upload current guidelines and choose an agent policy."],
-    tips: ["Use the same Project ID as your teammates.", "Secrets are encrypted and never shown again after saving."],
+    tips: ["Use the same Project ID as your teammates.", "Connect only Discourse. Gemini is included automatically and does not require a personal key."],
   },
   {
     path: "/memory",
@@ -258,7 +258,7 @@ export function guidesForGroup(group: WorkspaceGuide["group"]): WorkspaceGuide[]
 
 export const onboardingChecklist = [
   { label: "Project identity", description: "Project ID, name, category and channel", icon: FolderKanban },
-  { label: "Personal connections", description: "Discourse and Claude credentials", icon: Users },
+  { label: "Community connection", description: "Private Discourse access and managed Gemini", icon: Users },
   { label: "Project knowledge", description: "Guidelines, links and key facts", icon: FileText },
-  { label: "Automation policy", description: "Mode, confidence and daily limits", icon: Bot },
+  { label: "Automation policy", description: "Mode, confidence and response rules", icon: Bot },
 ]

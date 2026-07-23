@@ -621,7 +621,7 @@ export interface AiUsageEvent {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
-  status: 'success' | 'error' | 'blocked';
+  status: 'success' | 'error' | 'blocked' | 'reserved';
 }
 
 export interface AiUsageSummary {
@@ -665,8 +665,9 @@ export interface QmProject {
   discourseUsername: string;
   discourseApiClientId: string;
   discourseApiKeyConfigured: boolean;
-  anthropicApiKeyConfigured: boolean;
-  anthropicModel: string;
+  aiProviderConfigured: boolean;
+  aiProvider: 'gemini';
+  aiModel: string;
   aiDailyTokenLimit: number | null;
   aiDailyCallLimit: number | null;
   projectGuidelines: string;
@@ -695,8 +696,6 @@ export interface QmProjectInput {
   discourseUsername?: string;
   discourseApiClientId?: string;
   discourseApiKey?: string;
-  anthropicApiKey?: string;
-  anthropicModel?: string;
   aiDailyTokenLimit?: number | null;
   aiDailyCallLimit?: number | null;
   projectGuidelines?: string;
@@ -718,6 +717,13 @@ export interface PlatformStatus {
   encryptionConfigured: boolean;
   schemaReady: boolean;
   schemaMessage: string;
+}
+
+export interface GeminiConnectionStatus {
+  connected: boolean;
+  provider: 'gemini';
+  model: string;
+  managed?: boolean;
 }
 
 export interface SandboxReplayMessage {
@@ -1016,6 +1022,14 @@ export const api = {
   getAiUsage: () => request<AiUsageSummary>('/usage'),
   getPlatformStatus: () => request<PlatformStatus>('/platform/status'),
   getPlatformMe: () => request<{ user: { id: string; email: string; name: string } }>('/platform/me'),
+  getGeminiStatus: () => request<GeminiConnectionStatus>('/platform/gemini/status'),
+  connectGemini: (apiKey: string) =>
+    request<GeminiConnectionStatus>('/platform/gemini/connect', {
+      method: 'POST',
+      body: JSON.stringify({ apiKey }),
+    }),
+  disconnectGemini: () =>
+    request<GeminiConnectionStatus>('/platform/gemini/connection', { method: 'DELETE' }),
   getProjects: () => request<{ projects: QmProject[] }>('/platform/projects'),
   getCurrentProject: () => request<{ project: QmProject | null }>('/platform/projects/current'),
   findSharedProject: (projectKey: string) =>

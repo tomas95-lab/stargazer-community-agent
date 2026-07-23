@@ -1,7 +1,7 @@
 {
   "name": "daily-thread-bot",
   "version": "1.0.0",
-  "description": "Automation tool for publishing Stargazer Axiom daily threads",
+  "description": "Multi-project community operations and automation platform",
   "main": "dist/index.js",
   "scripts": {
     "build": "node node_modules/typescript/bin/tsc",
@@ -20,9 +20,8 @@
     "job:webinars": "node node_modules/tsx/dist/cli.mjs src/webinar-reminder.ts",
     "jobs:all": "node node_modules/tsx/dist/cli.mjs src/run-community-jobs.ts",
     "scheduler:setup:cron-job-org": "node scripts/setup-cron-job-org.mjs",
-    "ai:respond": "node node_modules/tsx/dist/cli.mjs src/claude-responder.ts",
+    "ai:respond": "node node_modules/tsx/dist/cli.mjs src/ai-responder.ts",
     "training:scan": "node node_modules/tsx/dist/cli.mjs src/manager-training-scan.ts",
-    "guidelines:extract": "node scripts/extract-guidelines.mjs",
     "storage:migrate": "node node_modules/tsx/dist/cli.mjs src/migrate-data-store.ts",
     "storage:migrate:operations": "node node_modules/tsx/dist/cli.mjs src/migrate-operational-history.ts",
     "demo:seed": "node node_modules/tsx/dist/cli.mjs src/seed-demo-account.ts",
@@ -31,7 +30,6 @@
   "keywords": [],
   "license": "PRIVATE",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.107.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@napi-rs/canvas": "^0.1.80",
     "@supabase/supabase-js": "^2.110.5",

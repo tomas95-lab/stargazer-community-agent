@@ -1,6 +1,0 @@
-{
-  "url": "https://community.outlier.ai/t/daily-thread-07-08/2903090",
-  "date": "2026-07-08",
-  "publishedAt": "2026-07-08T13:00:32.674Z",
-  "source": "daily_publish_job"
-}

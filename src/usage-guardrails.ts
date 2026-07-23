@@ -3,6 +3,7 @@ import { readDataJSON, writeDataJSON } from './data-store';
 import { getProjectContext } from './project-context';
 import { appDateParts } from './timezone';
 import { runtimeDb, runtimeDbConfigured, runtimeScope, runtimeTableMissing } from './runtime-db';
+import { platformGeminiConfigured } from './ai-runtime';
 
 const FILE = 'output/ai-usage-state.json';
 const MAX_EVENTS = 1000;
@@ -19,7 +20,7 @@ export interface AiUsageEvent {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
-  status: 'success' | 'error' | 'blocked';
+  status: 'success' | 'error' | 'blocked' | 'reserved';
 }
 
 export interface AiUsageSummary {
@@ -63,7 +64,7 @@ function numericEnv(key: string): number | null {
 function numericLimit(value: unknown, envKey: string): number | null {
   const parsed = typeof value === 'number' || typeof value === 'string' ? Number(value) : NaN;
   if (Number.isFinite(parsed) && parsed > 0) return Math.floor(parsed);
-  return numericEnv(envKey);
+  return numericEnv(envKey) || (envKey === 'AI_DAILY_TOKEN_LIMIT' ? 50_000 : 100);
 }
 
 export function estimateTokens(text: string): number {
@@ -76,7 +77,32 @@ function normalizeTokens(value: unknown): number {
 }
 
 function currentAiModel(): string {
-  return getProjectContext().aiConfig?.anthropicModel || process.env.ANTHROPIC_MODEL || 'unknown';
+  return getProjectContext().aiConfig?.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+}
+
+function configuredLimit(envKey: string, fallback: number): number {
+  return numericEnv(envKey) || fallback;
+}
+
+export interface PlatformAiLimits {
+  globalTokenLimit: number;
+  globalCallLimit: number;
+  projectTokenLimit: number;
+  projectCallLimit: number;
+  ownerTokenLimit: number;
+  ownerCallLimit: number;
+}
+
+export function platformAiLimits(): PlatformAiLimits {
+  const context = getProjectContext();
+  return {
+    globalTokenLimit: configuredLimit('PLATFORM_AI_DAILY_TOKEN_LIMIT', 500_000),
+    globalCallLimit: configuredLimit('PLATFORM_AI_DAILY_CALL_LIMIT', 500),
+    projectTokenLimit: configuredLimit('AI_PROJECT_DAILY_TOKEN_LIMIT', 200_000),
+    projectCallLimit: configuredLimit('AI_PROJECT_DAILY_CALL_LIMIT', 200),
+    ownerTokenLimit: numericLimit(context.aiConfig?.dailyTokenLimit, 'AI_DAILY_TOKEN_LIMIT') || 50_000,
+    ownerCallLimit: numericLimit(context.aiConfig?.dailyCallLimit, 'AI_DAILY_CALL_LIMIT') || 100,
+  };
 }
 
 async function readState(): Promise<AiUsageState> {
@@ -146,7 +172,9 @@ function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
   const totalTokens = inputTokens + outputTokens;
   const dailyTokenLimit = numericLimit(context.aiConfig?.dailyTokenLimit, 'AI_DAILY_TOKEN_LIMIT');
   const dailyCallLimit = numericLimit(context.aiConfig?.dailyCallLimit, 'AI_DAILY_CALL_LIMIT');
-  const enforce = context.aiConfig?.enforceLimits === true || process.env.AI_GUARDRAILS_ENFORCE === 'true';
+  const enforce = context.aiConfig?.provider === 'gemini'
+    || context.aiConfig?.enforceLimits === true
+    || process.env.AI_GUARDRAILS_ENFORCE === 'true';
   const warnings: string[] = [];
 
   if (dailyTokenLimit && totalTokens >= Math.floor(dailyTokenLimit * 0.8)) {
@@ -185,7 +213,61 @@ export async function getAiUsageSummary(now = new Date()): Promise<AiUsageSummar
   return summarize(state.events, now);
 }
 
-export async function assertAiUsageAllowed(feature: string, estimatedInputTokens = 0, estimatedOutputTokens = 0): Promise<void> {
+function quotaRpcMissing(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message || error || '');
+  return runtimeTableMissing(error) || /reserve_ai_usage|PGRST202|function .* does not exist/i.test(message);
+}
+
+async function reservePlatformUsage(
+  feature: string,
+  estimatedInputTokens: number,
+  estimatedOutputTokens: number,
+): Promise<string | undefined> {
+  if (!runtimeDbConfigured() || !platformGeminiConfigured()) return undefined;
+
+  const scope = runtimeScope();
+  const limits = platformAiLimits();
+  const reservationId = randomUUID();
+  const { data, error } = await runtimeDb().rpc('reserve_ai_usage', {
+    p_reservation_id: reservationId,
+    p_project_key: scope.projectKey,
+    p_owner_id: scope.ownerId,
+    p_feature: feature,
+    p_model: currentAiModel(),
+    p_input_tokens: normalizeTokens(estimatedInputTokens),
+    p_output_tokens: normalizeTokens(estimatedOutputTokens),
+    p_global_call_limit: limits.globalCallLimit,
+    p_global_token_limit: limits.globalTokenLimit,
+    p_project_call_limit: limits.projectCallLimit,
+    p_project_token_limit: limits.projectTokenLimit,
+    p_owner_call_limit: limits.ownerCallLimit,
+    p_owner_token_limit: limits.ownerTokenLimit,
+  });
+  if (error) {
+    if (quotaRpcMissing(error)) return undefined;
+    throw new Error(`Could not reserve Gemini quota: ${error.message}`);
+  }
+
+  const result = (Array.isArray(data) ? data[0] : data) as {
+    allowed?: boolean;
+    reason?: string;
+    scope?: string;
+  } | null;
+  if (!result?.allowed) {
+    const scopeLabel = result?.scope ? ` for ${result.scope}` : '';
+    throw new Error(result?.reason || `Gemini daily quota reached${scopeLabel}. This message requires human review.`);
+  }
+  return reservationId;
+}
+
+export async function assertAiUsageAllowed(
+  feature: string,
+  estimatedInputTokens = 0,
+  estimatedOutputTokens = 0,
+): Promise<string | undefined> {
+  const reservationId = await reservePlatformUsage(feature, estimatedInputTokens, estimatedOutputTokens);
+  if (reservationId) return reservationId;
+
   const state = await readState();
   const summary = summarize(state.events);
   const expectedTokens = Math.max(0, estimatedInputTokens + estimatedOutputTokens);
@@ -213,6 +295,8 @@ export async function assertAiUsageAllowed(feature: string, estimatedInputTokens
     });
     throw new Error(`AI daily call limit reached for ${summary.utcDate}.`);
   }
+
+  return undefined;
 }
 
 export async function recordAiUsage(input: {
@@ -223,12 +307,13 @@ export async function recordAiUsage(input: {
   inputText?: string;
   outputText?: string;
   status?: AiUsageEvent['status'];
+  reservationId?: string;
 }): Promise<AiUsageEvent | undefined> {
   const inputTokens = normalizeTokens(input.inputTokens) || (input.inputText ? estimateTokens(input.inputText) : 0);
   const outputTokens = normalizeTokens(input.outputTokens) || (input.outputText ? estimateTokens(input.outputText) : 0);
   const context = getProjectContext();
   const event: AiUsageEvent = {
-    id: randomUUID(),
+    id: input.reservationId || randomUUID(),
     at: new Date().toISOString(),
     utcDate: utcDate(),
     argentinaDate: utcDate(),
@@ -246,7 +331,7 @@ export async function recordAiUsage(input: {
     if (runtimeDbConfigured()) {
       try {
         const scope = runtimeScope();
-        const { error } = await runtimeDb().from('ai_usage_events').insert({
+        const row = {
           id: event.id,
           project_key: scope.projectKey,
           owner_id: scope.ownerId,
@@ -256,7 +341,11 @@ export async function recordAiUsage(input: {
           output_tokens: event.outputTokens,
           status: event.status,
           created_at: event.at,
-        });
+        };
+        const operation = input.reservationId
+          ? runtimeDb().from('ai_usage_events').update(row).eq('id', input.reservationId).eq('status', 'reserved')
+          : runtimeDb().from('ai_usage_events').insert(row);
+        const { error } = await operation;
         if (error) throw new Error(error.message);
         return event;
       } catch (err) {

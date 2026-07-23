@@ -113,7 +113,7 @@ export default function Dashboard() {
   const readiness = [
     { label: "Community target", ready: Boolean(currentProject?.categoryId && currentProject.channelId) },
     { label: "Discourse", ready: Boolean(currentProject?.discourseApiKeyConfigured) },
-    { label: "Claude", ready: Boolean(currentProject?.anthropicApiKeyConfigured) },
+    { label: "Platform AI", ready: Boolean(currentProject?.aiProviderConfigured) },
     { label: "Guidelines", ready: Boolean(currentProject?.projectGuidelinesCharacters) },
   ]
   const readyCount = readiness.filter((item) => item.ready).length

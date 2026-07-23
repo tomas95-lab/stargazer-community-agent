@@ -12,7 +12,7 @@ import { loadProjectLinks } from './links';
 import { getProjectContext, projectScheduleAllowsNow } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
-import { resolveAnthropicRuntime } from './anthropic-runtime';
+import { generateAiText } from './ai-runtime';
 import { appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
 import { appendDemoCommunityReply, demoCommunityMessages } from './demo-mode';
 import { isDemoMode } from './project-context';
@@ -108,7 +108,7 @@ interface AgentState {
   processed: Record<string, { at: string; action: CommunityAgentAction; posted: boolean; reacted?: boolean }>;
 }
 
-interface ClaudeDecision {
+interface AiDecision {
   action?: CommunityAgentAction;
   confidence?: number;
   reason?: string;
@@ -305,28 +305,6 @@ function isPotentiallyUsefulContribution(text: string): boolean {
   ];
 
   return usefulSignals.some((signal) => lower.includes(signal));
-}
-
-function isWarRoomAvailabilityQuestion(text: string): boolean {
-  const lower = normalizeText(text);
-  if (!lower.includes('war room')) return false;
-
-  const availabilitySignals = [
-    '?',
-    'open',
-    'available',
-    'availability',
-    'abierto',
-    'abierta',
-    'abre',
-    'abrira',
-    'va a estar',
-    'estara',
-    'hay war room',
-    'is there',
-  ];
-
-  return availabilitySignals.some((signal) => lower.includes(signal));
 }
 
 function replyTargetId(message: DiscourseChatMessage): number | undefined {
@@ -679,26 +657,13 @@ async function writeState(state: AgentState): Promise<void> {
   await writeDataJSON(STATE_FILE, { processed: Object.fromEntries(entries) }, 'update community agent state');
 }
 
-function extractJson(text: string): ClaudeDecision {
+function extractJson(text: string): AiDecision {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start === -1 || end === -1 || end <= start) {
-    throw new Error(`Claude returned non-JSON content: ${text.slice(0, 200)}`);
+    throw new Error(`The AI provider returned non-JSON content: ${text.slice(0, 200)}`);
   }
-  return JSON.parse(text.slice(start, end + 1)) as ClaudeDecision;
-}
-
-function anthropicText(response: { content?: Array<{ type: string; text?: string }> }): string {
-  const block = response.content?.find((item) => item.type === 'text');
-  return block?.text || '';
-}
-
-function anthropicUsage(response: unknown): { inputTokens?: number; outputTokens?: number } {
-  const usage = (response as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
-  return {
-    inputTokens: usage?.input_tokens,
-    outputTokens: usage?.output_tokens,
-  };
+  return JSON.parse(text.slice(start, end + 1)) as AiDecision;
 }
 
 function removeWarRoomLink(reply: string, warRoomLink: string): string {
@@ -773,8 +738,6 @@ export async function evaluateSupportMessage(
   }
   const snippets = await findProjectGuidelineSnippets(message, 4);
   const memory = await projectMemoryText(25);
-  const anthropicRuntime = resolveAnthropicRuntime();
-  const anthropic = anthropicRuntime.client;
   const projectName = getProjectContext().projectName || 'the active project';
   const warRoomInstruction = canUseWarRoomLink && warRoomLink
     ? `A War Room link is configured for this project: ${warRoomLink}. Include it only when live support is clearly relevant and supported by project memory, project guidelines, or recent context. Do not state live-support hours, weekdays, weekends, or room names unless they are present in project memory, project guidelines, or recent context.`
@@ -801,26 +764,34 @@ export async function evaluateSupportMessage(
     `Incoming message from ${username}:\n${message}`,
   ].join('\n\n');
 
-  await assertAiUsageAllowed('support_evaluation', estimateTokens(`${systemPrompt}\n\n${userPrompt}`), 450);
-  const response = await anthropic.messages.create({
-    model: anthropicRuntime.model,
-    max_tokens: 450,
-    system: systemPrompt,
-    messages: [
-      {
-        role: 'user',
-        content: userPrompt,
-      },
-    ],
-  });
+  const estimatedInputTokens = estimateTokens(`${systemPrompt}\n\n${userPrompt}`);
+  const reservationId = await assertAiUsageAllowed('support_evaluation', estimatedInputTokens, 450);
+  let response;
+  try {
+    response = await generateAiText({
+      maxOutputTokens: 450,
+      system: systemPrompt,
+      prompt: userPrompt,
+    });
+  } catch (err) {
+    await recordAiUsage({
+      reservationId,
+      feature: 'support_evaluation',
+      model: getProjectContext().aiConfig?.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+      inputTokens: estimatedInputTokens,
+      outputTokens: 0,
+      status: 'error',
+    });
+    throw err;
+  }
 
-  const rawResponseText = anthropicText(response);
-  const usage = anthropicUsage(response);
+  const rawResponseText = response.text;
   await recordAiUsage({
+    reservationId,
     feature: 'support_evaluation',
-    model: anthropicRuntime.model,
-    inputTokens: usage.inputTokens,
-    outputTokens: usage.outputTokens,
+    model: response.model,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
     inputText: `${systemPrompt}\n\n${userPrompt}`,
     outputText: rawResponseText,
   });
@@ -850,7 +821,7 @@ export async function evaluateSupportMessage(
     action: finalAction,
     confidence,
     reason: nonEnglishReply
-      ? 'Claude reply failed the English-only check, escalated to human'
+      ? 'AI reply failed the English-only check, escalated to human'
       : typeof parsed.reason === 'string'
         ? parsed.reason
         : 'No reason returned',

@@ -64,8 +64,8 @@ function ProjectRow({
             <Badge variant={project.discourseApiKeyConfigured ? 'secondary' : 'outline'}>
               {project.discourseApiKeyConfigured ? 'Discourse connected' : 'Discourse missing'}
             </Badge>
-            <Badge variant={project.anthropicApiKeyConfigured ? 'secondary' : 'outline'}>
-              {project.anthropicApiKeyConfigured ? 'Claude key connected' : 'Claude key missing'}
+            <Badge variant={project.aiProviderConfigured ? 'secondary' : 'outline'}>
+              {project.aiProviderConfigured ? 'Gemini included' : 'Gemini unavailable'}
             </Badge>
             <Badge variant="outline">{project.projectGuidelinesCharacters.toLocaleString()} guideline chars</Badge>
           </div>
@@ -289,9 +289,9 @@ export default function Projects() {
           </p>
         </div>
         <div className="sg-panel p-4">
-          <p className="text-xs font-semibold uppercase text-muted-foreground">Claude Ready</p>
+          <p className="text-xs font-semibold uppercase text-muted-foreground">AI Ready</p>
           <p className="mt-2 text-2xl font-semibold text-foreground">
-            {projects.filter((project) => project.anthropicApiKeyConfigured).length}
+            {projects.filter((project) => project.aiProviderConfigured).length}
           </p>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { requireAdminToken } from '../auth';
 import { dataStoreSummary } from '../../src/data-store';
 import { isPlatformConfigured } from '../platform-store';
+import { DEFAULT_GEMINI_MODEL, platformGeminiConfigured } from '../../src/ai-runtime';
 
 const router = Router();
 
@@ -25,8 +26,10 @@ router.get('/', (_req: Request, res: Response) => {
     STORAGE_BACKEND_REQUESTED: store.requested,
     STORAGE_BACKEND_ACTIVE: store.active,
     STORAGE_FALLBACK: process.env.STORAGE_FALLBACK || process.env.DATA_STORE_FALLBACK || '',
-    ANTHROPIC_CONFIGURED: String(Boolean(process.env.ANTHROPIC_API_KEY)),
-    ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
+    AI_PROVIDER: 'gemini',
+    GEMINI_CONNECTION_MODE: platformGeminiConfigured() ? 'platform_managed' : 'per_qm_fallback',
+    PLATFORM_GEMINI_CONFIGURED: String(platformGeminiConfigured()),
+    GEMINI_MODEL: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
     CRON_CONFIGURED: String(Boolean(process.env.CRON_SECRET)),
     AGENT_AUTO_POST: String(process.env.AGENT_AUTO_POST === 'true'),
     DM_AUTO_REPLY: String(process.env.DM_AUTO_REPLY === 'true'),
@@ -35,6 +38,10 @@ router.get('/', (_req: Request, res: Response) => {
     AGENT_THREAD_MESSAGE_COUNT: process.env.AGENT_THREAD_MESSAGE_COUNT || '30',
     AI_DAILY_TOKEN_LIMIT: process.env.AI_DAILY_TOKEN_LIMIT || '',
     AI_DAILY_CALL_LIMIT: process.env.AI_DAILY_CALL_LIMIT || '',
+    AI_PROJECT_DAILY_TOKEN_LIMIT: process.env.AI_PROJECT_DAILY_TOKEN_LIMIT || '200000',
+    AI_PROJECT_DAILY_CALL_LIMIT: process.env.AI_PROJECT_DAILY_CALL_LIMIT || '200',
+    PLATFORM_AI_DAILY_TOKEN_LIMIT: process.env.PLATFORM_AI_DAILY_TOKEN_LIMIT || '500000',
+    PLATFORM_AI_DAILY_CALL_LIMIT: process.env.PLATFORM_AI_DAILY_CALL_LIMIT || '500',
     AI_GUARDRAILS_ENFORCE: String(process.env.AI_GUARDRAILS_ENFORCE === 'true'),
     PLATFORM_CONFIGURED: String(isPlatformConfigured()),
     PLATFORM_ENCRYPTION_CONFIGURED: String(Boolean(process.env.PLATFORM_ENCRYPTION_KEY || process.env.SUPABASE_JWT_SECRET)),

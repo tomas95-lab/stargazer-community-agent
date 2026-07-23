@@ -1,5 +1,0 @@
-{
-  "url": "https://community.outlier.ai/t/daily-thread-07-07/2902883",
-  "date": "2026-07-07",
-  "publishedAt": "2026-07-07T13:01:26.697Z"
-}

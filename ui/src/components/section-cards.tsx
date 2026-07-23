@@ -102,7 +102,7 @@ export function SectionCards({
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Claude Agent</CardDescription>
+          <CardDescription>Gemini Agent</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {stats.agentStatus}
           </CardTitle>

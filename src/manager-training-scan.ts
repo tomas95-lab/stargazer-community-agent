@@ -584,7 +584,7 @@ async function writeFineTunePack(params: {
     format: 'openai-chat-jsonl',
     privacy: 'Redacted emails, usernames, and links. Raw transcripts remain in output/training and are gitignored.',
     caveats: [
-      'Claude/Anthropic API does not currently offer public fine-tuning, so this pack is for providers that accept chat JSONL fine-tuning.',
+      'The managed Gemini runtime does not train on this pack directly. Keep it as an evaluation and portability artifact.',
       'Do not upload this pack to a paid provider without reviewing examples and approving cost.',
     ],
     trainPath,

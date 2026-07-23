@@ -4,14 +4,8 @@ dist/
 .browser-profile/
 .browser-profile-mobile/
 .visual-*/
-output/*.md
-output/*.txt
-output/*.png
-output/*.html
-output/*.log
-output/training/
+output/**
 data/demo-community-state.json
-output/projects/outlier-community-demo/
 !output/.gitkeep
 ui/node_modules/
 ui/dist/
@@ -19,4 +13,5 @@ ui/dist/
 env
 
 .vercel
+.claude/
 supabase/.temp/

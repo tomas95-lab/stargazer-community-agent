@@ -1,65 +1,109 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import type { ChangeEvent, DragEvent, FormEvent, ReactNode } from "react"
+import type { ChangeEvent, DragEvent, FormEvent } from "react"
+import type { LucideIcon } from "lucide-react"
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bot,
+  Check,
+  CircleAlert,
+  FileText,
+  KeyRound,
+  LoaderCircle,
+  LogOut,
+  MessageCircle,
+  ShieldCheck,
+  Users,
+} from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { Check as IconCheck, ExternalLink as IconExternalLink, FileText as IconFileText, FileUp as IconFileTypePdf, LoaderCircle as IconLoader2, RefreshCw as IconRefresh, Search as IconSearch, ShieldCheck as IconShieldCheck, Upload as IconUpload, X as IconX } from "lucide-react"
 
-import { api, projectSelection, type DiscourseAuthStatus, type QmProjectInput } from "@/api"
+import {
+  api,
+  projectSelection,
+  type DiscourseAuthStatus,
+  type QmProjectInput,
+} from "@/api"
 import { useAuth } from "@/auth"
 import { usePlatform } from "@/platform"
+import { AutomationStep } from "@/components/project-setup/AutomationStep"
+import { CommunityStep } from "@/components/project-setup/CommunityStep"
+import { ConnectionsStep } from "@/components/project-setup/ConnectionsStep"
+import { IdentityStep } from "@/components/project-setup/IdentityStep"
+import { KnowledgeStep } from "@/components/project-setup/KnowledgeStep"
+import type {
+  GuidelinesFileStatus,
+  PersistedProjectFormState,
+  ProjectFormState,
+} from "@/components/project-setup/types"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-interface ProjectFormState {
-  ownerName: string
-  projectKey: string
-  projectName: string
-  communityBaseUrl: string
-  categoryId: string
-  categorySlug: string
-  channelId: string
-  discourseUsername: string
-  discourseApiClientId: string
-  discourseApiKey: string
-  anthropicApiKey: string
-  anthropicModel: string
-  aiDailyTokenLimit: string
-  aiDailyCallLimit: string
-  projectGuidelines: string
-  warRoomLink: string
-  agentMode: "draft" | "supervised" | "auto"
-  autoReplyEnabled: boolean
-  minConfidence: string
-}
-
-type PersistedProjectFormState = Omit<ProjectFormState, "discourseApiKey" | "anthropicApiKey">
-
-interface GuidelinesFileStatus {
-  name: string
-  size: number
-  pages: number
-  characters: number
-  tables: number
-  chunks: number
-  warnings: string[]
-}
+import { cn } from "@/lib/utils"
 
 interface ProjectSetupDraft {
   version: 1
   form: PersistedProjectFormState
   savedAt: string
 }
+
+interface SetupStep {
+  id: string
+  label: string
+  eyebrow: string
+  title: string
+  description: string
+  icon: LucideIcon
+}
+
+const SETUP_STEPS: SetupStep[] = [
+  {
+    id: "identity",
+    label: "Project",
+    eyebrow: "Project identity",
+    title: "Start with the project",
+    description: "Use the shared Project ID so every QM works from the same configuration.",
+    icon: Users,
+  },
+  {
+    id: "community",
+    label: "Community",
+    eyebrow: "Community target",
+    title: "Point the agent to the right place",
+    description: "Add the category, chat channel, and your Community username.",
+    icon: MessageCircle,
+  },
+  {
+    id: "connections",
+    label: "Connections",
+    eyebrow: "Personal connections",
+    title: "Connect your accounts",
+    description: "Authorize Community. Gemini is already included and managed by the platform.",
+    icon: KeyRound,
+  },
+  {
+    id: "knowledge",
+    label: "Guidelines",
+    eyebrow: "Project knowledge",
+    title: "Give the agent reliable context",
+    description: "Upload the current PDF and add the support link used by your project.",
+    icon: FileText,
+  },
+  {
+    id: "automation",
+    label: "Automation",
+    eyebrow: "Automation policy",
+    title: "Choose how the agent should work",
+    description: "Start cautiously and increase autonomy when the answers look right.",
+    icon: Bot,
+  },
+]
 
 const DEFAULT_FORM: ProjectFormState = {
   ownerName: "",
@@ -72,10 +116,6 @@ const DEFAULT_FORM: ProjectFormState = {
   discourseUsername: "",
   discourseApiClientId: "daily-thread-bot",
   discourseApiKey: "",
-  anthropicApiKey: "",
-  anthropicModel: "claude-haiku-4-5",
-  aiDailyTokenLimit: "50000",
-  aiDailyCallLimit: "100",
   projectGuidelines: "",
   warRoomLink: "",
   agentMode: "supervised",
@@ -95,10 +135,6 @@ function projectToForm(project: NonNullable<ReturnType<typeof usePlatform>["curr
     discourseUsername: project.discourseUsername,
     discourseApiClientId: project.discourseApiClientId,
     discourseApiKey: "",
-    anthropicApiKey: "",
-    anthropicModel: project.anthropicModel || "claude-haiku-4-5",
-    aiDailyTokenLimit: project.aiDailyTokenLimit ? String(project.aiDailyTokenLimit) : "",
-    aiDailyCallLimit: project.aiDailyCallLimit ? String(project.aiDailyCallLimit) : "",
     projectGuidelines: project.projectGuidelines,
     warRoomLink: project.warRoomLink,
     agentMode: project.agentMode,
@@ -112,7 +148,7 @@ function draftKey(userId: string, projectId?: string): string {
 }
 
 function persistedForm(form: ProjectFormState): PersistedProjectFormState {
-  const { discourseApiKey: _discourseApiKey, anthropicApiKey: _anthropicApiKey, ...rest } = form
+  const { discourseApiKey: _discourseApiKey, ...rest } = form
   return rest
 }
 
@@ -123,18 +159,19 @@ function readDraft(key: string, fallback: ProjectFormState): ProjectFormState {
     if (!raw) return fallback
     const parsed = JSON.parse(raw) as Partial<ProjectSetupDraft>
     if (parsed.version !== 1 || !parsed.form) return fallback
-    return {
-      ...fallback,
-      ...parsed.form,
-      discourseApiKey: "",
-      anthropicApiKey: "",
-    }
+    return { ...fallback, ...parsed.form, discourseApiKey: "" }
   } catch {
     return fallback
   }
 }
 
-function writeDraft(key: string, form: ProjectFormState): void {
+function readDraftStep(key: string): number {
+  if (typeof window === "undefined") return 0
+  const stored = Number(window.localStorage.getItem(`${key}:step`))
+  return Number.isInteger(stored) && stored >= 0 && stored < SETUP_STEPS.length ? stored : 0
+}
+
+function writeDraft(key: string, form: ProjectFormState, step: number): void {
   if (typeof window === "undefined") return
   try {
     const draft: ProjectSetupDraft = {
@@ -143,78 +180,16 @@ function writeDraft(key: string, form: ProjectFormState): void {
       savedAt: new Date().toISOString(),
     }
     window.localStorage.setItem(key, JSON.stringify(draft))
+    window.localStorage.setItem(`${key}:step`, String(step))
   } catch {
-    // Ignore quota/private-mode failures; the form still works in memory.
+    // The setup still works in memory when storage is unavailable.
   }
 }
 
 function clearDraft(key: string): void {
   if (typeof window === "undefined") return
   window.localStorage.removeItem(key)
-}
-
-function GuideItem({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
-  return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border bg-background">
-        {icon}
-      </div>
-      <div className="grid gap-1">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-sm text-muted-foreground">{children}</p>
-      </div>
-    </div>
-  )
-}
-
-function SetupSection({ number, title, description, className = "" }: { number: number; title: string; description: string; className?: string }) {
-  return (
-    <div className={`flex items-start gap-3 border-t pt-6 ${className}`}>
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-foreground text-xs font-semibold text-background">{number}</span>
-      <div>
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{description}</p>
-      </div>
-    </div>
-  )
-}
-
-function OnboardingGuide({ completed }: { completed: boolean[] }) {
-  const progress = completed.filter(Boolean).length
-  return (
-    <Card className="rounded-lg shadow-sm">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle>Setup guide</CardTitle>
-          <Badge variant={progress === completed.length ? "secondary" : "outline"}>{progress} of {completed.length}</Badge>
-        </div>
-        <CardDescription>Find each value and verify the project before enabling automation.</CardDescription>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${(progress / completed.length) * 100}%` }} />
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-4">
-        <GuideItem icon={<IconCheck className="size-4" />} title="Project ID and name">
-          Use the shared Project ID from your team. Every QM on the same project should enter the exact same ID.
-        </GuideItem>
-        <GuideItem icon={<IconExternalLink className="size-4" />} title="Category ID and slug">
-          Open the category in Outlier Community. URLs usually look like /c/category-slug/123: 123 is the ID and category-slug is the slug.
-        </GuideItem>
-        <GuideItem icon={<IconExternalLink className="size-4" />} title="Community channel ID">
-          Open the project chat or channel and copy its numeric channel ID from the URL or channel settings.
-        </GuideItem>
-        <GuideItem icon={<IconShieldCheck className="size-4" />} title="Discourse username">
-          Use your Outlier Community username from your profile or one of your posts, without the @ symbol.
-        </GuideItem>
-        <GuideItem icon={<IconShieldCheck className="size-4" />} title="API keys">
-          Connect Discourse in the new tab or paste a User API Key manually. Claude uses your own QM Anthropic key.
-        </GuideItem>
-        <GuideItem icon={<IconFileText className="size-4" />} title="Project guidelines">
-          Upload the project PDF or paste the current instructions, examples, policies and escalation rules.
-        </GuideItem>
-      </CardContent>
-    </Card>
-  )
+  window.localStorage.removeItem(`${key}:step`)
 }
 
 export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean }) {
@@ -223,21 +198,28 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   const { user, signOut } = useAuth()
   const { currentProject, refreshProjects } = usePlatform()
   const activeProject = forceNew ? null : currentProject
+  const editing = Boolean(activeProject)
+
   const [form, setForm] = useState<ProjectFormState>(DEFAULT_FORM)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [stepDirection, setStepDirection] = useState<"forward" | "back">("forward")
   const [pending, setPending] = useState(false)
   const [connectingDiscourse, setConnectingDiscourse] = useState(false)
+  const [platformGeminiReady, setPlatformGeminiReady] = useState(false)
+  const [geminiModel, setGeminiModel] = useState("Gemini Flash-Lite")
   const [extractingGuidelines, setExtractingGuidelines] = useState(false)
   const [guidelinesFile, setGuidelinesFile] = useState<GuidelinesFileStatus | null>(null)
   const [draggingGuidelines, setDraggingGuidelines] = useState(false)
   const [lookingUpProject, setLookingUpProject] = useState(false)
   const [discourseStatus, setDiscourseStatus] = useState<DiscourseAuthStatus | null>(null)
   const [activeDraftKey, setActiveDraftKey] = useState("")
+  const [categoryUrl, setCategoryUrl] = useState("")
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
-  const guidelinesInputRef = useRef<HTMLInputElement>(null)
-  const consumedGuidelineSuggestion = useRef("")
 
-  const editing = Boolean(activeProject)
+  const guidelinesInputRef = useRef<HTMLInputElement>(null)
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null)
+  const consumedGuidelineSuggestion = useRef("")
 
   useEffect(() => {
     if (!user) return
@@ -253,12 +235,23 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
 
     setForm(draft)
     setActiveDraftKey(key)
+    setCurrentStep(readDraftStep(key))
+    setCategoryUrl(
+      draft.categoryId && draft.categorySlug
+        ? `${draft.communityBaseUrl.replace(/\/$/, "")}/c/${draft.categorySlug}/${draft.categoryId}`
+        : "",
+    )
   }, [activeProject, user])
 
   useEffect(() => {
     if (!activeDraftKey) return
-    writeDraft(activeDraftKey, form)
-  }, [activeDraftKey, form])
+    writeDraft(activeDraftKey, form, currentStep)
+  }, [activeDraftKey, currentStep, form])
+
+  useEffect(() => {
+    stepHeadingRef.current?.focus()
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [currentStep])
 
   useEffect(() => {
     if (!activeDraftKey) return
@@ -270,6 +263,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       ...current,
       projectGuidelines: [current.projectGuidelines.trim(), suggestion].filter(Boolean).join("\n\n"),
     }))
+    setCurrentStep(3)
     setMessage("Knowledge gap draft added. Complete the verified policy before saving.")
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
   }, [activeDraftKey, location.pathname, location.search, location.state, navigate])
@@ -280,52 +274,108 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     const params = new URLSearchParams(location.search)
     const discourse = params.get("discourse")
     const callbackMessage = params.get("message")
-    if (discourse === "connected") setMessage("Discourse connected. You can save the project now.")
-    if (discourse === "error") setError(callbackMessage || "Discourse authorization failed. Please try again.")
+    if (discourse === "connected") {
+      setCurrentStep(2)
+      setMessage("Discourse connected successfully.")
+    }
+    if (discourse === "error") {
+      setCurrentStep(2)
+      setError(callbackMessage || "Discourse authorization failed. Please try again.")
+    }
 
     api.getDiscourseAuthStatus()
       .then((status) => {
         setDiscourseStatus(status)
         if (status.username) {
-          setForm((current) => current.discourseUsername ? current : { ...current, discourseUsername: status.username })
+          setForm((current) => current.discourseUsername
+            ? current
+            : { ...current, discourseUsername: status.username })
         }
+      })
+      .catch(() => undefined)
+    api.getConfig()
+      .then((config) => {
+        setPlatformGeminiReady(config.PLATFORM_GEMINI_CONFIGURED === "true")
+        setGeminiModel(config.GEMINI_MODEL || "Gemini Flash-Lite")
       })
       .catch(() => undefined)
   }, [location.search, user])
 
-  const title = editing ? "Project settings" : "Set up your project"
-  const description = editing
-    ? "Update the active project configuration used by the agent."
-    : "Connect your Outlier community project before using the agent."
+  const discourseConnected = Boolean(discourseStatus?.connected || activeProject?.discourseApiKeyConfigured)
 
-  const apiKeyLabel = useMemo(() => {
-    if (!editing && discourseStatus?.connected) return "Discourse User API key (connected, no manual key needed)"
-    if (!editing) return "Discourse User API key"
-    return activeProject?.discourseApiKeyConfigured
-      ? "Discourse User API key (leave blank to keep current key)"
-      : "Discourse User API key"
-  }, [editing, activeProject, discourseStatus])
-
-  const anthropicApiKeyLabel = useMemo(() => {
-    if (!editing) return "Your Anthropic API key"
-    return activeProject?.anthropicApiKeyConfigured
-      ? "Your Anthropic API key (leave blank to keep current key)"
-      : "Your Anthropic API key"
-  }, [editing, activeProject])
-
-  const setupChecks = useMemo(() => [
+  const completedSteps = useMemo(() => [
     Boolean(form.ownerName.trim() && form.projectName.trim() && form.projectKey.trim()),
-    Boolean(form.categoryId.trim() && form.channelId.trim() && form.discourseUsername.trim()),
-    Boolean((discourseStatus?.connected || activeProject?.discourseApiKeyConfigured || form.discourseApiKey.trim())
-      && (activeProject?.anthropicApiKeyConfigured || form.anthropicApiKey.trim())),
+    Boolean(
+      form.communityBaseUrl.trim()
+      && form.categoryId.trim()
+      && form.channelId.trim()
+      && form.discourseUsername.trim(),
+    ),
+    Boolean(discourseConnected || form.discourseApiKey.trim()),
     form.projectGuidelines.trim().length >= 100,
-    Boolean(form.agentMode && Number.isFinite(Number(form.minConfidence))),
-  ], [activeProject, discourseStatus, form])
+    Boolean(form.agentMode)
+      && Number.isFinite(Number(form.minConfidence))
+      && Number(form.minConfidence) >= 0
+      && Number(form.minConfidence) <= 1,
+  ], [discourseConnected, form])
 
-  const setupProgress = setupChecks.filter(Boolean).length
+  const completedCount = completedSteps.filter(Boolean).length
+  const progress = ((currentStep + 1) / SETUP_STEPS.length) * 100
+  const step = SETUP_STEPS[currentStep]
 
   function update<K extends keyof ProjectFormState>(key: K, value: ProjectFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
+  }
+
+  function validationMessage(stepIndex: number): string {
+    if (stepIndex === 0) {
+      if (!form.ownerName.trim()) return "Add your QM name."
+      if (!form.projectKey.trim()) return "Add the shared Project ID."
+      if (!form.projectName.trim()) return "Add the project name."
+    }
+    if (stepIndex === 1) {
+      if (!form.communityBaseUrl.trim()) return "Add the Community base URL."
+      try {
+        new URL(form.communityBaseUrl)
+      } catch {
+        return "Enter a valid Community base URL."
+      }
+      if (!form.categoryId.trim()) return "Add the Community category ID."
+      if (!form.channelId.trim()) return "Add the Community channel ID."
+      if (!form.discourseUsername.trim()) return "Add your Discourse username."
+    }
+    if (stepIndex === 2) {
+      if (!discourseConnected && !form.discourseApiKey.trim()) {
+        return "Connect Discourse or use the manual User API Key fallback."
+      }
+    }
+    if (stepIndex === 3 && form.projectGuidelines.trim().length < 100) {
+      return "Upload or paste enough project context for the agent to answer safely."
+    }
+    if (stepIndex === 4) {
+      const confidence = Number(form.minConfidence)
+      if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+        return "Choose a confidence value between 0 and 1."
+      }
+    }
+    return ""
+  }
+
+  function goToStep(nextStep: number) {
+    const bounded = Math.max(0, Math.min(SETUP_STEPS.length - 1, nextStep))
+    setStepDirection(bounded >= currentStep ? "forward" : "back")
+    setCurrentStep(bounded)
+    setError("")
+    setMessage("")
+  }
+
+  function continueSetup() {
+    const problem = validationMessage(currentStep)
+    if (problem) {
+      setError(problem)
+      return
+    }
+    goToStep(currentStep + 1)
   }
 
   async function lookupSharedProject() {
@@ -337,7 +387,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     try {
       const { project } = await api.findSharedProject(projectKey)
       if (!project) {
-        setMessage("This is a new Project ID. Complete the project configuration below.")
+        setMessage("New Project ID. You will create its shared configuration.")
         return
       }
       setForm((current) => ({
@@ -354,11 +404,34 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         autoReplyEnabled: project.autoReplyEnabled,
         minConfidence: String(project.minConfidence),
       }))
-      setMessage(`Existing project found: ${project.projectName}. Shared configuration loaded.`)
+      setCategoryUrl(
+        project.categoryId && project.categorySlug
+          ? `${project.communityBaseUrl.replace(/\/$/, "")}/c/${project.categorySlug}/${project.categoryId}`
+          : "",
+      )
+      setMessage(`Found ${project.projectName}. Shared project information is already filled in.`)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLookingUpProject(false)
+    }
+  }
+
+  function extractCategoryUrl() {
+    setError("")
+    try {
+      const parsed = new URL(categoryUrl.trim())
+      const match = parsed.pathname.match(/\/c\/([^/]+)\/(\d+)(?:\/|$)/)
+      if (!match) throw new Error("Category URL not recognized.")
+      setForm((current) => ({
+        ...current,
+        communityBaseUrl: parsed.origin,
+        categorySlug: decodeURIComponent(match[1]),
+        categoryId: match[2],
+      }))
+      setMessage("Category ID and slug extracted from the URL.")
+    } catch {
+      setError("Paste a category URL like https://community.outlier.ai/c/category-name/123.")
     }
   }
 
@@ -402,7 +475,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         chunks: result.chunks,
         warnings: result.warnings,
       })
-      setMessage(`Project guidelines extracted from ${file.name}.`)
+      setMessage(`Guidelines extracted from ${file.name}.`)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -430,19 +503,13 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     setMessage("Project guidelines removed.")
   }
 
-  function formatFileSize(bytes: number): string {
-    return bytes >= 1024 * 1024
-      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-      : `${Math.max(1, Math.round(bytes / 1024))} KB`
-  }
-
   async function connectDiscourse() {
     const authWindow = window.open("about:blank", "_blank")
     if (authWindow) {
       try {
         authWindow.document.title = "Connecting Discourse"
       } catch {
-        // Some browsers restrict access immediately; navigation still works.
+        // Navigation still works when the browser restricts access to the new tab.
       }
     }
 
@@ -454,7 +521,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         projectId: activeProject?.id,
         returnTo: location.pathname,
       })
-      setMessage("Authorization opened in a new tab. If it does not connect automatically, paste your User API Key below.")
+      setMessage("Authorization opened in a new tab. Return here when Community confirms access.")
       if (authWindow) {
         authWindow.location.href = result.authorizationUrl
       } else {
@@ -468,13 +535,14 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     }
   }
 
-  function optionalNumber(value: string): number | null {
-    const trimmed = value.trim()
-    return trimmed ? Number(trimmed) : null
-  }
+  async function submit() {
+    const firstInvalidStep = SETUP_STEPS.findIndex((_, index) => Boolean(validationMessage(index)))
+    if (firstInvalidStep >= 0) {
+      goToStep(firstInvalidStep)
+      setError(validationMessage(firstInvalidStep))
+      return
+    }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
     setPending(true)
     setError("")
     setMessage("")
@@ -490,13 +558,11 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       discourseUsername: form.discourseUsername,
       discourseApiClientId: form.discourseApiClientId,
       discourseApiKey: form.discourseApiKey || undefined,
-      anthropicApiKey: form.anthropicApiKey || undefined,
-      anthropicModel: form.anthropicModel,
-      aiDailyTokenLimit: optionalNumber(form.aiDailyTokenLimit),
-      aiDailyCallLimit: optionalNumber(form.aiDailyCallLimit),
       projectGuidelines: form.projectGuidelines,
       guidelinesSourceName: guidelinesFile?.name,
-      guidelinesChangeSummary: guidelinesFile ? `Uploaded ${guidelinesFile.name}.` : 'Updated guidelines in the editor.',
+      guidelinesChangeSummary: guidelinesFile
+        ? `Uploaded ${guidelinesFile.name}.`
+        : "Updated guidelines in the editor.",
       warRoomLink: form.warRoomLink,
       agentMode: form.agentMode,
       autoReplyEnabled: form.autoReplyEnabled,
@@ -510,7 +576,6 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       if (activeDraftKey) clearDraft(activeDraftKey)
       projectSelection.setProjectId(result.project.id)
       await refreshProjects()
-      setMessage("Project saved.")
       navigate("/", { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -519,358 +584,240 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     }
   }
 
+  function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (currentStep < SETUP_STEPS.length - 1) {
+      continueSetup()
+      return
+    }
+    void submit()
+  }
+
+  let stepContent
+  if (currentStep === 0) {
+    stepContent = (
+      <IdentityStep
+        form={form}
+        update={update}
+        editing={editing}
+        lookingUpProject={lookingUpProject}
+        onLookupProject={() => void lookupSharedProject()}
+      />
+    )
+  } else if (currentStep === 1) {
+    stepContent = (
+      <CommunityStep
+        form={form}
+        update={update}
+        categoryUrl={categoryUrl}
+        onCategoryUrlChange={setCategoryUrl}
+        onExtractCategory={extractCategoryUrl}
+      />
+    )
+  } else if (currentStep === 2) {
+    stepContent = (
+      <ConnectionsStep
+        form={form}
+        update={update}
+        discourseConnected={discourseConnected}
+        discourseStatus={discourseStatus}
+        connectingDiscourse={connectingDiscourse}
+        onConnectDiscourse={() => void connectDiscourse()}
+        platformGeminiReady={platformGeminiReady || Boolean(activeProject?.aiProviderConfigured)}
+        geminiModel={geminiModel || activeProject?.aiModel || ""}
+      />
+    )
+  } else if (currentStep === 3) {
+    stepContent = (
+      <KnowledgeStep
+        form={form}
+        update={update}
+        guidelinesFile={guidelinesFile}
+        extractingGuidelines={extractingGuidelines}
+        draggingGuidelines={draggingGuidelines}
+        guidelinesInputRef={guidelinesInputRef}
+        onDraggingChange={setDraggingGuidelines}
+        onDropFile={dropGuidelinesFile}
+        onReadFile={readGuidelinesFile}
+        onClearFile={clearGuidelinesFile}
+      />
+    )
+  } else {
+    stepContent = (
+      <AutomationStep
+        form={form}
+        update={update}
+        completedCount={completedCount}
+        totalSteps={SETUP_STEPS.length}
+        discourseConnected={discourseConnected}
+      />
+    )
+  }
+
   return (
-    <div className={editing ? "bg-background px-4 md:px-6" : "min-h-screen bg-background px-4 py-8 md:px-8"}>
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
-            <p className="text-sm text-muted-foreground">{description}</p>
+    <div className={cn(
+      "bg-background px-4 pb-24 md:px-6 sm:pb-0",
+      editing ? "" : "min-h-screen py-5 sm:py-8",
+    )}>
+      <div className="mx-auto w-full max-w-6xl">
+        <header className="mb-6 flex items-center justify-between gap-4 border-b pb-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <ShieldCheck className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">Community Agent</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {editing ? `Settings for ${activeProject?.projectName}` : "Project setup"}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={setupProgress === setupChecks.length ? "secondary" : "outline"}>{setupProgress} of {setupChecks.length} ready</Badge>
-            {!editing ? <Button type="button" variant="outline" onClick={() => void signOut()}>Sign out</Button> : null}
+          <div className="flex items-center gap-3">
+            <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+              <Check className="size-3.5 text-success" />
+              Draft saved automatically
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => editing || forceNew ? navigate(-1) : void signOut()}
+            >
+              {editing || forceNew ? <ArrowLeft /> : <LogOut />}
+              {editing || forceNew ? "Exit setup" : "Sign out"}
+            </Button>
+          </div>
+        </header>
+
+        <div className="mb-5 lg:hidden">
+          <div className="mb-2 flex items-center justify-between text-xs">
+            <span className="font-medium">Step {currentStep + 1} of {SETUP_STEPS.length}</span>
+            <span className="text-muted-foreground">{step.label}</span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
         </div>
 
-        <div className={editing ? "grid gap-6" : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_480px]"}>
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle>Project configuration</CardTitle>
-            <CardDescription>
-              Complete the five sections below. Drafts are saved locally as you work, but API keys are never stored in the browser draft.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="grid gap-6" onSubmit={submit}>
-              <div className="flex flex-col gap-3 rounded-md border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-start gap-3">
-                  <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md border bg-background">
-                    <IconShieldCheck className="size-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">
-                      {discourseStatus?.connected || activeProject?.discourseApiKeyConfigured
-                        ? "Discourse is connected"
-                        : "Connect Discourse"}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {discourseStatus?.username
-                        ? `Authorized as ${discourseStatus.username}. The raw User API Key is stored server-side only.`
-                        : "Authorize DailyThreadBot in Outlier Community, or paste your User API Key manually below."}
-                    </p>
-                  </div>
-                </div>
-                <Button type="button" variant="outline" onClick={connectDiscourse} disabled={connectingDiscourse}>
-                  {connectingDiscourse ? <IconLoader2 className="size-4 animate-spin" /> : <IconExternalLink className="size-4" />}
-                  Connect Discourse
-                </Button>
-              </div>
-
-              <SetupSection number={1} title="Project identity" description="Name the project and use the exact shared Project ID used by the other QMs." />
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="ownerName">QM name</Label>
-                  <Input
-                    id="ownerName"
-                    value={form.ownerName}
-                    onChange={(event) => update("ownerName", event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="projectName">Project name</Label>
-                  <Input
-                    id="projectName"
-                    value={form.projectName}
-                    onChange={(event) => update("projectName", event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="projectKey">Project ID</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="projectKey"
-                      value={form.projectKey}
-                      onChange={(event) => update("projectKey", event.target.value)}
-                      placeholder="project-id-from-your-team"
-                      required
-                    />
-                    {!editing ? (
-                      <Button type="button" variant="outline" onClick={() => void lookupSharedProject()} disabled={lookingUpProject || !form.projectKey.trim()}>
-                        {lookingUpProject ? <IconLoader2 className="animate-spin" /> : <IconSearch />}
-                        Find
-                      </Button>
-                    ) : null}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Use the same ID as the other QMs to load and share that project.
-                  </p>
-                </div>
-                <SetupSection className="md:col-span-2" number={2} title="Community target" description="Identify the category and chat channel this project owns in Outlier Community." />
-                <div className="grid gap-2">
-                  <Label htmlFor="communityBaseUrl">Community base URL</Label>
-                  <Input
-                    id="communityBaseUrl"
-                    value={form.communityBaseUrl}
-                    onChange={(event) => update("communityBaseUrl", event.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Keep the default unless your project uses a different Community host.
-                  </p>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="categoryId">Category ID</Label>
-                  <Input
-                    id="categoryId"
-                    value={form.categoryId}
-                    onChange={(event) => update("categoryId", event.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    From the category URL, usually the final number after /c/category-slug/.
-                  </p>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="categorySlug">Category slug</Label>
-                  <Input
-                    id="categorySlug"
-                    value={form.categorySlug}
-                    onChange={(event) => update("categorySlug", event.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    From the same category URL, usually the text after /c/.
-                  </p>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="channelId">Community channel ID</Label>
-                  <Input
-                    id="channelId"
-                    value={form.channelId}
-                    onChange={(event) => update("channelId", event.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Open the project chat or channel and copy the numeric ID from the URL or settings.
-                  </p>
-                </div>
-                <SetupSection className="md:col-span-2" number={3} title="Personal connections" description="Connect your own Community and Claude credentials. These are private to your QM account." />
-                <div className="grid gap-2">
-                  <Label htmlFor="discourseUsername">Discourse username</Label>
-                  <Input
-                    id="discourseUsername"
-                    value={form.discourseUsername}
-                    onChange={(event) => update("discourseUsername", event.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Your Outlier Community username, without the @ symbol.
-                  </p>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="discourseApiClientId">Discourse API client ID</Label>
-                  <Input
-                    id="discourseApiClientId"
-                    value={form.discourseApiClientId}
-                    onChange={(event) => update("discourseApiClientId", event.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Usually daily-thread-bot unless your team configured a different client ID.
-                  </p>
-                </div>
-                <div className="grid gap-2 md:col-span-2">
-                  <Label htmlFor="discourseApiKey">{apiKeyLabel}</Label>
-                  <Input
-                    id="discourseApiKey"
-                    type="password"
-                    value={form.discourseApiKey}
-                    onChange={(event) => update("discourseApiKey", event.target.value)}
-                    required={!editing && !discourseStatus?.connected}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Only needed if Connect Discourse is not already connected. Stored encrypted server-side.
-                  </p>
-                </div>
-                <div className="grid gap-2 md:col-span-2">
-                  <Label htmlFor="anthropicApiKey">{anthropicApiKeyLabel}</Label>
-                  <Input
-                    id="anthropicApiKey"
-                    type="password"
-                    value={form.anthropicApiKey}
-                    onChange={(event) => update("anthropicApiKey", event.target.value)}
-                    placeholder="sk-ant-..."
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Stored encrypted. Claude features use your QM key across your projects, never another QM&apos;s key.
-                  </p>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="anthropicModel">Claude model</Label>
-                  <Input
-                    id="anthropicModel"
-                    value={form.anthropicModel}
-                    onChange={(event) => update("anthropicModel", event.target.value)}
-                    placeholder="claude-haiku-4-5"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="aiDailyTokenLimit">Daily token limit</Label>
-                  <Input
-                    id="aiDailyTokenLimit"
-                    type="number"
-                    min="1"
-                    step="1000"
-                    value={form.aiDailyTokenLimit}
-                    onChange={(event) => update("aiDailyTokenLimit", event.target.value)}
-                    placeholder="50000"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="aiDailyCallLimit">Daily call limit</Label>
-                  <Input
-                    id="aiDailyCallLimit"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={form.aiDailyCallLimit}
-                    onChange={(event) => update("aiDailyCallLimit", event.target.value)}
-                    placeholder="100"
-                  />
-                </div>
-                <SetupSection className="md:col-span-2" number={4} title="Project context" description="Add the trusted links and source material the agent should use when answering." />
-                <div className="grid gap-2 md:col-span-2">
-                  <Label htmlFor="warRoomLink">War Room link</Label>
-                  <Input
-                    id="warRoomLink"
-                    value={form.warRoomLink}
-                    onChange={(event) => update("warRoomLink", event.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <div className="grid gap-1">
-                  <Label htmlFor="projectGuidelinesPdf">Project guidelines</Label>
-                  <p className="text-sm text-muted-foreground">The agent uses the extracted PDF text as project context.</p>
-                </div>
-
-                <div
-                  className={`flex min-h-36 flex-col items-center justify-center gap-3 rounded-md border border-dashed px-6 py-5 text-center transition-colors ${draggingGuidelines ? "border-primary bg-primary/5" : "border-border bg-muted/20"}`}
-                  onDragEnter={(event) => { event.preventDefault(); setDraggingGuidelines(true) }}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDraggingGuidelines(false) }}
-                  onDrop={dropGuidelinesFile}
+        <div className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <nav className="sticky top-6 hidden lg:grid lg:gap-1" aria-label="Project setup steps">
+            {SETUP_STEPS.map((item, index) => {
+              const Icon = item.icon
+              const active = index === currentStep
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={cn(
+                    "flex min-h-12 items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors",
+                    active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                  onClick={() => goToStep(index)}
+                  aria-current={active ? "step" : undefined}
                 >
-                  {extractingGuidelines ? <IconLoader2 className="size-8 animate-spin text-primary" /> : <IconFileTypePdf className="size-8 text-primary" />}
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{extractingGuidelines ? "Extracting PDF text" : "Drop the guidelines PDF here"}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">PDF with selectable text, up to 12 MB</p>
-                  </div>
-                  <Button type="button" variant="outline" onClick={() => guidelinesInputRef.current?.click()} disabled={extractingGuidelines}>
-                    <IconUpload />
-                    {guidelinesFile ? "Replace PDF" : "Choose PDF"}
-                  </Button>
-                  <input
-                    ref={guidelinesInputRef}
-                    id="projectGuidelinesPdf"
-                    className="sr-only"
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={readGuidelinesFile}
-                    disabled={extractingGuidelines}
-                  />
-                </div>
-
-                {guidelinesFile ? (
-                  <div className="flex min-w-0 items-center gap-3 rounded-md border bg-background px-3 py-2.5">
-                    <IconFileTypePdf className="size-5 shrink-0 text-primary" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">{guidelinesFile.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFileSize(guidelinesFile.size)}, {guidelinesFile.pages} pages, {guidelinesFile.tables} tables, {guidelinesFile.chunks} context sections
-                      </p>
-                      {guidelinesFile.warnings.length ? <p className="mt-1 text-xs text-warning">{guidelinesFile.warnings[0]}</p> : null}
-                    </div>
-                    <Button type="button" size="icon" variant="ghost" onClick={clearGuidelinesFile} title="Remove guidelines">
-                      <IconX />
-                    </Button>
-                  </div>
-                ) : null}
-
-                <div className="flex items-center justify-between gap-3">
-                  <Label htmlFor="projectGuidelines">Extracted agent context</Label>
-                  {form.projectGuidelines && !guidelinesFile ? (
-                    <span className="text-xs text-muted-foreground">{form.projectGuidelines.length.toLocaleString()} characters</span>
-                  ) : null}
-                </div>
-                <Textarea
-                  id="projectGuidelines"
-                  className="min-h-64 font-mono text-sm"
-                  value={form.projectGuidelines}
-                  onChange={(event) => update("projectGuidelines", event.target.value)}
-                  placeholder="Extracted PDF content appears here. You can also paste or edit project context directly."
+                  <span className={cn(
+                    "flex size-7 shrink-0 items-center justify-center rounded-md border text-xs font-semibold",
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : completedSteps[index]
+                        ? "border-success/30 bg-success/10 text-success"
+                        : "bg-background",
+                  )}>
+                    {completedSteps[index] && !active ? <Check className="size-3.5" /> : <Icon className="size-3.5" />}
+                  </span>
+                  <span className="truncate">{item.label}</span>
+                </button>
+              )
+            })}
+            <div className="mt-4 border-t px-3 pt-4">
+              <p className="text-xs text-muted-foreground">{completedCount} of {SETUP_STEPS.length} sections ready</p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-success transition-all duration-300"
+                  style={{ width: `${(completedCount / SETUP_STEPS.length) * 100}%` }}
                 />
               </div>
+            </div>
+          </nav>
 
-              <SetupSection number={5} title="Automation policy" description="Choose how much autonomy the agent has and the minimum confidence required." />
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="grid gap-2">
-                  <Label htmlFor="agentMode">Agent mode</Label>
-                  <Select value={form.agentMode} onValueChange={(value) => update("agentMode", value as ProjectFormState["agentMode"])}>
-                    <SelectTrigger id="agentMode"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="supervised">Supervised</SelectItem>
-                      <SelectItem value="draft">Draft only</SelectItem>
-                      <SelectItem value="auto">Automatic replies</SelectItem>
-                    </SelectContent>
-                  </Select>
+          <form onSubmit={handleFormSubmit}>
+            <Card className="min-h-[600px] py-0">
+              <CardHeader className="border-b bg-muted/25 px-5 py-5 sm:px-8 sm:py-7">
+                <div className="flex items-start gap-4">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-background text-primary shadow-xs">
+                    <step.icon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-muted-foreground">{step.eyebrow}</p>
+                    <CardTitle
+                      ref={stepHeadingRef}
+                      tabIndex={-1}
+                      className="mt-1 text-xl leading-tight outline-none sm:text-2xl"
+                    >
+                      {step.title}
+                    </CardTitle>
+                    <CardDescription className="mt-2 max-w-2xl leading-6">
+                      {step.description}
+                    </CardDescription>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="minConfidence">Minimum confidence</Label>
-                  <Input
-                    id="minConfidence"
-                    type="number"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={form.minConfidence}
-                    onChange={(event) => update("minConfidence", event.target.value)}
-                  />
+              </CardHeader>
+
+              <CardContent className="flex-1 px-5 py-6 sm:px-8 sm:py-8">
+                {error ? (
+                  <Alert className="mb-5" variant="destructive">
+                    <CircleAlert className="absolute left-4 top-3.5 size-4" />
+                    <div className="pl-6">
+                      <AlertTitle>Check this section</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </div>
+                  </Alert>
+                ) : null}
+                {message ? (
+                  <Alert className="mb-5 border-success/30 bg-success/5 text-foreground">
+                    <Check className="absolute left-4 top-3.5 size-4 text-success" />
+                    <div className="pl-6">
+                      <AlertTitle>Done</AlertTitle>
+                      <AlertDescription>{message}</AlertDescription>
+                    </div>
+                  </Alert>
+                ) : null}
+
+                <div
+                  key={`${currentStep}-${stepDirection}`}
+                  className={cn(
+                    "onboarding-step-enter",
+                    stepDirection === "back" && "onboarding-step-enter-back",
+                  )}
+                >
+                  {stepContent}
                 </div>
-                <label className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
-                  <Checkbox
-                    checked={form.autoReplyEnabled}
-                    onCheckedChange={(checked) => update("autoReplyEnabled", checked === true)}
-                  />
-                  Enable automatic replies
-                </label>
-              </div>
+              </CardContent>
 
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
-              {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
-
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <Button type="button" variant="outline" onClick={() => void refreshProjects()}>
-                  <IconRefresh className="size-4" />
-                  Refresh
+              <CardFooter className="fixed inset-x-0 bottom-0 z-50 justify-between gap-3 border-t bg-background px-5 py-4 shadow-[0_-4px_12px_hsl(222_47%_11%/0.06)] sm:sticky sm:inset-x-auto sm:rounded-b-lg sm:px-8">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => goToStep(currentStep - 1)}
+                  disabled={currentStep === 0 || pending}
+                >
+                  <ArrowLeft />
+                  Back
                 </Button>
-                <Button type="submit" disabled={pending}>
-                  {pending ? <IconLoader2 className="size-4 animate-spin" /> : null}
-                  Save project
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-        {!editing ? (
-          <aside className="lg:sticky lg:top-6 lg:self-start">
-            <OnboardingGuide completed={setupChecks} />
-          </aside>
-        ) : null}
+                {currentStep < SETUP_STEPS.length - 1 ? (
+                  <Button type="submit">
+                    Continue
+                    <ArrowRight />
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={pending}>
+                    {pending ? <LoaderCircle className="animate-spin" /> : <Check />}
+                    {editing ? "Save changes" : "Create project"}
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          </form>
         </div>
       </div>
     </div>

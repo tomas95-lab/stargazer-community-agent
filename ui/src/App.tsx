@@ -121,7 +121,7 @@ function WorkspaceRoutes() {
               {currentProject?.settings?.demoMode === true ? (
                 <div className="mx-4 flex items-start gap-3 rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm lg:mx-6">
                   <FlaskConical className="mt-0.5 size-4 shrink-0 text-primary" />
-                  <div><p className="font-medium">Isolated Demo Mode</p><p className="mt-0.5 text-xs text-muted-foreground">Community members, messages, channels, and posts are simulated. Claude is live, while every external Discourse write is blocked.</p></div>
+                  <div><p className="font-medium">Isolated Demo Mode</p><p className="mt-0.5 text-xs text-muted-foreground">Community members, messages, channels, and posts are simulated. Gemini uses a strict demo allowance from the managed platform quota, while every external Discourse write is blocked.</p></div>
                 </div>
               ) : null}
               <Suspense fallback={<PageLoading />}>

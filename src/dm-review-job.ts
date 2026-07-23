@@ -13,7 +13,7 @@ import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
 import { evaluateSupportMessage } from './community-agent';
 import { loadProjectLinks } from './links';
-import { appDateParts, appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
+import { appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
 import { assertProjectAutomationActive } from './project-context';
 import { appendDemoDmReply, demoDmMessages, demoDmReview } from './demo-mode';
 import { isDemoMode } from './project-context';
@@ -148,10 +148,6 @@ interface DmAutoReplyState {
     channelId: number;
     lastIncomingMessageId: number;
   }>;
-}
-
-function utcDateParts(date: Date): { year: number; month: number; day: number; label: string } {
-  return appDateParts(date);
 }
 
 export function getUtcDayWindow(now = new Date()): DmReviewWindow & { start: Date; end: Date } {
@@ -644,7 +640,7 @@ async function evaluateDirectMessageThread(
     await appendOperationLog({
       action: 'dm_draft',
       status: action === 'reply' ? 'success' : action === 'human' ? 'skipped' : 'success',
-      message: `Claude DM draft evaluated channel ${channelId}.`,
+      message: `AI DM draft evaluated channel ${channelId}.`,
       metadata: {
         channelId,
         action,
@@ -660,7 +656,7 @@ async function evaluateDirectMessageThread(
     action,
     confidence: deterministicDecision.confidence,
     reason: action === 'ignore' && deterministicDecision.action === 'react'
-      ? 'Claude suggested a reaction, but DM reactions are not supported by this workflow.'
+      ? 'The AI suggested a reaction, but DM reactions are not supported by this workflow.'
       : deterministicDecision.reason,
     reply: action === 'reply' ? deterministicDecision.reply : '',
     needsHuman: action === 'human',

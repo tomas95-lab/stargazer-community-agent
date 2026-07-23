@@ -1,7 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { BotConfig } from '../src/config';
-import { deleteDataPath, readDataJSON, writeDataJSON } from '../src/data-store';
+import { platformGeminiConfigured } from '../src/ai-runtime';
+import { readDataJSON, writeDataJSON } from '../src/data-store';
 import {
   canonicalProjectId,
   isLegacyProjectId,
@@ -60,8 +61,6 @@ export interface QmProjectInput {
   discourseUsername?: string;
   discourseApiClientId?: string;
   discourseApiKey?: string;
-  anthropicApiKey?: string;
-  anthropicModel?: string;
   aiDailyTokenLimit?: number | null;
   aiDailyCallLimit?: number | null;
   projectGuidelines?: string;
@@ -90,8 +89,9 @@ export interface QmProjectPublic {
   discourseUsername: string;
   discourseApiClientId: string;
   discourseApiKeyConfigured: boolean;
-  anthropicApiKeyConfigured: boolean;
-  anthropicModel: string;
+  aiProviderConfigured: boolean;
+  aiProvider: 'gemini';
+  aiModel: string;
   aiDailyTokenLimit: number | null;
   aiDailyCallLimit: number | null;
   projectGuidelines: string;
@@ -305,10 +305,6 @@ function positiveIntOrNull(value: unknown, fallback: number | null = null): numb
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
-function anthropicModel(value: unknown, fallback = 'claude-haiku-4-5'): string {
-  return text(value, fallback) || fallback;
-}
-
 function envFallback(key: string, fallback = ''): string {
   return env(key) || fallback;
 }
@@ -380,6 +376,7 @@ export async function getUserFromAccessToken(accessToken: string): Promise<Authe
 }
 
 function publicProject(row: QmProjectRow, aiKey?: UserAiKeyRow | null): QmProjectPublic {
+  const gemini = userGeminiStatus(aiKey);
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -394,8 +391,9 @@ function publicProject(row: QmProjectRow, aiKey?: UserAiKeyRow | null): QmProjec
     discourseUsername: row.discourse_username,
     discourseApiClientId: row.discourse_api_client_id,
     discourseApiKeyConfigured: Boolean(row.discourse_api_key_ciphertext),
-    anthropicApiKeyConfigured: Boolean(aiKey?.anthropic_api_key_ciphertext),
-    anthropicModel: anthropicModel(aiKey?.anthropic_model),
+    aiProviderConfigured: platformGeminiConfigured() || gemini.connected,
+    aiProvider: 'gemini',
+    aiModel: gemini.model,
     aiDailyTokenLimit: positiveIntOrNull(aiKey?.ai_daily_token_limit),
     aiDailyCallLimit: positiveIntOrNull(aiKey?.ai_daily_call_limit),
     projectGuidelines: row.project_guidelines,
@@ -483,6 +481,8 @@ export interface UserAiKeyRow {
   owner_id: string;
   anthropic_api_key_ciphertext: string;
   anthropic_model: string;
+  gemini_api_key_ciphertext?: string;
+  gemini_model?: string;
   ai_daily_token_limit: number | null;
   ai_daily_call_limit: number | null;
   created_at: string;
@@ -502,29 +502,64 @@ export async function getUserAiKey(userId: string): Promise<UserAiKeyRow | null>
 
 function hasAiInput(input: QmProjectInput): boolean {
   return Boolean(
-    text(input.anthropicApiKey)
-    || input.anthropicModel !== undefined
-    || input.aiDailyTokenLimit !== undefined
+    input.aiDailyTokenLimit !== undefined
     || input.aiDailyCallLimit !== undefined
   );
+}
+
+export interface UserGeminiStatus {
+  connected: boolean;
+  provider: 'gemini';
+  model: string;
+}
+
+const DEFAULT_USER_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+
+function currentGeminiModel(value: unknown): string {
+  const configured = text(value);
+  if (!configured || configured === 'gemini-2.5-flash-lite') {
+    const envModel = text(process.env.GEMINI_MODEL);
+    return envModel && envModel !== 'gemini-2.5-flash-lite' ? envModel : DEFAULT_USER_GEMINI_MODEL;
+  }
+  return configured;
+}
+
+function isMissingGeminiColumn(message: string): boolean {
+  return /gemini_(api_key_ciphertext|model)/i.test(message)
+    && /(column|schema cache|could not find)/i.test(message);
+}
+
+function geminiCiphertext(row?: UserAiKeyRow | null): string {
+  const dedicated = text(row?.gemini_api_key_ciphertext);
+  if (dedicated) return dedicated;
+  const legacyModel = text(row?.anthropic_model);
+  return legacyModel.startsWith('gemini-') ? text(row?.anthropic_api_key_ciphertext) : '';
+}
+
+export function userGeminiStatus(row?: UserAiKeyRow | null): UserGeminiStatus {
+  return {
+    connected: Boolean(geminiCiphertext(row)),
+    provider: 'gemini',
+    model: currentGeminiModel(
+      text(row?.gemini_model)
+      || (text(row?.anthropic_model).startsWith('gemini-') ? text(row?.anthropic_model) : ''),
+    ),
+  };
+}
+
+export function decryptUserGeminiApiKey(row?: UserAiKeyRow | null): string {
+  return decryptSecret(geminiCiphertext(row));
 }
 
 export async function saveUserAiKey(userId: string, input: QmProjectInput): Promise<UserAiKeyRow | null> {
   const existing = await getUserAiKey(userId);
   if (!existing && !hasAiInput(input)) return null;
 
-  const anthropicApiKey = text(input.anthropicApiKey);
   const payload: Partial<UserAiKeyRow> & { owner_id: string } = {
     owner_id: userId,
-    anthropic_model: anthropicModel(input.anthropicModel, existing?.anthropic_model || 'claude-haiku-4-5'),
     ai_daily_token_limit: positiveIntOrNull(input.aiDailyTokenLimit, existing?.ai_daily_token_limit ?? null),
     ai_daily_call_limit: positiveIntOrNull(input.aiDailyCallLimit, existing?.ai_daily_call_limit ?? null),
     updated_at: new Date().toISOString(),
-    ...(anthropicApiKey
-      ? { anthropic_api_key_ciphertext: encryptSecret(anthropicApiKey) }
-      : existing
-        ? {}
-        : { anthropic_api_key_ciphertext: '' }),
   };
 
   const { data, error } = await getSupabaseAdmin()
@@ -535,6 +570,73 @@ export async function saveUserAiKey(userId: string, input: QmProjectInput): Prom
 
   if (error) throw new Error(error.message);
   return data as UserAiKeyRow;
+}
+
+export async function saveUserGeminiKey(
+  userId: string,
+  apiKey: string,
+  model = DEFAULT_USER_GEMINI_MODEL,
+): Promise<UserAiKeyRow> {
+  const key = text(apiKey);
+  if (!key) throw new Error('Gemini API key is required.');
+  const encryptedKey = encryptSecret(key);
+  const now = new Date().toISOString();
+  const modernPayload = {
+    owner_id: userId,
+    gemini_api_key_ciphertext: encryptedKey,
+    gemini_model: currentGeminiModel(model),
+    updated_at: now,
+  };
+  const modern = await getSupabaseAdmin()
+    .from(USER_AI_KEYS_TABLE)
+    .upsert(modernPayload, { onConflict: 'owner_id' })
+    .select('*')
+    .single();
+  if (!modern.error) return modern.data as UserAiKeyRow;
+  if (!isMissingGeminiColumn(modern.error.message)) throw new Error(modern.error.message);
+
+  const legacy = await getSupabaseAdmin()
+    .from(USER_AI_KEYS_TABLE)
+    .upsert({
+      owner_id: userId,
+      anthropic_api_key_ciphertext: encryptedKey,
+      anthropic_model: modernPayload.gemini_model,
+      updated_at: now,
+    }, { onConflict: 'owner_id' })
+    .select('*')
+    .single();
+  if (legacy.error) throw new Error(legacy.error.message);
+  return legacy.data as UserAiKeyRow;
+}
+
+export async function disconnectUserGeminiKey(userId: string): Promise<UserAiKeyRow | null> {
+  const modern = await getSupabaseAdmin()
+    .from(USER_AI_KEYS_TABLE)
+    .update({
+      gemini_api_key_ciphertext: '',
+      gemini_model: text(process.env.GEMINI_MODEL, DEFAULT_USER_GEMINI_MODEL),
+      anthropic_api_key_ciphertext: '',
+      anthropic_model: 'legacy-disabled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('owner_id', userId)
+    .select('*')
+    .maybeSingle();
+  if (!modern.error) return modern.data as UserAiKeyRow | null;
+  if (!isMissingGeminiColumn(modern.error.message)) throw new Error(modern.error.message);
+
+  const legacy = await getSupabaseAdmin()
+    .from(USER_AI_KEYS_TABLE)
+    .update({
+      anthropic_api_key_ciphertext: '',
+      anthropic_model: 'legacy-disabled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('owner_id', userId)
+    .select('*')
+    .maybeSingle();
+  if (legacy.error) throw new Error(legacy.error.message);
+  return legacy.data as UserAiKeyRow | null;
 }
 
 function normalizeProjectInput(
@@ -1027,17 +1129,6 @@ async function countProjectConnections(projectKey: string): Promise<number> {
   }
 }
 
-async function deleteProjectFiles(projectKey: string, projectName: string): Promise<boolean> {
-  const key = canonicalProjectId(projectKey);
-  if (!key || isLegacyProjectId(key)) return false;
-
-  await Promise.all([
-    deleteDataPath(`data/projects/${key}`, `delete ${projectName} project data`),
-    deleteDataPath(`output/projects/${key}`, `delete ${projectName} project output`),
-  ]);
-  return true;
-}
-
 export async function deleteUserProject(userId: string, projectId: string): Promise<DeletedProjectResult> {
   const existing = await getUserProject(userId, projectId);
   if (!existing) throw new Error('Project not found.');
@@ -1177,10 +1268,8 @@ export function projectRuntimeContext(
 ): ProjectContext {
   const projectLinks: ProjectContext['projectLinks'] = {};
   if (text(row.war_room_link)) projectLinks.warRoom = text(row.war_room_link);
-  const anthropicApiKey = text(aiKey?.anthropic_api_key_ciphertext)
-    ? decryptSecret(aiKey!.anthropic_api_key_ciphertext)
-    : '';
   const demoMode = row.settings?.demoMode === true;
+  const gemini = userGeminiStatus(aiKey);
 
   return {
     projectId: projectKeyFromRow(row),
@@ -1201,11 +1290,12 @@ export function projectRuntimeContext(
     },
     botConfig: projectBotConfig(row, discourseKey),
     aiConfig: {
-      anthropicApiKey,
-      anthropicModel: anthropicModel(aiKey?.anthropic_model),
+      provider: 'gemini',
+      apiKey: decryptUserGeminiApiKey(aiKey),
+      model: gemini.model,
       dailyTokenLimit: positiveIntOrNull(aiKey?.ai_daily_token_limit),
       dailyCallLimit: positiveIntOrNull(aiKey?.ai_daily_call_limit),
-      enforceLimits: demoMode || row.settings?.aiLimitsEnforced === true,
+      enforceLimits: true,
     },
     ...(text(row.project_guidelines) ? { projectGuidelines: text(row.project_guidelines) } : {}),
     ...(Object.keys(projectLinks).length > 0 ? { projectLinks } : {}),

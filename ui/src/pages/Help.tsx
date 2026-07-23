@@ -22,7 +22,7 @@ import { navigationGroups, onboardingChecklist, workspaceGuides } from "@/lib/wo
 const workflows = [
   {
     title: "Set up a project",
-    description: "Connect Community, add your AI key, and give the agent reliable project context.",
+    description: "Connect Community and give the included Gemini agent reliable project context.",
     href: "/project",
     label: "Open project setup",
     icon: Settings,
@@ -51,7 +51,7 @@ const troubleshooting = [
   },
   {
     issue: "The agent did not reply",
-    checks: ["Confirm Discourse and Claude are connected.", "Check the response mode and confidence threshold.", "Open Review Queue for a human-review decision."],
+    checks: ["Confirm Discourse and the platform AI service are ready.", "Check the response mode and confidence threshold.", "Open Review Queue for a human-review decision."],
     href: "/review",
   },
   {
@@ -61,7 +61,7 @@ const troubleshooting = [
   },
   {
     issue: "A teammate sees different project data",
-    checks: ["Compare the exact Project ID.", "Confirm both QMs selected the same project.", "Remember that personal API keys are intentionally separate."],
+    checks: ["Compare the exact Project ID.", "Confirm both QMs selected the same project.", "Remember that each QM keeps separate Discourse access."],
     href: "/projects",
   },
 ]
@@ -81,7 +81,7 @@ export default function Help() {
 
   const readiness = [
     Boolean(currentProject?.categoryId && currentProject.channelId),
-    Boolean(currentProject?.discourseApiKeyConfigured && currentProject?.anthropicApiKeyConfigured),
+    Boolean(currentProject?.discourseApiKeyConfigured && currentProject?.aiProviderConfigured),
     Boolean(currentProject?.projectGuidelinesCharacters),
     Boolean(currentProject?.agentMode && Number.isFinite(currentProject.minConfidence)),
   ]
@@ -179,8 +179,9 @@ export default function Help() {
               </p>
               <Separator className="my-5" />
               <div className="space-y-3 text-sm">
-                <div className="flex gap-2.5"><KeyRound className="mt-0.5 size-4 shrink-0" /><span>Your API keys stay tied to your QM account.</span></div>
+                <div className="flex gap-2.5"><KeyRound className="mt-0.5 size-4 shrink-0" /><span>Your Discourse access stays tied to your QM account.</span></div>
                 <div className="flex gap-2.5"><Bot className="mt-0.5 size-4 shrink-0" /><span>Project content is shared through the Project ID.</span></div>
+                <div className="flex gap-2.5"><Sparkles className="mt-0.5 size-4 shrink-0" /><span>Gemini is included and protected by fair-use limits.</span></div>
                 <div className="flex gap-2.5"><ShieldCheck className="mt-0.5 size-4 shrink-0" /><span>Sandbox tests never publish a message.</span></div>
               </div>
             </aside>

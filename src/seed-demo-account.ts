@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { createHash } from 'crypto';
 import { createClient, User } from '@supabase/supabase-js';
 import { appDateParts } from './timezone';
+import { platformGeminiConfigured } from './ai-runtime';
 
 const DEMO_EMAIL = process.env.DEMO_USER_EMAIL || 'testing@demo.local';
 const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD || 'testing';
@@ -54,22 +55,25 @@ async function ensureDemoUser(): Promise<User> {
   return data.user;
 }
 
-async function copyLimitedAiKey(userId: string): Promise<void> {
-  const sourceEmail = required('DEMO_AI_SOURCE_EMAIL');
-  const sourceUser = await findUser(sourceEmail);
-  if (!sourceUser) throw new Error('The configured DEMO_AI_SOURCE_EMAIL user was not found.');
-  const { data: sourceKey, error: sourceError } = await supabase.from('user_ai_keys').select('*').eq('owner_id', sourceUser.id).maybeSingle();
-  if (sourceError) throw new Error(sourceError.message);
-  if (!sourceKey?.anthropic_api_key_ciphertext) throw new Error('The source QM does not have a Claude API key configured.');
-  const { error } = await supabase.from('user_ai_keys').upsert({
+async function ensureAiLimits(userId: string): Promise<void> {
+  const basePayload = {
     owner_id: userId,
-    anthropic_api_key_ciphertext: sourceKey.anthropic_api_key_ciphertext,
-    anthropic_model: sourceKey.anthropic_model || 'claude-haiku-4-5',
     ai_daily_token_limit: DAILY_TOKEN_LIMIT,
     ai_daily_call_limit: DAILY_CALL_LIMIT,
     updated_at: new Date().toISOString(),
+  };
+  const modern = await supabase.from('user_ai_keys').upsert({
+    ...basePayload,
+    gemini_model: 'gemini-3.5-flash-lite',
   }, { onConflict: 'owner_id' });
-  if (error) throw new Error(error.message);
+  if (!modern.error) return;
+  if (!/gemini_(api_key_ciphertext|model)/i.test(modern.error.message)) throw new Error(modern.error.message);
+
+  const legacy = await supabase.from('user_ai_keys').upsert({
+    ...basePayload,
+    anthropic_model: 'legacy-disabled',
+  }, { onConflict: 'owner_id' });
+  if (legacy.error) throw new Error(legacy.error.message);
 }
 
 const GUIDELINES = `# Aurora Evaluation Project Guidelines
@@ -283,10 +287,17 @@ async function seedProjectContent(): Promise<void> {
 
 async function run(): Promise<void> {
   const user = await ensureDemoUser();
-  await copyLimitedAiKey(user.id);
+  await ensureAiLimits(user.id);
   const projectId = await ensureProject(user);
   await Promise.all([seedProjectContent(), seedQualityHistory(user.id)]);
-  console.log(JSON.stringify({ ok: true, username: 'testing', projectId, dailyCallLimit: DAILY_CALL_LIMIT, dailyTokenLimit: DAILY_TOKEN_LIMIT }));
+  console.log(JSON.stringify({
+    ok: true,
+    username: 'testing',
+    projectId,
+    geminiConfigured: platformGeminiConfigured(),
+    dailyCallLimit: DAILY_CALL_LIMIT,
+    dailyTokenLimit: DAILY_TOKEN_LIMIT,
+  }));
 }
 
 run().catch((error) => {

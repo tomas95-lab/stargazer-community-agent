@@ -34,8 +34,9 @@ export interface RuntimeProjectMemoryFact {
 }
 
 export interface RuntimeAiConfig {
-  anthropicApiKey?: string;
-  anthropicModel?: string;
+  provider?: 'gemini';
+  apiKey?: string;
+  model?: string;
   dailyTokenLimit?: number | null;
   dailyCallLimit?: number | null;
   enforceLimits?: boolean;

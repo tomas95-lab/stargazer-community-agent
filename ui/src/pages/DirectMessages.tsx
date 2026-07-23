@@ -145,7 +145,7 @@ function DmThread({
         <div className="flex flex-wrap gap-2 md:justify-end">
           <Button variant="outline" onClick={onGenerateDraft} disabled={generating || sending}>
             <IconSparkles />
-            {generating ? 'Thinking...' : 'Ask Claude'}
+            {generating ? 'Thinking...' : 'Ask Gemini'}
           </Button>
           <Button onClick={onSend} disabled={sending || !draft.trim()}>
             <IconSend />

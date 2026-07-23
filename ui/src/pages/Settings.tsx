@@ -20,8 +20,10 @@ const LABELS: Record<string, string> = {
   STORAGE_BACKEND_REQUESTED: 'Storage Backend Requested',
   STORAGE_BACKEND_ACTIVE: 'Storage Backend Active',
   STORAGE_FALLBACK: 'Legacy Storage Fallback',
-  ANTHROPIC_CONFIGURED: 'Legacy Claude Fallback',
-  ANTHROPIC_MODEL: 'Legacy Claude Model',
+  AI_PROVIDER: 'AI Provider',
+  GEMINI_CONNECTION_MODE: 'Gemini Connection',
+  PLATFORM_GEMINI_CONFIGURED: 'Platform Gemini Ready',
+  GEMINI_MODEL: 'Gemini Model',
   CRON_CONFIGURED: 'Cron Configured',
   AGENT_AUTO_POST: 'Agent Auto Post',
   AGENT_THREAD_SCAN_LIMIT: 'Agent Thread Scan Limit',
@@ -30,6 +32,10 @@ const LABELS: Record<string, string> = {
   DM_AUTO_REPLY_MAX: 'DM Auto Reply Max',
   AI_DAILY_TOKEN_LIMIT: 'AI Daily Token Limit',
   AI_DAILY_CALL_LIMIT: 'AI Daily Call Limit',
+  AI_PROJECT_DAILY_TOKEN_LIMIT: 'Project Daily Token Limit',
+  AI_PROJECT_DAILY_CALL_LIMIT: 'Project Daily Call Limit',
+  PLATFORM_AI_DAILY_TOKEN_LIMIT: 'Platform Daily Token Limit',
+  PLATFORM_AI_DAILY_CALL_LIMIT: 'Platform Daily Call Limit',
   AI_GUARDRAILS_ENFORCE: 'AI Guardrails Enforced',
   PLATFORM_CONFIGURED: 'Platform Configured',
   PLATFORM_ENCRYPTION_CONFIGURED: 'Platform Encryption Configured',
@@ -434,8 +440,8 @@ export default function Settings() {
       <div className="sg-panel overflow-hidden p-0">
         <div className="flex flex-col gap-3 border-b border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">AI Cost Guardrails</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Daily calls and token usage tracked for the current QM's Claude requests.</p>
+            <h2 className="text-lg font-semibold text-foreground">AI Fair-Use Guardrails</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Usage for the current QM. Platform, project, and QM limits keep shared Gemini capacity available to everyone.</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant={usage?.limits.enforce ? 'secondary' : 'outline'}>

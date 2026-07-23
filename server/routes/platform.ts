@@ -3,6 +3,7 @@ import { AuthenticatedRequest, requirePlatformUser } from '../auth';
 import {
   createUserProject,
   deleteUserProject,
+  disconnectUserGeminiKey,
   getActiveUserProject,
   getSharedProjectSummary,
   getGuidelineVersion,
@@ -16,11 +17,13 @@ import {
   QmProjectInput,
   projectBotConfigForRow,
   saveUserAiKey,
+  saveUserGeminiKey,
   restoreUserProject,
   restoreGuidelineVersion,
   setProjectAutomationPaused,
   setProjectLifecycleStatus,
   toPublicProject,
+  userGeminiStatus,
   updateUserProject,
   updateProjectMemberRole,
 } from '../platform-store';
@@ -29,8 +32,28 @@ import {
   extractTextFromPdfBuffer,
   MAX_GUIDELINE_PDF_BYTES,
 } from '../../src/guideline-file-extractor';
+import {
+  DEFAULT_GEMINI_MODEL,
+  platformGeminiConfigured,
+  validateGeminiApiKey,
+} from '../../src/ai-runtime';
 
 const router = Router();
+
+async function platformAwareGeminiStatus(userId: string) {
+  if (platformGeminiConfigured()) {
+    return {
+      connected: true,
+      provider: 'gemini' as const,
+      model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
+      managed: true,
+    };
+  }
+  return {
+    ...userGeminiStatus(await getUserAiKey(userId)),
+    managed: false,
+  };
+}
 
 router.use((req: Request, res: Response, next: NextFunction) => {
   const user = (req as AuthenticatedRequest).authUser;
@@ -58,8 +81,6 @@ function projectInput(body: unknown): QmProjectInput {
     discourseUsername: typeof raw.discourseUsername === 'string' ? raw.discourseUsername : undefined,
     discourseApiClientId: typeof raw.discourseApiClientId === 'string' ? raw.discourseApiClientId : undefined,
     discourseApiKey: typeof raw.discourseApiKey === 'string' ? raw.discourseApiKey : undefined,
-    anthropicApiKey: typeof raw.anthropicApiKey === 'string' ? raw.anthropicApiKey : undefined,
-    anthropicModel: typeof raw.anthropicModel === 'string' ? raw.anthropicModel : undefined,
     aiDailyTokenLimit: typeof raw.aiDailyTokenLimit === 'number' || typeof raw.aiDailyTokenLimit === 'string'
       ? Number(raw.aiDailyTokenLimit)
       : raw.aiDailyTokenLimit === null ? null : undefined,
@@ -118,6 +139,42 @@ router.get('/status', async (_req: Request, res: Response) => {
 router.get('/me', requirePlatformUser, async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
   res.json({ user: authReq.authUser });
+});
+
+router.get('/gemini/status', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    res.json(await platformAwareGeminiStatus(authReq.authUser!.id));
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/gemini/connect', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const raw = req.body && typeof req.body === 'object' ? req.body as Record<string, unknown> : {};
+    const apiKey = typeof raw.apiKey === 'string' ? raw.apiKey.trim() : '';
+    if (!apiKey || apiKey.length > 512) {
+      res.status(400).json({ error: 'Paste a valid Gemini API key.' });
+      return;
+    }
+    const validated = await validateGeminiApiKey(apiKey, DEFAULT_GEMINI_MODEL);
+    const saved = await saveUserGeminiKey(authReq.authUser!.id, apiKey, validated.model);
+    res.json(userGeminiStatus(saved));
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.delete('/gemini/connection', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    await disconnectUserGeminiKey(authReq.authUser!.id);
+    res.json(userGeminiStatus(null));
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
 });
 
 router.get('/projects', requirePlatformUser, async (req: Request, res: Response) => {
@@ -210,7 +267,7 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
       res.status(404).json({ error: 'Project not found.' });
       return;
     }
-    const aiKey = await getUserAiKey(authReq.authUser!.id);
+    const aiStatus = await platformAwareGeminiStatus(authReq.authUser!.id);
     const config = await projectBotConfigForRow(project);
     if (project.settings?.demoMode === true) {
       const checks = [
@@ -219,7 +276,7 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
         { id: 'channel', label: 'Simulated channel', ok: true, detail: config.communityChatChannelId },
         { id: 'username', label: 'Demo identity', ok: true, detail: project.discourse_username },
         { id: 'guidelines', label: 'Project guidelines', ok: project.project_guidelines.trim().length >= 100, detail: `${project.project_guidelines.length} characters` },
-        { id: 'claude', label: 'Claude API key', ok: Boolean(aiKey?.anthropic_api_key_ciphertext), detail: aiKey?.anthropic_api_key_ciphertext ? `${aiKey.anthropic_model}, daily limits enforced` : 'Not configured' },
+        { id: 'gemini', label: 'Gemini platform service', ok: aiStatus.connected, detail: aiStatus.connected ? `${aiStatus.model}, ${aiStatus.managed ? 'managed by the platform' : 'personal fallback active'}` : 'Platform Gemini configuration is pending' },
         { id: 'automation', label: 'External automation', ok: true, detail: 'Disabled for Demo Mode' },
       ];
       res.json({ projectId: project.id, generatedAt: new Date().toISOString(), healthy: checks.every((check) => check.ok), checks });
@@ -275,7 +332,7 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
       { id: 'channel', label: 'Community channel', ok: channelReachable, detail: channelReachable ? config.communityChatChannelId : channelError },
       { id: 'username', label: 'Discourse identity', ok: identityMatches, detail: identityMatches ? discourseIdentity : discourseIdentity ? `Connected as ${discourseIdentity}; expected ${project.discourse_username}.` : project.discourse_username || 'Missing username' },
       { id: 'guidelines', label: 'Project guidelines', ok: project.project_guidelines.trim().length >= 100, detail: `${project.project_guidelines.length} characters` },
-      { id: 'claude', label: 'Claude API key', ok: Boolean(aiKey?.anthropic_api_key_ciphertext), detail: aiKey?.anthropic_api_key_ciphertext ? aiKey.anthropic_model : 'Not configured' },
+      { id: 'gemini', label: 'Gemini platform service', ok: aiStatus.connected, detail: aiStatus.connected ? `${aiStatus.model}, ${aiStatus.managed ? 'managed by the platform' : 'personal fallback active'}` : 'Platform Gemini configuration is pending' },
       { id: 'automation', label: 'Project automation', ok: project.enabled && project.status !== 'archived', detail: project.status || (project.enabled ? 'active' : 'paused') },
     ];
     res.json({ projectId: project.id, generatedAt: new Date().toISOString(), healthy: checks.every((check) => check.ok), checks });

@@ -9,7 +9,7 @@ import { projectMemoryText } from './project-memory';
 import { getProjectContext } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
-import { resolveAnthropicRuntime } from './anthropic-runtime';
+import { generateAiText } from './ai-runtime';
 
 export const COMPOSER_CHANNELS = ['community', 'dm', 'daily_thread', 'reminder', 'announcement'] as const;
 export const COMPOSER_TONES = ['friendly', 'professional', 'direct', 'warm_supportive', 'urgent', 'short_clear'] as const;
@@ -59,15 +59,15 @@ export interface MessageComposerResult {
   guidelineSnippets: string[];
 }
 
-interface ClaudeComposerVariant {
+interface AiComposerVariant {
   title?: unknown;
   message?: unknown;
   notes?: unknown;
   warnings?: unknown;
 }
 
-interface ClaudeComposerResponse {
-  variants?: ClaudeComposerVariant[];
+interface AiComposerResponse {
+  variants?: AiComposerVariant[];
 }
 
 function oneOf<T extends readonly string[]>(value: unknown, allowed: T, fallback: T[number]): T[number] {
@@ -104,26 +104,13 @@ export function normalizeComposerRequest(input: MessageComposerInput): Normalize
   };
 }
 
-function extractJson(text: string): ClaudeComposerResponse {
+function extractJson(text: string): AiComposerResponse {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start === -1 || end === -1 || end <= start) {
-    throw new Error(`Claude returned non-JSON content: ${text.slice(0, 200)}`);
+    throw new Error(`The AI provider returned non-JSON content: ${text.slice(0, 200)}`);
   }
-  return JSON.parse(text.slice(start, end + 1)) as ClaudeComposerResponse;
-}
-
-function anthropicText(response: { content?: Array<{ type: string; text?: string }> }): string {
-  const block = response.content?.find((item) => item.type === 'text');
-  return block?.text || '';
-}
-
-function anthropicUsage(response: unknown): { inputTokens?: number; outputTokens?: number } {
-  const usage = (response as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
-  return {
-    inputTokens: usage?.input_tokens,
-    outputTokens: usage?.output_tokens,
-  };
+  return JSON.parse(text.slice(start, end + 1)) as AiComposerResponse;
 }
 
 function label(value: string): string {
@@ -140,7 +127,7 @@ function removeGeneratedFooter(message: string): string {
   return lines.join('\n').trim();
 }
 
-function normalizeVariant(raw: ClaudeComposerVariant | undefined): ComposerVariant | null {
+function normalizeVariant(raw: AiComposerVariant | undefined): ComposerVariant | null {
   const message = text(raw?.message);
   if (!message) return null;
   const warnings = Array.isArray(raw?.warnings)
@@ -160,8 +147,6 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
   const links = await loadProjectLinks();
   const snippets = await findProjectGuidelineSnippets(`${request.prompt}\n${request.extraContext}`, 5);
   const memory = await projectMemoryText(25);
-  const anthropicRuntime = resolveAnthropicRuntime();
-  const anthropic = anthropicRuntime.client;
   const maxTokens = request.variantCount === 1 ? 700 : 1200;
   const projectName = getProjectContext().projectName || 'the active project';
   const systemPrompt = [
@@ -191,27 +176,34 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
   ].filter(Boolean).join('\n\n');
 
   try {
-    await assertAiUsageAllowed('message_composer', estimateTokens(`${systemPrompt}\n\n${userPrompt}`), maxTokens);
-
-    const response = await anthropic.messages.create({
-      model: anthropicRuntime.model,
-      max_tokens: maxTokens,
-      temperature: 0.4,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: userPrompt,
-        },
-      ],
-    });
-    const rawResponseText = anthropicText(response);
-    const usage = anthropicUsage(response);
+    const estimatedInputTokens = estimateTokens(`${systemPrompt}\n\n${userPrompt}`);
+    const reservationId = await assertAiUsageAllowed('message_composer', estimatedInputTokens, maxTokens);
+    let response;
+    try {
+      response = await generateAiText({
+        maxOutputTokens: maxTokens,
+        temperature: 0.4,
+        system: systemPrompt,
+        prompt: userPrompt,
+      });
+    } catch (err) {
+      await recordAiUsage({
+        reservationId,
+        feature: 'message_composer',
+        model: getProjectContext().aiConfig?.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+        inputTokens: estimatedInputTokens,
+        outputTokens: 0,
+        status: 'error',
+      });
+      throw err;
+    }
+    const rawResponseText = response.text;
     await recordAiUsage({
+      reservationId,
       feature: 'message_composer',
-      model: anthropicRuntime.model,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
+      model: response.model,
+      inputTokens: response.inputTokens,
+      outputTokens: response.outputTokens,
       inputText: `${systemPrompt}\n\n${userPrompt}`,
       outputText: rawResponseText,
     });
@@ -222,7 +214,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
       .filter((variant): variant is ComposerVariant => Boolean(variant))
       .slice(0, request.variantCount);
 
-    if (variants.length === 0) throw new Error('Claude did not return any usable message variants.');
+    if (variants.length === 0) throw new Error('Gemini did not return any usable message variants.');
 
     await appendOperationLog({
       action: 'message_composer',
