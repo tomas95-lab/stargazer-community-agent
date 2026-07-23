@@ -59,7 +59,7 @@ export function KnowledgeStep({
         <div>
           <p className="font-medium">{extractingGuidelines ? "Reading your PDF" : "Drop the project guidelines here"}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Tables and page context are preserved. PDF up to 12 MB.
+            Processed privately in your browser. Tables and page context are preserved. PDF up to 12 MB.
           </p>
         </div>
         <Button type="button" variant="outline" onClick={() => guidelinesInputRef.current?.click()} disabled={extractingGuidelines}>

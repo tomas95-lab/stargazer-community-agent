@@ -46,6 +46,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { extractGuidelinesPdf } from "@/lib/pdf-guidelines"
 
 interface ProjectSetupDraft {
   version: 1
@@ -435,16 +436,6 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     }
   }
 
-  async function fileToBase64(file: File): Promise<string> {
-    const bytes = new Uint8Array(await file.arrayBuffer())
-    let binary = ""
-    const chunkSize = 0x8000
-    for (let index = 0; index < bytes.length; index += chunkSize) {
-      binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize))
-    }
-    return window.btoa(binary)
-  }
-
   async function processGuidelinesPdf(file: File) {
     setError("")
     setMessage("")
@@ -460,11 +451,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     setExtractingGuidelines(true)
 
     try {
-      const result = await api.extractGuidelinesFromPdf({
-        fileName: file.name,
-        mimeType: file.type || "application/pdf",
-        base64: await fileToBase64(file),
-      })
+      const result = await extractGuidelinesPdf(file)
       update("projectGuidelines", result.text)
       setGuidelinesFile({
         name: file.name,
