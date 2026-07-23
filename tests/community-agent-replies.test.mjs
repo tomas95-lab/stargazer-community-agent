@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { annotateProbableReplies } from '../dist/community-agent.js';
+import { annotateProbableReplies, isLikelyAnswerReply } from '../dist/community-agent.js';
 
 function item(overrides) {
   return {
@@ -164,4 +164,28 @@ test('annotateProbableReplies does not treat a staff message in another thread a
   ]);
 
   assert.deepEqual(annotated[0].probableReplies, []);
+});
+
+test('direct QM answers are filtered before using an AI call', () => {
+  const answers = [
+    'El problema se debe a que su correo ya esta vinculado. Para solucionar este problema, debe cambiarlo.',
+    'Una vez realizado el cambio, por favor, dejeme saber por DM para escalar su caso.',
+    'Hello! Could you please submit a support ticket so the team can review your case?',
+    'Your ticket has been resolved. Please review the latest update.',
+  ];
+
+  for (const message of answers) {
+    assert.equal(isLikelyAnswerReply({ message, replyToChatMessageId: 10 }), true, message);
+  }
+});
+
+test('contributor follow-up questions in a thread still reach the agent', () => {
+  assert.equal(isLikelyAnswerReply({
+    message: 'I submitted my ticket but I still need help with my project status. Could you help me?',
+    replyToChatMessageId: 10,
+  }), false);
+  assert.equal(isLikelyAnswerReply({
+    message: 'No puedo entrar a mi proyecto, me pueden ayudar?',
+    replyToChatMessageId: 10,
+  }), false);
 });

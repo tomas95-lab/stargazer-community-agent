@@ -465,6 +465,38 @@ function shouldIgnoreMessage(text: string): boolean {
   return isAnnouncementMessage(text);
 }
 
+export function isLikelyAnswerReply(item: Pick<CommunityAgentItem, 'message' | 'replyToChatMessageId'>): boolean {
+  if (item.replyToChatMessageId === undefined) return false;
+  const lower = normalizeText(item.message).trim();
+
+  const contributorNeedPatterns = [
+    /\bi (?:need|have|cannot|can't|am|was|completed|submitted)\b/,
+    /\bmy (?:account|ticket|project|task|queue|status|access)\b/,
+    /\bcan someone help\b/,
+    /\bcould you help me\b/,
+    /\bnecesito\b/,
+    /\bno puedo\b/,
+    /\bme pueden\b/,
+    /\btengo (?:un|una|el|la)\b/,
+    /\bmi (?:cuenta|ticket|proyecto|tarea|estado|acceso)\b/,
+  ];
+  if (contributorNeedPatterns.some((pattern) => pattern.test(lower))) return false;
+
+  const answerPatterns = [
+    /\bthe problem (?:is|is due to)\b/,
+    /\bel problema se debe\b/,
+    /\bto (?:solve|fix|resolve) (?:this|the issue)\b/,
+    /\bpara solucionar (?:esto|este problema|el problema)\b/,
+    /\bplease (?:submit|review|check|join|contact|use|change|send)\b/,
+    /\b(?:you|your) (?:can|need|should|must|ticket has|ticket is)\b/,
+    /\b(?:debe|debes|puede|puedes|tienes que|tenes que)\b/,
+    /\buna vez (?:realizado|completado|hecho)\b/,
+    /\b(?:ticket|case) has been (?:resolved|closed|escalated)\b/,
+  ];
+
+  return answerPatterns.some((pattern) => pattern.test(lower));
+}
+
 function baseIgnoreReason(item: CommunityAgentItem): string | null {
   const isOwnAuthor = shouldIgnoreAuthor(item.username);
   const isAnnouncement = isAnnouncementMessage(item.message);
@@ -477,6 +509,7 @@ function baseIgnoreReason(item: CommunityAgentItem): string | null {
   if (isTeamAnnouncement && isAnnouncement) return 'Team announcement, not a contributor support request.';
   if (isAnnouncement) return 'Announcement or thread root, not a contributor support request.';
   if (shouldIgnoreAuthor(item.username)) return 'Authored by the configured manager/bot user.';
+  if (isLikelyAnswerReply(item)) return 'Direct reply appears to answer another message.';
   if (item.message.trim().length < 8) return 'Message is too short to evaluate safely.';
   if ((item.probableReplies || []).length > 0) return 'Already has a probable reply in the chat or thread.';
   if (!isQuestionOrSupportRequest(item.message) && !isPotentiallyUsefulContribution(item.message)) {
@@ -633,6 +666,7 @@ function relevantItems(items: CommunityAgentItem[]): CommunityAgentItem[] {
   return items.filter((item) => {
     if (shouldIgnoreAuthor(item.username)) return false;
     if (shouldIgnoreMessage(item.message)) return false;
+    if (isLikelyAnswerReply(item)) return false;
     if ((item.probableReplies || []).length > 0) return false;
     return isQuestionOrSupportRequest(item.message) || isPotentiallyUsefulContribution(item.message);
   });
