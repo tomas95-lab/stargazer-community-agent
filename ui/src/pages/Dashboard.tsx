@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
+  ArrowRight,
   AlertTriangle,
   Bot,
+  CalendarDays,
+  CheckCircle2,
   CircleAlert,
+  FileText,
+  MessagesSquare,
   Settings,
 } from "lucide-react"
 
-import { api, type PreviewData, type Topic, type Webinar } from "@/api"
+import { api, type DailySummaryResult, type PreviewData, type Topic, type Webinar } from "@/api"
 import Preview from "@/components/Preview"
 import PublishButton from "@/components/PublishButton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -27,24 +32,50 @@ function NextWebinarCard({ webinar }: { webinar: Webinar }) {
   const timeLeft = diffD > 0 ? `in ${diffD}d ${diffH % 24}h` : diffH > 0 ? `in ${diffH}h` : "soon"
 
   return (
-    <div className="px-4 lg:px-6">
-      <Card className="border-blue-200 bg-blue-50/70 shadow-xs">
-        <CardContent className="space-y-2 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase text-blue-700">Next Session</p>
-            <Badge variant="secondary">{timeLeft}</Badge>
-          </div>
-          <p className="font-semibold text-foreground">{webinar.title}</p>
-          <p className="text-sm text-muted-foreground">{webinar.date} - {webinar.timeLabel}</p>
-          <a href={webinar.link} target="_blank" rel="noopener" className="block truncate text-xs text-primary hover:underline">
-            {webinar.link}
-          </a>
-          {webinar.invitees.length > 0 && (
-            <p className="text-xs text-muted-foreground">{webinar.invitees.length} invitee{webinar.invitees.length > 1 ? "s" : ""}</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="py-0 shadow-xs">
+      <CardContent className="space-y-2 p-5">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase text-muted-foreground">Next session</p>
+          <Badge variant="secondary">{timeLeft}</Badge>
+        </div>
+        <p className="font-semibold text-foreground">{webinar.title}</p>
+        <p className="text-sm text-muted-foreground">{webinar.date} · {webinar.timeLabel}</p>
+        <a href={webinar.link} target="_blank" rel="noopener" className="block truncate text-xs text-primary hover:underline">
+          Open session link
+        </a>
+      </CardContent>
+    </Card>
+  )
+}
+
+function OperationMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  onClick,
+}: {
+  icon: typeof FileText
+  label: string
+  value: string | number
+  detail: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-w-0 items-start gap-3 p-4 text-left transition-colors hover:bg-muted/50"
+    >
+      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border bg-background">
+        <Icon className="size-4 text-primary" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-xs font-medium text-muted-foreground">{label}</span>
+        <span className="mt-0.5 block truncate text-lg font-semibold text-foreground">{value}</span>
+        <span className="block truncate text-xs text-muted-foreground">{detail}</span>
+      </span>
+    </button>
   )
 }
 
@@ -54,18 +85,24 @@ export default function Dashboard() {
   const [date, setDate] = useState("")
   const [topic, setTopic] = useState<Topic | null>(null)
   const [preview, setPreview] = useState<PreviewData | null>(null)
+  const [allTopics, setAllTopics] = useState<Topic[]>([])
   const [webinars, setWebinars] = useState<Webinar[]>([])
+  const [summary, setSummary] = useState<DailySummaryResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"thread" | "announcement">("thread")
 
   useEffect(() => {
     Promise.all([
       api.getToday(),
-      api.getWebinars(),
-    ]).then(([today, wbns]) => {
+      api.getWebinars().catch(() => []),
+      api.getTopics().catch(() => []),
+      api.getDailySummary().catch(() => null),
+    ]).then(([today, wbns, topics, dailySummary]) => {
       setDate(today.date)
       setTopic(today.topic)
       setWebinars(wbns)
+      setAllTopics(topics)
+      setSummary(dailySummary)
       if (today.topic) {
         api.getPreview(today.date).then(setPreview).catch(() => {})
       }
@@ -76,6 +113,9 @@ export default function Dashboard() {
   const nextWebinar = webinars
     .filter((w) => new Date(`${w.date}T${w.timeUtc}:00Z`) > new Date())
     .sort((a, b) => a.date.localeCompare(b.date))[0]
+  const upcomingTopics = allTopics.filter((item) => item.date >= date).length
+  const needsAttention = (summary?.totals.communityNeedsHuman || 0) + (summary?.totals.dmNeedsHuman || 0)
+  const repliesToday = (summary?.totals.communityRepliesPosted || 0) + (summary?.totals.dmAutoReplies || 0)
 
   const readiness = [
     { label: "Community target", ready: Boolean(currentProject?.categoryId && currentProject.channelId) },
@@ -117,6 +157,39 @@ export default function Dashboard() {
         </Button>
       </div>
 
+      <div className="px-4 lg:px-6">
+        <section className="grid overflow-hidden rounded-lg border bg-card shadow-xs sm:grid-cols-2 lg:grid-cols-4 sm:[&>*:nth-child(even)]:border-l lg:[&>*]:border-l lg:[&>*:first-child]:border-l-0 [&>*:nth-child(n+3)]:border-t lg:[&>*]:border-t-0">
+          <OperationMetric
+            icon={FileText}
+            label="Today's thread"
+            value={topic ? "Ready" : "Missing"}
+            detail={date || "Calendar not loaded"}
+            onClick={() => navigate("/topics")}
+          />
+          <OperationMetric
+            icon={CalendarDays}
+            label="Content queue"
+            value={upcomingTopics}
+            detail="upcoming topics"
+            onClick={() => navigate("/topics")}
+          />
+          <OperationMetric
+            icon={MessagesSquare}
+            label="Needs attention"
+            value={needsAttention}
+            detail="Community and DMs"
+            onClick={() => navigate("/review")}
+          />
+          <OperationMetric
+            icon={CheckCircle2}
+            label="Replies today"
+            value={repliesToday}
+            detail={`${summary?.totals.runs || 0} automation runs`}
+            onClick={() => navigate("/summary")}
+          />
+        </section>
+      </div>
+
       {readyCount < readiness.length ? (
         <div className="px-4 lg:px-6">
           <div className="flex flex-col gap-4 rounded-lg border border-amber-200 bg-amber-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -141,61 +214,81 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      {nextWebinar && <NextWebinarCard webinar={nextWebinar} />}
-
-      {!topic && (
-        <div className="px-4 lg:px-6">
-          <Alert variant="warning" className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 size-5 shrink-0" />
-            <div>
-              <AlertTitle>No topic for today ({date})</AlertTitle>
-              <AlertDescription>The daily publisher will use the first available topic as fallback if no exact date exists.</AlertDescription>
-              <Button onClick={() => navigate("/topics")} variant="link" className="mt-2 h-auto p-0">
-                Create today's topic
-              </Button>
-            </div>
-          </Alert>
-        </div>
-      )}
-
-      {topic && (
-        <div className="space-y-4 px-4 lg:px-6">
-          <Card className="shadow-xs">
-            <CardContent className="p-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Today's Thread</p>
-                  <h2 className="text-xl font-semibold text-foreground">{preview?.title || topic.title}</h2>
-                  <p className="text-sm text-muted-foreground">{topic.topic}</p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {(topic.tags || []).map((t) => (
-                      <Badge key={t} variant="secondary">{t}</Badge>
-                    ))}
+      <div className="space-y-4 px-4 lg:px-6">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          {topic ? (
+            <Card className="shadow-xs">
+              <CardContent className="p-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Today's thread</p>
+                    <h2 className="text-xl font-semibold text-foreground">{preview?.title || topic.title}</h2>
+                    <p className="text-sm leading-6 text-muted-foreground">{topic.topic}</p>
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {(topic.tags || []).map((tag) => (
+                        <Badge key={tag} variant="secondary">{tag}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <PublishButton date={date} />
                   </div>
                 </div>
-                <div className="shrink-0">
-                  <PublishButton date={date} />
-                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Alert variant="warning" className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 size-5 shrink-0" />
+              <div>
+                <AlertTitle>No topic for today ({date})</AlertTitle>
+                <AlertDescription>The publisher will use the next available topic as fallback.</AlertDescription>
+                <Button onClick={() => navigate("/topics")} variant="link" className="mt-2 h-auto p-0">Create today's topic</Button>
               </div>
-            </CardContent>
-          </Card>
-
-          {preview && (
-            <Tabs value={tab} onValueChange={(value) => setTab(value as "thread" | "announcement")} className="gap-3">
-              <TabsList>
-                <TabsTrigger value="thread">Thread Preview</TabsTrigger>
-                <TabsTrigger value="announcement">Announcement</TabsTrigger>
-              </TabsList>
-              <TabsContent value="thread" className={cn(tab !== "thread" && "hidden")}>
-                <Preview content={preview.thread} label="Daily Thread" />
-              </TabsContent>
-              <TabsContent value="announcement" className={cn(tab !== "announcement" && "hidden")}>
-                <Preview content={preview.announcement} label="Chat Announcement" />
-              </TabsContent>
-            </Tabs>
+            </Alert>
           )}
+
+          <aside className="space-y-4">
+            <Card className="py-0 shadow-xs">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Today's activity</p>
+                  <Badge variant={summary?.status === "attention" ? "destructive" : "secondary"}>
+                    {summary?.status || "quiet"}
+                  </Badge>
+                </div>
+                <p className="mt-3 text-sm font-medium text-foreground">{summary?.headline || "No activity recorded yet."}</p>
+                {summary?.highlights.length ? (
+                  <div className="mt-3 space-y-2">
+                    {summary.highlights.slice(0, 3).map((highlight) => (
+                      <p key={highlight} className="text-xs leading-5 text-muted-foreground">{highlight}</p>
+                    ))}
+                  </div>
+                ) : null}
+                <Button variant="link" className="mt-3 h-auto p-0" onClick={() => navigate("/summary")}>
+                  View daily summary
+                  <ArrowRight />
+                </Button>
+              </CardContent>
+            </Card>
+            {nextWebinar ? <NextWebinarCard webinar={nextWebinar} /> : null}
+          </aside>
         </div>
-      )}
+
+        {topic && preview ? (
+          <Tabs value={tab} onValueChange={(value) => setTab(value as "thread" | "announcement")} className="gap-3">
+            <TabsList>
+              <TabsTrigger value="thread">Thread preview</TabsTrigger>
+              <TabsTrigger value="announcement">Announcement</TabsTrigger>
+            </TabsList>
+            <TabsContent value="thread" className={cn(tab !== "thread" && "hidden")}>
+              <Preview content={preview.thread} label="Daily thread" />
+            </TabsContent>
+            <TabsContent value="announcement" className={cn(tab !== "announcement" && "hidden")}>
+              <Preview content={preview.announcement} label="Chat announcement" />
+            </TabsContent>
+          </Tabs>
+        ) : null}
+      </div>
     </div>
   )
 }
