@@ -80,11 +80,11 @@ export default function WebinarScheduler() {
   const labelCls = 'sg-label mb-1 block';
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Session Scheduler</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Schedule webinars & onboardings. Reminder jobs use this data source.</p>
+          <h1 className="text-2xl font-semibold text-foreground">Sessions</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Schedule webinars and onboarding sessions used by reminders.</p>
         </div>
       </div>
 

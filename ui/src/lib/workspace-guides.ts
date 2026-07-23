@@ -47,7 +47,7 @@ export const workspaceGuides: WorkspaceGuide[] = [
   {
     path: "/agent",
     title: "Community inbox",
-    shortTitle: "Community",
+    shortTitle: "Inbox",
     description: "Review channel messages, generated replies, confidence, and items that need a QM.",
     group: "Inbox",
     icon: Bot,
@@ -107,7 +107,7 @@ export const workspaceGuides: WorkspaceGuide[] = [
   {
     path: "/composer",
     title: "Message composer",
-    shortTitle: "Composer",
+    shortTitle: "Content",
     description: "Generate a polished one-off message from an objective, audience, tone, and channel.",
     group: "Content",
     icon: PenLine,
@@ -252,8 +252,17 @@ export function guideForPath(pathname: string): WorkspaceGuide {
 
 export const navigationGroups = ["Overview", "Inbox", "Content", "Project", "System"] as const
 
+const primaryNavigationPaths = new Set([
+  "/",
+  "/agent",
+  "/composer",
+  "/projects",
+  "/quality",
+  "/settings",
+])
+
 export function guidesForGroup(group: WorkspaceGuide["group"]): WorkspaceGuide[] {
-  return workspaceGuides.filter((guide) => guide.group === group && guide.path !== "/help")
+  return workspaceGuides.filter((guide) => guide.group === group && primaryNavigationPaths.has(guide.path))
 }
 
 export const onboardingChecklist = [

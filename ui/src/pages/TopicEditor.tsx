@@ -244,7 +244,7 @@ export default function TopicEditor() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Topics</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage daily thread topics stored in GitHub.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Manage the daily thread calendar shared by this project.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button type="button" variant="outline" onClick={() => setShowImport((value) => !value)}>

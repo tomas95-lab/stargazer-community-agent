@@ -77,21 +77,21 @@ export default function Signup() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+    <main className="flex min-h-screen w-full max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-10">
       <div className="w-full min-w-0 max-w-md">
         <Link to="/login" className="mb-5 flex items-center justify-center gap-2 text-sm font-semibold text-foreground">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Orbit className="size-4" /></span>
           Community Agent
         </Link>
-      <Card className="w-full min-w-0 overflow-hidden rounded-lg">
-        <CardHeader>
+      <Card className="w-full min-w-0 max-w-full overflow-hidden rounded-lg">
+        <CardHeader className="min-w-0 px-4 sm:px-6">
           <div className="mb-2 flex size-10 items-center justify-center rounded-md border bg-muted">
             <IconUserPlus className="size-5" />
           </div>
           <CardTitle>Create account</CardTitle>
           <CardDescription>Start a QM workspace for your community project.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0 px-4 sm:px-6">
           {!configured ? (
             <p className="text-sm text-muted-foreground">
               Supabase is not configured for this UI environment.
@@ -147,7 +147,7 @@ export default function Signup() {
           )}
         </CardContent>
       </Card>
-      <p className="mt-5 text-center text-xs text-muted-foreground">Your personal credentials remain separate from shared project content</p>
+      <p className="mt-5 break-words px-2 text-center text-xs text-muted-foreground">Your personal credentials remain separate from shared project content</p>
       </div>
     </main>
   )

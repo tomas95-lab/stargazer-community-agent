@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CircleAlert as IconAlertCircle,
-  Check as IconCheck,
   Clock as IconClock,
   Inbox as IconInbox,
-  RefreshCw as IconRefresh,
   Send as IconSend,
   Sparkles as IconSparkles,
   User as IconUser,
@@ -13,31 +11,6 @@ import { api, type DmDraftResult, type DmReviewMessage, type DmReviewResult, typ
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { APP_TIME_ZONE_LABEL, formatAppDateTime, formatAppTime } from '@/lib/timezone';
-
-function Stat({
-  icon: Icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: typeof IconInbox;
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <div className="sg-panel flex min-h-28 flex-col justify-between p-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
-        <Icon className="size-4 text-muted-foreground" />
-      </div>
-      <div>
-        <p className="text-2xl font-semibold text-foreground">{value}</p>
-        {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
-      </div>
-    </div>
-  );
-}
 
 function senderLabel(message: DmReviewMessage): string {
   return message.name ? `${message.name} · ${message.username}` : message.username;
@@ -79,7 +52,6 @@ function DmThread({
   onGenerateDraft: () => void;
   onSend: () => void;
 }) {
-  const channelId = messages[0]?.channelId;
   const incomingCount = messages.filter((message) => message.incoming).length;
 
   return (
@@ -90,7 +62,6 @@ function DmThread({
             <IconUser className="size-4 shrink-0 text-muted-foreground" />
             <p className="truncate text-sm font-semibold text-foreground">{threadLabel(messages)}</p>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">Channel {channelId}</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline">{messages.length} today</Badge>
@@ -145,7 +116,7 @@ function DmThread({
         <div className="flex flex-wrap gap-2 md:justify-end">
           <Button variant="outline" onClick={onGenerateDraft} disabled={generating || sending}>
             <IconSparkles />
-            {generating ? 'Thinking...' : 'Ask Gemini'}
+            {generating ? 'Thinking...' : 'Draft reply'}
           </Button>
           <Button onClick={onSend} disabled={sending || !draft.trim()}>
             <IconSend />
@@ -162,7 +133,6 @@ export default function DirectMessages() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
-  const [reportSaved, setReportSaved] = useState(false);
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
   const [draftResults, setDraftResults] = useState<Record<number, DmDraftResult>>({});
   const [generatingDraftId, setGeneratingDraftId] = useState<number | null>(null);
@@ -172,7 +142,6 @@ export default function DirectMessages() {
   const load = async () => {
     setLoading(true);
     setError('');
-    setReportSaved(false);
     try {
       setResult(await api.getDmReview({ messageCount: 50, maxChannels: 5, fullScan: true }));
     } catch (err) {
@@ -191,7 +160,6 @@ export default function DirectMessages() {
     setError('');
     try {
       setResult(await api.runDmReview({ messageCount: 50, maxChannels: 5, requestDelayMs: 1500 }));
-      setReportSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -255,27 +223,16 @@ export default function DirectMessages() {
   };
 
   return (
-    <div className="space-y-6 px-6">
+    <div className="space-y-5 px-4 lg:px-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">DM Review</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant="outline">Today only</Badge>
-            {result && <Badge variant="outline">{result.scanMode === 'full' ? 'Full scan' : 'Quick preview'}</Badge>}
             {result && <Badge variant="secondary">{result.window.utcDate || result.window.argentinaDate} {APP_TIME_ZONE_LABEL}</Badge>}
-            {reportSaved && (
-              <Badge className="border-transparent bg-success text-success-foreground">
-                <IconCheck />
-                Report saved
-              </Badge>
-            )}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={load} disabled={loading || running}>
-            <IconRefresh />
-            Refresh
-          </Button>
+        <div>
           <Button onClick={run} disabled={loading || running}>
             <IconInbox />
             {running ? 'Checking...' : 'Check now'}
@@ -283,11 +240,10 @@ export default function DirectMessages() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={IconInbox} label="Messages" value={result?.messages.length ?? '-'} sub={`${result?.incomingMessages ?? '-'} incoming`} />
-        <Stat icon={IconUser} label="Channels" value={result?.scannedChannels ?? '-'} sub={`${result?.totalDirectChannels ?? '-'} total`} />
-        <Stat icon={IconClock} label="Window" value={result?.window.utcDate || result?.window.argentinaDate || '-'} sub={result ? `${formatAppDateTime(result.window.startUtc)} - ${formatAppDateTime(result.window.endUtc)} ${APP_TIME_ZONE_LABEL}` : `${APP_TIME_ZONE_LABEL} day`} />
-        <Stat icon={IconCheck} label="Open Threads" value={result?.unresolvedChannels ?? '-'} sub={`${result?.pendingIncomingMessages ?? '-'} pending incoming`} />
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Badge variant={result?.unresolvedChannels ? 'default' : 'secondary'}>{result?.unresolvedChannels ?? 0} open threads</Badge>
+        <span className="text-muted-foreground">{result?.incomingMessages ?? 0} incoming messages</span>
+        <span className="text-muted-foreground">{result?.scannedChannels ?? 0} conversations checked</span>
       </div>
 
       {error && (

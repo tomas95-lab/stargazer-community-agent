@@ -53,15 +53,6 @@ function FieldLabel({ children }: { children: string }) {
   return <label className="sg-label mb-1 block">{children}</label>;
 }
 
-function Metric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-md border border-border bg-surface px-3 py-2">
-      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
-    </div>
-  );
-}
-
 export default function MessageComposer() {
   const [searchParams] = useSearchParams();
   const [templates, setTemplates] = useState<ComposerTemplate[]>([]);
@@ -173,19 +164,13 @@ export default function MessageComposer() {
   };
 
   return (
-    <div className="space-y-6 px-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Wand2 className="size-5 text-primary" />
-            <h1 className="text-2xl font-semibold text-foreground">Message Composer</h1>
-          </div>
+    <div className="space-y-5 px-4 lg:px-6">
+      <div>
+        <div className="flex items-center gap-2">
+          <Wand2 className="size-5 text-primary" />
+          <h1 className="text-2xl font-semibold text-foreground">Compose a message</h1>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Metric label="Mode" value="Draft" />
-          <Metric label="Language" value="English" />
-          <Metric label="Source" value="Guidelines" />
-        </div>
+        <p className="mt-1 text-sm text-muted-foreground">Describe what you need, then review the generated draft before sending.</p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(340px,420px)_1fr]">

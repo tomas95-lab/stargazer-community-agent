@@ -9,38 +9,6 @@ import { APP_TIME_ZONE_LABEL, formatAppDateTime } from '@/lib/timezone';
 import { disableWebPush, enableWebPush, webPushSubscription, webPushSupported } from '@/lib/web-push';
 import { usePlatform } from '@/platform';
 
-const LABELS: Record<string, string> = {
-  COMMUNITY_BASE_URL: 'Community Base URL',
-  COMMUNITY_CATEGORY_ID: 'Category ID',
-  COMMUNITY_CATEGORY_SLUG: 'Category Slug',
-  COMMUNITY_CHAT_CHANNEL_ID: 'Chat Channel ID',
-  DISCOURSE_API_KEY: 'Discourse API Key',
-  DISCOURSE_API_CLIENT_ID: 'Discourse API Client ID',
-  DISCOURSE_USERNAME: 'Discourse Username',
-  STORAGE_BACKEND_REQUESTED: 'Storage Backend Requested',
-  STORAGE_BACKEND_ACTIVE: 'Storage Backend Active',
-  STORAGE_FALLBACK: 'Legacy Storage Fallback',
-  AI_PROVIDER: 'AI Provider',
-  GEMINI_CONNECTION_MODE: 'Gemini Connection',
-  PLATFORM_GEMINI_CONFIGURED: 'Platform Gemini Ready',
-  GEMINI_MODEL: 'Gemini Model',
-  CRON_CONFIGURED: 'Cron Configured',
-  AGENT_AUTO_POST: 'Agent Auto Post',
-  AGENT_THREAD_SCAN_LIMIT: 'Agent Thread Scan Limit',
-  AGENT_THREAD_MESSAGE_COUNT: 'Agent Thread Message Count',
-  DM_AUTO_REPLY: 'DM Auto Reply',
-  DM_AUTO_REPLY_MAX: 'DM Auto Reply Max',
-  AI_DAILY_TOKEN_LIMIT: 'AI Daily Token Limit',
-  AI_DAILY_CALL_LIMIT: 'AI Daily Call Limit',
-  AI_PROJECT_DAILY_TOKEN_LIMIT: 'Project Daily Token Limit',
-  AI_PROJECT_DAILY_CALL_LIMIT: 'Project Daily Call Limit',
-  PLATFORM_AI_DAILY_TOKEN_LIMIT: 'Platform Daily Token Limit',
-  PLATFORM_AI_DAILY_CALL_LIMIT: 'Platform Daily Call Limit',
-  AI_GUARDRAILS_ENFORCE: 'AI Guardrails Enforced',
-  PLATFORM_CONFIGURED: 'Platform Configured',
-  PLATFORM_ENCRYPTION_CONFIGURED: 'Platform Encryption Configured',
-};
-
 const DAYS = [
   { value: 1, label: 'Mon' }, { value: 2, label: 'Tue' }, { value: 3, label: 'Wed' },
   { value: 4, label: 'Thu' }, { value: 5, label: 'Fri' }, { value: 6, label: 'Sat' }, { value: 0, label: 'Sun' },
@@ -112,7 +80,6 @@ function formatNumber(value?: number | null): string {
 
 export default function Settings() {
   const { currentProject, refreshProjects } = usePlatform();
-  const [config, setConfig] = useState<Record<string, string>>({});
   const [health, setHealth] = useState<AutomationHealthResult | null>(null);
   const [healthLoading, setHealthLoading] = useState(true);
   const [healthError, setHealthError] = useState('');
@@ -131,7 +98,6 @@ export default function Settings() {
   const [pushMessage, setPushMessage] = useState('');
 
   useEffect(() => {
-    api.getConfig().then(setConfig);
     loadHealth();
     loadUsage();
   }, []);
@@ -244,13 +210,11 @@ export default function Settings() {
       .finally(() => setUsageLoading(false));
   };
 
-  const inputCls = 'sg-input cursor-not-allowed px-3 py-2 text-sm text-muted-foreground';
-
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden px-4 lg:px-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
-        <span className="rounded-full border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Environment managed</span>
+        <p className="mt-1 text-sm text-muted-foreground">Manage project automation, notifications, and usage limits.</p>
       </div>
 
       <section className="sg-panel min-w-0 overflow-hidden p-0">
@@ -357,10 +321,14 @@ export default function Settings() {
         </div>
       </section>
 
-      <div className="sg-panel overflow-hidden p-0">
-        <div className="flex flex-col gap-3 border-b border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
+      <details className="sg-panel overflow-hidden p-0">
+        <summary className="cursor-pointer px-4 py-4 sm:px-6">
+          <span className="text-base font-semibold text-foreground">Automation run details</span>
+          <span className="ml-2 text-sm text-muted-foreground">{health?.jobs.length || 0} scheduled jobs</span>
+        </summary>
+        <div className="flex flex-col gap-3 border-y border-border px-4 py-4 md:flex-row md:items-center md:justify-between sm:px-6">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Cron Health</h2>
+            <h2 className="text-sm font-semibold text-foreground">Scheduler health</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               External scheduler status, app execution result, and next run.
             </p>
@@ -383,22 +351,20 @@ export default function Settings() {
         ) : null}
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead className="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
                 <th className="px-4 py-3 text-left font-semibold">Job</th>
-                <th className="px-4 py-3 text-left font-semibold">Last Scheduler</th>
                 <th className="px-4 py-3 text-left font-semibold">Last App Result</th>
                 <th className="px-4 py-3 text-left font-semibold">Next Run</th>
                 <th className="px-4 py-3 text-left font-semibold">Metrics</th>
-                <th className="px-4 py-3 text-left font-semibold">Reason</th>
               </tr>
             </thead>
             <tbody>
               {healthLoading && !health ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-sm text-muted-foreground">Loading cron health...</td>
+                  <td colSpan={5} className="px-4 py-6 text-sm text-muted-foreground">Loading automation health...</td>
                 </tr>
               ) : health?.jobs.length ? (
                 health.jobs.map((item) => (
@@ -413,10 +379,6 @@ export default function Settings() {
                       <p className="mt-1 font-mono text-xs text-muted-foreground">{item.endpoint}</p>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      <p>{formatAppDateTime(item.provider?.lastExecution || item.lastCronRequest?.at)} {APP_TIME_ZONE_LABEL}</p>
-                      <p className="mt-1 text-xs">{item.provider?.lastStatusLabel || item.lastCronRequest?.status || '-'}</p>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
                       <p>{formatAppDateTime(item.lastAppResult?.at)} {APP_TIME_ZONE_LABEL}</p>
                       <p className="mt-1 text-xs">{item.lastAppResult?.status || '-'}</p>
                     </td>
@@ -424,18 +386,17 @@ export default function Settings() {
                       {formatAppDateTime(item.provider?.nextExecution)} {APP_TIME_ZONE_LABEL}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{metricValue(item)}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{item.healthReason}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-sm text-muted-foreground">No automation jobs found.</td>
+                  <td colSpan={5} className="px-4 py-6 text-sm text-muted-foreground">No automation jobs found.</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
+      </details>
 
       <div className="sg-panel overflow-hidden p-0">
         <div className="flex flex-col gap-3 border-b border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
@@ -460,24 +421,24 @@ export default function Settings() {
 
         <div className="grid gap-3 p-4 md:grid-cols-4">
           <div className="rounded-md border border-border bg-background p-4">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Calls Today</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Calls used</p>
             <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.calls)}</p>
             <p className="mt-1 text-xs text-muted-foreground">Limit {formatNumber(usage?.limits.dailyCallLimit)}</p>
           </div>
           <div className="rounded-md border border-border bg-background p-4">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Tokens Today</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Calls remaining</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.remaining.calls)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">QM daily allowance</p>
+          </div>
+          <div className="rounded-md border border-border bg-background p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Tokens used</p>
             <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.totalTokens)}</p>
             <p className="mt-1 text-xs text-muted-foreground">Limit {formatNumber(usage?.limits.dailyTokenLimit)}</p>
           </div>
           <div className="rounded-md border border-border bg-background p-4">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Input Tokens</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.inputTokens)}</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Tokens remaining</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.remaining.tokens)}</p>
             <p className="mt-1 text-xs text-muted-foreground">{usage?.utcDate || usage?.argentinaDate || `${APP_TIME_ZONE_LABEL} day`}</p>
-          </div>
-          <div className="rounded-md border border-border bg-background p-4">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Output Tokens</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.today.outputTokens)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Remaining {formatNumber(usage?.remaining.tokens)}</p>
           </div>
         </div>
 
@@ -487,7 +448,9 @@ export default function Settings() {
           </div>
         ) : null}
 
-        <div className="overflow-x-auto border-t border-border">
+        <details className="border-t border-border">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Recent AI activity</summary>
+          <div className="overflow-x-auto border-t border-border">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
               <tr>
@@ -520,53 +483,9 @@ export default function Settings() {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div className="sg-panel space-y-4 p-6">
-        {Object.entries(LABELS).map(([key, label]) => (
-          <div key={key}>
-            <label className="sg-label mb-1 block">{label}</label>
-            <input
-              type={key === 'DISCOURSE_API_KEY' ? 'password' : 'text'}
-              value={config[key] || ''}
-              readOnly
-              className={inputCls}
-            />
           </div>
-        ))}
+        </details>
       </div>
-
-      <div className="sg-panel overflow-hidden p-0">
-        <div className="border-b border-border px-6 py-4">
-          <h2 className="text-lg font-semibold text-foreground">Automation Schedule</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Automation schedule in {APP_TIME_ZONE_LABEL}.</p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-sm">
-            <thead className="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold">Job</th>
-                <th className="px-4 py-3 text-left font-semibold">Endpoint</th>
-                <th className="px-4 py-3 text-left font-semibold">{APP_TIME_ZONE_LABEL}</th>
-                <th className="px-4 py-3 text-left font-semibold">Purpose</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(health?.jobs || []).map((item) => (
-                <tr key={item.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium text-foreground">{item.job}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.endpoint}</td>
-                  <td className="px-4 py-3 text-foreground">{item.utc}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{item.purpose}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <p className="text-xs text-muted-foreground">Settings are read from server environment variables.</p>
     </div>
   );
 }

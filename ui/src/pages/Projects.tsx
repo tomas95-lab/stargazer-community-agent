@@ -10,14 +10,12 @@ import {
   Plus as IconPlus,
   Pause as IconPlayerPause,
   Play as IconPlayerPlay,
-  RefreshCw as IconRefresh,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { api, projectSelection, type QmProject } from '@/api';
 import { usePlatform } from '@/platform';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { APP_TIME_ZONE_LABEL, formatAppDateTime } from '@/lib/timezone';
 
 function ProjectRow({
   project,
@@ -54,12 +52,6 @@ function ProjectRow({
             <Badge variant="outline">{project.role || 'owner'}</Badge>
           </div>
           <p className="mt-2 font-mono text-xs text-muted-foreground">{project.projectKey}</p>
-          <div className="mt-3 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
-            <p>Category: {project.categoryId || '-'}</p>
-            <p>Channel: {project.channelId || '-'}</p>
-            <p>Discourse: {project.discourseUsername || '-'}</p>
-            <p>Updated: {formatAppDateTime(project.updatedAt)} {APP_TIME_ZONE_LABEL}</p>
-          </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant={project.discourseApiKeyConfigured ? 'secondary' : 'outline'}>
               {project.discourseApiKeyConfigured ? 'Discourse connected' : 'Discourse missing'}
@@ -67,7 +59,6 @@ function ProjectRow({
             <Badge variant={project.aiProviderConfigured ? 'secondary' : 'outline'}>
               {project.aiProviderConfigured ? 'Gemini included' : 'Gemini unavailable'}
             </Badge>
-            <Badge variant="outline">{project.projectGuidelinesCharacters.toLocaleString()} guideline chars</Badge>
           </div>
         </div>
 
@@ -236,7 +227,7 @@ export default function Projects() {
   };
 
   return (
-    <div className="space-y-6 px-6">
+    <div className="space-y-5 px-4 lg:px-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -257,10 +248,6 @@ export default function Projects() {
               Export
             </Button>
           )}
-          <Button onClick={() => void refreshProjects()} disabled={loading} variant="outline">
-            <IconRefresh />
-            Refresh
-          </Button>
           <Button asChild>
             <Link to="/projects/new">
               <IconPlus />
@@ -272,29 +259,6 @@ export default function Projects() {
 
       {error && <div className="sg-status-danger rounded-lg border p-4 text-sm">{error}</div>}
       {message && <div className="sg-status-success rounded-lg border p-4 text-sm">{message}</div>}
-
-      <div className="grid gap-3 md:grid-cols-4">
-        <div className="sg-panel p-4">
-          <p className="text-xs font-semibold uppercase text-muted-foreground">Projects</p>
-          <p className="mt-2 text-2xl font-semibold text-foreground">{projects.length}</p>
-        </div>
-        <div className="sg-panel p-4">
-          <p className="text-xs font-semibold uppercase text-muted-foreground">Active</p>
-          <p className="mt-2 truncate text-2xl font-semibold text-foreground">{currentProject?.projectName || '-'}</p>
-        </div>
-        <div className="sg-panel p-4">
-          <p className="text-xs font-semibold uppercase text-muted-foreground">Discourse Ready</p>
-          <p className="mt-2 text-2xl font-semibold text-foreground">
-            {projects.filter((project) => project.discourseApiKeyConfigured).length}
-          </p>
-        </div>
-        <div className="sg-panel p-4">
-          <p className="text-xs font-semibold uppercase text-muted-foreground">AI Ready</p>
-          <p className="mt-2 text-2xl font-semibold text-foreground">
-            {projects.filter((project) => project.aiProviderConfigured).length}
-          </p>
-        </div>
-      </div>
 
       <section className="sg-panel overflow-hidden p-0">
         {loading ? (

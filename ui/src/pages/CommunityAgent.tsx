@@ -9,16 +9,8 @@ import {
   type CommunityAgentResult,
 } from '../api';
 import { APP_TIME_ZONE_LABEL, formatAppTimeWithSeconds } from '@/lib/timezone';
-
-function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div className="sg-panel p-4">
-      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-foreground">{value}</p>
-      {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
-    </div>
-  );
-}
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 function Badge({ children, tone }: { children: string; tone: 'green' | 'yellow' | 'gray' | 'blue' | 'red' }) {
   const cls = {
@@ -153,10 +145,12 @@ function InboxThreadCard({
   thread,
   index,
   candidateIds,
+  decision,
 }: {
   thread: InboxThread;
   index: number;
   candidateIds: Set<string>;
+  decision?: CommunityAgentDecision;
 }) {
   const replies = thread.replies;
   const totalReplies = replies.length + thread.evidence.length;
@@ -186,11 +180,17 @@ function InboxThreadCard({
           </div>
         )}
       </div>
+      {decision ? (
+        <div className="border-t bg-muted/20 p-4">
+          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Gemini decision</p>
+          <DecisionCard decision={decision} embedded />
+        </div>
+      ) : null}
     </section>
   );
 }
 
-function DecisionCard({ decision }: { decision: CommunityAgentDecision }) {
+function DecisionCard({ decision, embedded = false }: { decision: CommunityAgentDecision; embedded?: boolean }) {
   const tone = decision.error
     ? 'red'
     : decision.action === 'reply'
@@ -202,7 +202,7 @@ function DecisionCard({ decision }: { decision: CommunityAgentDecision }) {
           : 'gray';
 
   return (
-    <div className="sg-panel space-y-3 p-5">
+    <div className={embedded ? 'space-y-3' : 'sg-panel space-y-3 p-5'}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -243,7 +243,6 @@ export default function CommunityAgent() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
-  const [includeCommunity, setIncludeCommunity] = useState(true);
   const [skipProcessed, setSkipProcessed] = useState(true);
   const [post, setPost] = useState(false);
   const [react, setReact] = useState(false);
@@ -251,7 +250,7 @@ export default function CommunityAgent() {
   const load = () => {
     setLoading(true);
     setError('');
-    api.getCommunityAgentOverview({ includeCommunity, messageCount: 50 })
+    api.getCommunityAgentOverview({ includeCommunity: true, messageCount: 50 })
       .then(setOverview)
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
@@ -266,6 +265,10 @@ export default function CommunityAgent() {
     [overview],
   );
   const inboxThreads = useMemo(() => buildInboxThreads(overview?.items || []), [overview]);
+  const decisionsByItem = useMemo(
+    () => new Map((result?.decisions || []).map((decision) => [decision.itemId, decision])),
+    [result],
+  );
   const counts = useMemo(() => {
     const items = overview?.items || [];
     return {
@@ -281,14 +284,14 @@ export default function CommunityAgent() {
       const next = await api.runCommunityAgent({
         post,
         react,
-        includeCommunity,
+        includeCommunity: true,
         skipProcessed,
         markProcessed: post || react,
         maxAnswers: 4,
         messageCount: 50,
       });
       setResult(next);
-      await api.getCommunityAgentOverview({ includeCommunity, messageCount: 50 }).then(setOverview);
+      await api.getCommunityAgentOverview({ includeCommunity: true, messageCount: 50 }).then(setOverview);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -297,78 +300,63 @@ export default function CommunityAgent() {
   };
 
   return (
-    <div className="space-y-6 px-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="space-y-5 px-4 lg:px-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Community Agent</h1>
           <p className="mt-1 text-sm text-muted-foreground">{overview?.window.operatingHours || `Agent scans the current ${APP_TIME_ZONE_LABEL} day.`}</p>
         </div>
-        <button
+        <Button
+          variant="outline"
           onClick={load}
           disabled={loading || running}
-          className="rounded-md border bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent disabled:opacity-50"
         >
           Refresh
-        </button>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat label="Date" value={overview?.window.utcDate || overview?.window.argentinaDate || '-'} sub={APP_TIME_ZONE_LABEL} />
-        <Stat label="Guideline" value={overview?.guidelines.available ? 'Ready' : 'Missing'} sub={overview ? `${overview.guidelines.characters} chars` : ''} />
-        <Stat label="Community" value={counts.community} sub={`${counts.withReplies} with replies`} />
-        <Stat label="Candidates" value={overview?.candidates.length || 0} sub="pending check" />
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Badge tone={overview?.guidelines.available ? 'green' : 'yellow'}>
+          {overview?.guidelines.available ? 'Guidelines ready' : 'Guidelines missing'}
+        </Badge>
+        <span className="text-muted-foreground">{counts.community} messages</span>
+        <span className="text-muted-foreground">{counts.withReplies} threads with replies</span>
+        <span className="text-muted-foreground">{overview?.candidates.length || 0} pending</span>
       </div>
 
-      <div className="sg-panel space-y-4 p-5">
-        <div className="flex flex-wrap items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" checked={includeCommunity} onChange={(e) => setIncludeCommunity(e.target.checked)} className="accent-primary" />
-            Community
-          </label>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" checked={skipProcessed} onChange={(e) => setSkipProcessed(e.target.checked)} className="accent-primary" />
-            Skip processed
-          </label>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" checked={post} onChange={(e) => setPost(e.target.checked)} className="accent-primary" />
-            Post safe replies
-          </label>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" checked={react} onChange={(e) => setReact(e.target.checked)} className="accent-primary" />
-            React to useful messages
-          </label>
-        </div>
-
-        <button
+      <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <details className="text-sm">
+          <summary className="cursor-pointer font-medium text-foreground">Run options</summary>
+          <div className="mt-3 flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <Checkbox checked={skipProcessed} onCheckedChange={(checked) => setSkipProcessed(checked === true)} />
+              Skip processed
+            </label>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <Checkbox checked={post} onCheckedChange={(checked) => setPost(checked === true)} />
+              Post safe replies
+            </label>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <Checkbox checked={react} onCheckedChange={(checked) => setReact(checked === true)} />
+              React to useful messages
+            </label>
+          </div>
+        </details>
+        <Button
           onClick={run}
-          disabled={running || loading || !includeCommunity}
-          className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          disabled={running || loading}
         >
           {running ? 'Running Gemini...' : 'Run Gemini'}
-        </button>
+        </Button>
       </div>
 
       {error && <div className="sg-status-danger rounded-lg border p-4 text-sm">{error}</div>}
 
-      {result && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">Gemini Decisions</h2>
-            <p className="text-xs text-muted-foreground">
-              {result.handled} handled · {result.posted} posted · {result.reacted} reacted · {result.needsHuman} human
-            </p>
-          </div>
-          {result.decisions.length === 0 ? (
-            <div className="sg-panel p-5 text-sm text-muted-foreground">No pending candidates for Gemini.</div>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-4">
-              {result.decisions.map((decision) => (
-                <DecisionCard key={decision.itemId} decision={decision} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {result ? (
+        <p className="text-sm text-muted-foreground">
+          Last run: {result.handled} handled, {result.posted} posted, {result.reacted} reacted, {result.needsHuman} sent to review.
+        </p>
+      ) : null}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
@@ -384,7 +372,16 @@ export default function CommunityAgent() {
             <div className="sg-panel p-5 text-sm text-muted-foreground">Loading...</div>
           ) : inboxThreads.length > 0 ? (
             inboxThreads.map((thread, index) => (
-              <InboxThreadCard key={thread.id} thread={thread} index={index} candidateIds={candidateIds} />
+              <InboxThreadCard
+                key={thread.id}
+                thread={thread}
+                index={index}
+                candidateIds={candidateIds}
+                decision={
+                  decisionsByItem.get(thread.root.id)
+                  || thread.replies.map((reply) => decisionsByItem.get(reply.id)).find(Boolean)
+                }
+              />
             ))
           ) : (
             <div className="sg-panel p-5 text-sm text-muted-foreground">No messages found for today.</div>

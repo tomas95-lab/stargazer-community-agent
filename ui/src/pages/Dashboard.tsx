@@ -1,24 +1,15 @@
 import { useEffect, useState } from "react"
-import type { ComponentType } from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  ArrowRight,
   AlertTriangle,
   Bot,
-  CheckCircle2,
   CircleAlert,
-  FileText,
-  Link2,
-  MessageSquareText,
-  PencilLine,
-  Target,
   Settings,
 } from "lucide-react"
 
 import { api, type PreviewData, type Topic, type Webinar } from "@/api"
 import Preview from "@/components/Preview"
 import PublishButton from "@/components/PublishButton"
-import { SectionCards } from "@/components/section-cards"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -57,33 +48,12 @@ function NextWebinarCard({ webinar }: { webinar: Webinar }) {
   )
 }
 
-function QuickAction({
-  Icon,
-  label,
-  onClick,
-}: {
-  Icon: ComponentType<{ className?: string }>
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex min-h-24 flex-col items-center justify-center gap-3 rounded-lg border bg-card p-4 text-center shadow-xs transition-colors hover:bg-muted"
-    >
-      <Icon className="size-5 text-primary" />
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-    </button>
-  )
-}
-
 export default function Dashboard() {
   const navigate = useNavigate()
   const { currentProject } = usePlatform()
   const [date, setDate] = useState("")
   const [topic, setTopic] = useState<Topic | null>(null)
   const [preview, setPreview] = useState<PreviewData | null>(null)
-  const [allTopics, setAllTopics] = useState<Topic[]>([])
   const [webinars, setWebinars] = useState<Webinar[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"thread" | "announcement">("thread")
@@ -91,12 +61,10 @@ export default function Dashboard() {
   useEffect(() => {
     Promise.all([
       api.getToday(),
-      api.getTopics(),
       api.getWebinars(),
-    ]).then(([today, topics, wbns]) => {
+    ]).then(([today, wbns]) => {
       setDate(today.date)
       setTopic(today.topic)
-      setAllTopics(topics)
       setWebinars(wbns)
       if (today.topic) {
         api.getPreview(today.date).then(setPreview).catch(() => {})
@@ -109,7 +77,6 @@ export default function Dashboard() {
     .filter((w) => new Date(`${w.date}T${w.timeUtc}:00Z`) > new Date())
     .sort((a, b) => a.date.localeCompare(b.date))[0]
 
-  const upcomingTopics = allTopics.filter((t) => t.date >= date).length
   const readiness = [
     { label: "Community target", ready: Boolean(currentProject?.categoryId && currentProject.channelId) },
     { label: "Discourse", ready: Boolean(currentProject?.discourseApiKeyConfigured) },
@@ -150,56 +117,31 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <SectionCards
-        stats={{
-          todayStatus: topic ? "Ready" : "Missing",
-          todayDate: date,
-          upcomingTopics,
-          sessions: webinars.length,
-          agentStatus: currentProject?.enabled ? "Active" : "Paused",
-        }}
-      />
-
-      <div className="px-4 lg:px-6">
-        <div className={`flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between ${readyCount === readiness.length ? "bg-emerald-50/60" : "bg-amber-50/60"}`}>
+      {readyCount < readiness.length ? (
+        <div className="px-4 lg:px-6">
+          <div className="flex flex-col gap-4 rounded-lg border border-amber-200 bg-amber-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            {readyCount === readiness.length
-              ? <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-700" />
-              : <CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" />}
+            <CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" />
             <div>
-              <p className="text-sm font-semibold">{readyCount === readiness.length ? "Project is ready" : `${readiness.length - readyCount} setup item${readiness.length - readyCount === 1 ? "" : "s"} need attention`}</p>
+              <p className="text-sm font-semibold">{readiness.length - readyCount} setup item{readiness.length - readyCount === 1 ? "" : "s"} need attention</p>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                {readiness.map((item) => (
-                  <span key={item.label} className={`text-xs ${item.ready ? "text-emerald-700" : "text-amber-800"}`}>
-                    {item.ready ? "Ready" : "Missing"}: {item.label}
+                {readiness.filter((item) => !item.ready).map((item) => (
+                  <span key={item.label} className="text-xs text-amber-800">
+                    Missing: {item.label}
                   </span>
                 ))}
               </div>
             </div>
           </div>
-          {readyCount < readiness.length ? (
             <Button variant="outline" size="sm" onClick={() => navigate("/project")} className="bg-background">
               <Settings className="size-4" />
               Complete setup
-              <ArrowRight className="size-4" />
             </Button>
-          ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {nextWebinar && <NextWebinarCard webinar={nextWebinar} />}
-
-      <div className="px-4 lg:px-6">
-        <p className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Quick Actions</p>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          <QuickAction Icon={FileText} label="Manage Topics" onClick={() => navigate("/topics")} />
-          <QuickAction Icon={MessageSquareText} label="Send a Comm" onClick={() => navigate("/comms")} />
-          <QuickAction Icon={PencilLine} label="Compose Draft" onClick={() => navigate("/composer")} />
-          <QuickAction Icon={Bot} label="Community Agent" onClick={() => navigate("/agent")} />
-          <QuickAction Icon={Target} label="Schedule Session" onClick={() => navigate("/webinars")} />
-          <QuickAction Icon={Link2} label="Edit Links" onClick={() => navigate("/links")} />
-        </div>
-      </div>
 
       {!topic && (
         <div className="px-4 lg:px-6">

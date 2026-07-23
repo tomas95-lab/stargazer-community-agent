@@ -30,7 +30,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { APP_TIME_ZONE_LABEL, formatAppDateTime } from '@/lib/timezone';
 
 const CATEGORIES = [
@@ -716,35 +716,35 @@ export default function CommsAutomator() {
   );
 
   return (
-    <div className="flex min-h-[600px] flex-col gap-6 px-6 lg:flex-row">
-      <aside className="w-full shrink-0 lg:w-52">
-        <Card className="overflow-hidden p-1">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => {
-                setActiveCategory(cat.id);
-                setSelectedTemplate(null);
-                setEditingTemplate(undefined);
-              }}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm transition-colors',
-                activeCategory === cat.id
-                  ? 'bg-primary font-medium text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
-              )}
-            >
-              {(() => {
-                const Icon = CATEGORY_ICONS[cat.id];
-                return <Icon className="size-4" />;
-              })()}
-              <span>{cat.label}</span>
-            </button>
-          ))}
-        </Card>
-      </aside>
+    <div className="min-h-[600px] space-y-5 px-4 lg:px-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Message templates</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Reuse, customize, and schedule project communications.</p>
+        </div>
+        <div className="w-full sm:w-64">
+          <Label htmlFor="template-category">Category</Label>
+          <Select
+            value={activeCategory}
+            onValueChange={(value) => {
+              setActiveCategory(value);
+              setSelectedTemplate(null);
+              setEditingTemplate(undefined);
+            }}
+          >
+            <SelectTrigger id="template-category" className="mt-1 w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((category) => (
+                <SelectItem key={category.id} value={category.id}>{category.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         {selectedTemplate ? (
           <div className="space-y-6">
             <CommsForm

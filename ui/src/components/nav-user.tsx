@@ -1,10 +1,8 @@
 import {
   MoreVertical as IconDotsVertical,
-  History as IconHistory,
-  Link as IconLink,
+  CircleHelp as IconHelp,
   LogOut as IconLogout,
   Settings as IconSettings,
-  CircleUserRound as IconUserCircle,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 
@@ -88,21 +86,9 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link to="/agent">
-                <IconUserCircle />
-                Community Agent
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/links">
-                  <IconLink />
-                  Links
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/history">
-                  <IconHistory />
-                  History
+                <Link to="/help">
+                  <IconHelp />
+                  Help center
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

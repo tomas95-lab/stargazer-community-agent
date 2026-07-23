@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Save as IconDeviceFloppy, LoaderCircle as IconLoader2, Plus as IconPlus, RefreshCw as IconRefresh, Trash2 as IconTrash } from 'lucide-react';
+import { Save as IconDeviceFloppy, LoaderCircle as IconLoader2, Plus as IconPlus, Trash2 as IconTrash } from 'lucide-react';
 import { api, type ProjectMemory, type ProjectMemoryFact } from '../api';
 import { Button } from '@/components/ui/button';
 
@@ -91,17 +91,13 @@ export default function ProjectMemoryPage() {
   };
 
   return (
-    <div className="space-y-6 px-6">
+    <div className="space-y-5 px-4 lg:px-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Project Memory</h1>
-          {memory && <p className="mt-2 text-sm text-muted-foreground">{memory.facts.length} facts available</p>}
+          <h1 className="text-2xl font-semibold text-foreground">Project knowledge</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Verified facts the agent can use when guidelines do not cover a question.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={load} variant="outline" disabled={loading || saving}>
-            <IconRefresh />
-            Refresh
-          </Button>
           <Button onClick={save} disabled={saving || !memory}>
             {saving ? <IconLoader2 className="animate-spin" /> : <IconDeviceFloppy />}
             Save
@@ -117,7 +113,7 @@ export default function ProjectMemoryPage() {
           <p className="text-sm font-semibold text-foreground">Facts</p>
           <Button onClick={addFact} disabled={!memory || saving} variant="outline" size="sm">
             <IconPlus />
-            Add Fact
+            Add fact
           </Button>
         </div>
 

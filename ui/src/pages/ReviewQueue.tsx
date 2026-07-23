@@ -41,15 +41,6 @@ function composerLink(item: ReviewQueueItem): string {
   return `/composer?${params.toString()}`;
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="sg-panel p-4">
-      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
-    </div>
-  );
-}
-
 function QueueItem({
   item,
   updating,
@@ -179,7 +170,7 @@ export default function ReviewQueue() {
   }, [result]);
 
   return (
-    <div className="space-y-6 px-6">
+    <div className="space-y-5 px-4 lg:px-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -199,23 +190,21 @@ export default function ReviewQueue() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-6">
-        <Stat label="Open" value={result?.totals.open ?? '-'} />
-        <Stat label="High" value={result?.totals.high ?? '-'} />
-        <Stat label="Community" value={result?.totals.community ?? '-'} />
-        <Stat label="DM" value={result?.totals.dm ?? '-'} />
-        <Stat label="Resolved" value={result?.totals.resolved ?? '-'} />
-        <Stat label="Dismissed" value={result?.totals.dismissed ?? '-'} />
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Badge>{result?.totals.open ?? 0} open</Badge>
+        <Badge variant={result?.totals.high ? 'destructive' : 'secondary'}>{result?.totals.high ?? 0} high priority</Badge>
+        <span className="text-muted-foreground">{result?.totals.community ?? 0} Community</span>
+        <span className="text-muted-foreground">{result?.totals.dm ?? 0} DMs</span>
       </div>
 
       {error && <div className="sg-status-danger rounded-lg border p-4 text-sm">{error}</div>}
 
       {knowledgeGaps.length > 0 && (
-        <section className="sg-panel overflow-hidden p-0">
-          <div className="border-b border-border px-5 py-4">
-            <h2 className="text-base font-semibold text-foreground">Knowledge gaps</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Repeated reasons the agent needed a human. Use these to improve Project Guidelines.</p>
-          </div>
+        <details className="sg-panel overflow-hidden p-0">
+          <summary className="cursor-pointer px-5 py-4">
+            <span className="text-sm font-semibold text-foreground">Knowledge gaps</span>
+            <span className="ml-2 text-sm text-muted-foreground">{knowledgeGaps.length} suggestions from repeated escalations</span>
+          </summary>
           <div className="divide-y divide-border">
             {knowledgeGaps.map((gap) => (
               <div key={gap.id} className="grid gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
@@ -241,7 +230,7 @@ export default function ReviewQueue() {
               </div>
             ))}
           </div>
-        </section>
+        </details>
       )}
 
       <section className="sg-panel overflow-hidden p-0">

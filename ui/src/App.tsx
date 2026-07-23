@@ -6,6 +6,7 @@ import { FlaskConical } from "lucide-react"
 import { AuthProvider, useAuth } from "@/auth"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
+import { WorkspaceSubnav } from "@/components/workspace-subnav"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
@@ -115,6 +116,7 @@ function WorkspaceRoutes() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
+        <WorkspaceSubnav />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 py-5 md:gap-6 md:py-7">
