@@ -20,6 +20,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import {
   api,
   projectSelection,
+  type DiscourseAccessCheckResult,
   type DiscourseAuthStatus,
   type QmProjectInput,
 } from "@/api"
@@ -52,6 +53,11 @@ interface ProjectSetupDraft {
   version: 1
   form: PersistedProjectFormState
   savedAt: string
+}
+
+interface PendingDiscourseAuthorization {
+  nonce: string
+  expiresAt: string
 }
 
 interface SetupStep {
@@ -193,6 +199,33 @@ function clearDraft(key: string): void {
   window.localStorage.removeItem(`${key}:step`)
 }
 
+function discourseAttemptKey(userId: string): string {
+  return `qm_discourse_authorization:${userId}`
+}
+
+function readDiscourseAttempt(userId: string): PendingDiscourseAuthorization | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = window.localStorage.getItem(discourseAttemptKey(userId))
+    if (!raw) return null
+    const attempt = JSON.parse(raw) as PendingDiscourseAuthorization
+    if (!attempt.nonce || new Date(attempt.expiresAt).getTime() <= Date.now()) {
+      window.localStorage.removeItem(discourseAttemptKey(userId))
+      return null
+    }
+    return attempt
+  } catch {
+    return null
+  }
+}
+
+function writeDiscourseAttempt(userId: string, attempt: PendingDiscourseAuthorization | null): void {
+  if (typeof window === "undefined") return
+  const key = discourseAttemptKey(userId)
+  if (attempt) window.localStorage.setItem(key, JSON.stringify(attempt))
+  else window.localStorage.removeItem(key)
+}
+
 export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -213,6 +246,10 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   const [draggingGuidelines, setDraggingGuidelines] = useState(false)
   const [lookingUpProject, setLookingUpProject] = useState(false)
   const [discourseStatus, setDiscourseStatus] = useState<DiscourseAuthStatus | null>(null)
+  const [pendingDiscourseAuthorization, setPendingDiscourseAuthorization] = useState<PendingDiscourseAuthorization | null>(null)
+  const [authorizationCode, setAuthorizationCode] = useState("")
+  const [verifyingAuthorization, setVerifyingAuthorization] = useState(false)
+  const [discourseAccess, setDiscourseAccess] = useState<DiscourseAccessCheckResult | null>(null)
   const [activeDraftKey, setActiveDraftKey] = useState("")
   const [categoryUrl, setCategoryUrl] = useState("")
   const [error, setError] = useState("")
@@ -224,6 +261,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
 
   useEffect(() => {
     if (!user) return
+
+    setPendingDiscourseAuthorization(readDiscourseAttempt(user.id))
 
     const key = draftKey(user.id, activeProject?.id)
     const fallback = activeProject
@@ -302,7 +341,14 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       .catch(() => undefined)
   }, [location.search, user])
 
-  const discourseConnected = Boolean(discourseStatus?.connected || activeProject?.discourseApiKeyConfigured)
+  const discourseConnected = discourseStatus
+    ? discourseStatus.connected
+    : Boolean(activeProject?.discourseApiKeyConfigured)
+
+  const connectionReady = Boolean(
+    form.discourseApiKey.trim()
+    || (discourseConnected && (editing || discourseAccess)),
+  )
 
   const completedSteps = useMemo(() => [
     Boolean(form.ownerName.trim() && form.projectName.trim() && form.projectKey.trim()),
@@ -312,13 +358,13 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       && form.channelId.trim()
       && form.discourseUsername.trim(),
     ),
-    Boolean(discourseConnected || form.discourseApiKey.trim()),
+    connectionReady,
     form.projectGuidelines.trim().length >= 100,
     Boolean(form.agentMode)
       && Number.isFinite(Number(form.minConfidence))
       && Number(form.minConfidence) >= 0
       && Number(form.minConfidence) <= 1,
-  ], [discourseConnected, form])
+  ], [connectionReady, form])
 
   const completedCount = completedSteps.filter(Boolean).length
   const progress = ((currentStep + 1) / SETUP_STEPS.length) * 100
@@ -326,6 +372,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
 
   function update<K extends keyof ProjectFormState>(key: K, value: ProjectFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
+    if (["communityBaseUrl", "categoryId", "channelId", "discourseApiClientId"].includes(String(key))) {
+      setDiscourseAccess(null)
+    }
   }
 
   function validationMessage(stepIndex: number): string {
@@ -348,6 +397,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     if (stepIndex === 2) {
       if (!discourseConnected && !form.discourseApiKey.trim()) {
         return "Connect Discourse or use the manual User API Key fallback."
+      }
+      if (!editing && discourseConnected && !discourseAccess) {
+        return "Check category and channel access before continuing."
       }
     }
     if (stepIndex === 3 && form.projectGuidelines.trim().length < 100) {
@@ -508,7 +560,12 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         projectId: activeProject?.id,
         returnTo: location.pathname,
       })
-      setMessage("Authorization opened in a new tab. Return here when Community confirms access.")
+      const attempt = { nonce: result.nonce, expiresAt: result.expiresAt }
+      setPendingDiscourseAuthorization(attempt)
+      setAuthorizationCode("")
+      setDiscourseAccess(null)
+      if (user) writeDiscourseAttempt(user.id, attempt)
+      setMessage("Authorization opened in a new tab. Authorize the app, then paste the code shown by Community below.")
       if (authWindow) {
         authWindow.location.href = result.authorizationUrl
       } else {
@@ -519,6 +576,78 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setConnectingDiscourse(false)
+    }
+  }
+
+  async function checkDiscourseAccess() {
+    setVerifyingAuthorization(true)
+    setError("")
+    setMessage("")
+    try {
+      const result = await api.checkDiscourseAccess({
+        projectId: activeProject?.id,
+        communityBaseUrl: form.communityBaseUrl,
+        discourseApiClientId: form.discourseApiClientId,
+        categoryId: form.categoryId,
+        channelId: form.channelId,
+      })
+      setDiscourseAccess(result)
+      setDiscourseStatus((current) => ({
+        connected: true,
+        username: result.username,
+        apiVersion: current?.apiVersion || "",
+        createdAt: current?.createdAt || "",
+        updatedAt: new Date().toISOString(),
+      }))
+      update("discourseUsername", result.username)
+      setMessage(`Connected as ${result.username}. Category and channel access verified.`)
+    } catch (err) {
+      setDiscourseAccess(null)
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setVerifyingAuthorization(false)
+    }
+  }
+
+  async function verifyDiscourseAuthorization() {
+    if (!pendingDiscourseAuthorization) {
+      setError("Authorization expired. Open Community and authorize the app again.")
+      return
+    }
+    setVerifyingAuthorization(true)
+    setError("")
+    setMessage("")
+    try {
+      const result = await api.completeDiscourseAuth({
+        nonce: pendingDiscourseAuthorization.nonce,
+        payload: authorizationCode.trim(),
+      })
+      setDiscourseStatus({
+        connected: true,
+        username: result.username,
+        apiVersion: result.apiVersion,
+        createdAt: "",
+        updatedAt: new Date().toISOString(),
+      })
+      update("discourseUsername", result.username)
+      setPendingDiscourseAuthorization(null)
+      setAuthorizationCode("")
+      if (user) writeDiscourseAttempt(user.id, null)
+
+      const access = await api.checkDiscourseAccess({
+        projectId: activeProject?.id,
+        communityBaseUrl: form.communityBaseUrl,
+        discourseApiClientId: form.discourseApiClientId,
+        categoryId: form.categoryId,
+        channelId: form.channelId,
+      })
+      setDiscourseAccess(access)
+      setMessage(`Connected as ${access.username}. Category and channel access verified.`)
+    } catch (err) {
+      setDiscourseAccess(null)
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setVerifyingAuthorization(false)
     }
   }
 
@@ -610,6 +739,13 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         discourseStatus={discourseStatus}
         connectingDiscourse={connectingDiscourse}
         onConnectDiscourse={() => void connectDiscourse()}
+        authorizationPending={Boolean(pendingDiscourseAuthorization)}
+        authorizationCode={authorizationCode}
+        onAuthorizationCodeChange={setAuthorizationCode}
+        onVerifyAuthorization={() => void verifyDiscourseAuthorization()}
+        verifyingAuthorization={verifyingAuthorization}
+        accessVerified={Boolean(discourseAccess)}
+        onCheckAccess={() => void checkDiscourseAccess()}
         platformGeminiReady={platformGeminiReady || Boolean(activeProject?.aiProviderConfigured)}
         geminiModel={geminiModel || activeProject?.aiModel || ""}
       />

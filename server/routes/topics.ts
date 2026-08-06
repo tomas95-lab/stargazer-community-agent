@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { DailyThreadConfig } from '../../src/config';
 import { todayDate } from '../../src/utils';
-import { readDataJSON, writeDataJSON } from '../../src/data-store';
+import { readDataJSONOrDefault, writeDataJSON } from '../../src/data-store';
 import { requireAdminToken } from '../auth';
 import { appendOperationLog } from '../../src/operations-log';
 import {
@@ -14,7 +14,7 @@ const router = Router();
 const FILE = 'data/topics.json';
 
 async function readTopics(): Promise<DailyThreadConfig[]> {
-  return readDataJSON<DailyThreadConfig[]>(FILE);
+  return readDataJSONOrDefault<DailyThreadConfig[]>(FILE, []);
 }
 
 router.get('/', async (_req: Request, res: Response) => {

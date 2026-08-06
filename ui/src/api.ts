@@ -824,6 +824,7 @@ export interface PushStatus {
 export interface DiscourseAuthStatus {
   connected: boolean;
   username: string;
+  error?: string;
   apiVersion: string;
   createdAt: string;
   updatedAt: string;
@@ -841,6 +842,13 @@ export interface DiscourseAuthCompleteResult {
   username: string;
   apiVersion: string;
   expiresAt: string;
+}
+
+export interface DiscourseAccessCheckResult {
+  connected: boolean;
+  username: string;
+  categoryId: string;
+  channelId: string;
 }
 
 export const api = {
@@ -1093,5 +1101,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(opts),
     }),
+  checkDiscourseAccess: (opts: {
+    projectId?: string;
+    communityBaseUrl: string;
+    discourseApiClientId: string;
+    categoryId: string;
+    channelId: string;
+  }) => request<DiscourseAccessCheckResult>('/discourse-auth/check', {
+    method: 'POST',
+    body: JSON.stringify(opts),
+  }),
   getDiscourseAuthStatus: () => request<DiscourseAuthStatus>('/discourse-auth/status'),
 };

@@ -10,12 +10,6 @@ import {
 } from "@/components/ui/sidebar"
 import type { WorkspaceGuide } from "@/lib/workspace-guides"
 
-const modulePaths: Record<string, string[]> = {
-  "/agent": ["/agent", "/dms", "/review", "/summary"],
-  "/composer": ["/composer", "/comms", "/topics", "/webinars"],
-  "/projects": ["/projects", "/projects/new", "/project", "/memory", "/guidelines", "/links"],
-}
-
 export function NavMain({ items, label }: { items: WorkspaceGuide[]; label?: string }) {
   const { pathname } = useLocation()
 
@@ -25,7 +19,8 @@ export function NavMain({ items, label }: { items: WorkspaceGuide[]; label?: str
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => {
-            const active = (modulePaths[item.path] || [item.path]).includes(pathname)
+            const active = pathname === item.path
+              || (item.path === "/projects" && pathname === "/projects/new")
             return (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton asChild isActive={active} tooltip={item.shortTitle}>

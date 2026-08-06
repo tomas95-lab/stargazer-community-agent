@@ -28,6 +28,12 @@ export interface DataFileInfo {
   modified: string;
 }
 
+export function isMissingDataFileError(err: unknown): boolean {
+  if (err instanceof DataFileNotFoundError) return true;
+  if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') return true;
+  return err instanceof Error && /GitHub API error 404|Data file not found/i.test(err.message);
+}
+
 function requestedMode(): string {
   return (process.env.STORAGE_BACKEND || process.env.DATA_STORE || 'auto').trim().toLowerCase();
 }
@@ -87,6 +93,15 @@ export async function readDataJSON<T>(filePath: string): Promise<T> {
     }
   }
   return readJSONFrom<T>(store, filePath, pathInStore);
+}
+
+export async function readDataJSONOrDefault<T>(filePath: string, fallback: T): Promise<T> {
+  try {
+    return await readDataJSON<T>(filePath);
+  } catch (err) {
+    if (isMissingDataFileError(err)) return fallback;
+    throw err;
+  }
 }
 
 async function readJSONFrom<T>(mode: Exclude<DataStoreMode, 'supabase'>, filePath: string, pathInStore: string): Promise<T> {

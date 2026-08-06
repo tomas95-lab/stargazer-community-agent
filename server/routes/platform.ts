@@ -4,10 +4,12 @@ import {
   createUserProject,
   deleteUserProject,
   disconnectUserGeminiKey,
+  decryptSecret,
   getActiveUserProject,
   getSharedProjectSummary,
   getGuidelineVersion,
   getUserAiKey,
+  getUserDiscourseKey,
   getUserProject,
   getSupabaseAdmin,
   isPlatformConfigured,
@@ -37,6 +39,7 @@ import {
   platformGeminiConfigured,
   validateGeminiApiKey,
 } from '../../src/ai-runtime';
+import { validateDiscourseProjectAccess } from '../../src/discourse-credentials';
 
 const router = Router();
 
@@ -238,6 +241,22 @@ router.post('/projects', requirePlatformUser, async (req: Request, res: Response
   try {
     const authReq = req as AuthenticatedRequest;
     const input = projectInput(req.body);
+    const storedKey = await getUserDiscourseKey(authReq.authUser!.id);
+    const apiKey = input.discourseApiKey?.trim()
+      || (storedKey?.discourse_api_key_ciphertext ? decryptSecret(storedKey.discourse_api_key_ciphertext) : '');
+    if (!apiKey) throw new Error('Connect Discourse before creating the project.');
+    if (input.discourseApiKey?.trim()) {
+      const access = await validateDiscourseProjectAccess({
+        baseUrl: input.communityBaseUrl || 'https://community.outlier.ai',
+        apiKey,
+        apiClientId: input.discourseApiClientId || 'daily-thread-bot',
+        categoryId: input.categoryId || '',
+        channelId: input.channelId || '',
+      });
+      input.discourseUsername = access.username;
+    } else if (storedKey?.discourse_username) {
+      input.discourseUsername = storedKey.discourse_username;
+    }
     const project = await createUserProject(authReq.authUser!, input);
     const aiKey = await saveUserAiKey(authReq.authUser!.id, input);
     res.status(201).json({ project: toPublicProject(project, aiKey) });
@@ -287,20 +306,25 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
     let discourseError = '';
     let channelReachable = false;
     let channelError = '';
-    try {
-      const response = await fetch(`${config.communityBaseUrl}/session/current.json`, {
-        headers: { 'User-Api-Key': config.discourseApiKey, 'User-Api-Client-Id': config.discourseApiClientId },
-        signal: AbortSignal.timeout(6_000),
-      });
-      discourseReachable = response.ok;
-      if (response.ok) {
-        const body = await response.json() as { current_user?: { username?: string } };
-        discourseIdentity = body.current_user?.username || '';
-      } else if (response.status === 403) {
-        discourseError = 'The saved Discourse key is invalid or no longer authorized. Reconnect Discourse.';
-      } else discourseError = `Discourse returned ${response.status}.`;
-    } catch (err) {
-      discourseError = err instanceof Error ? err.message : String(err);
+    const discourseConfigured = Boolean(config.discourseApiKey.trim());
+    if (!discourseConfigured) {
+      discourseError = 'Discourse is not connected. Open Project setup and connect your Community account.';
+    } else {
+      try {
+        const response = await fetch(`${config.communityBaseUrl}/session/current.json`, {
+          headers: { 'User-Api-Key': config.discourseApiKey, 'User-Api-Client-Id': config.discourseApiClientId },
+          signal: AbortSignal.timeout(6_000),
+        });
+        discourseReachable = response.ok;
+        if (response.ok) {
+          const body = await response.json() as { current_user?: { username?: string } };
+          discourseIdentity = body.current_user?.username || '';
+        } else if (response.status === 401 || response.status === 403) {
+          discourseError = 'The saved Discourse key was rejected or is no longer authorized. Reconnect Discourse.';
+        } else discourseError = `Discourse returned ${response.status}.`;
+      } catch (err) {
+        discourseError = err instanceof Error ? err.message : String(err);
+      }
     }
 
     if (discourseReachable && config.communityChatChannelId) {
@@ -320,7 +344,9 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
         channelError = err instanceof Error ? err.message : String(err);
       }
     } else if (!config.communityChatChannelId) channelError = 'Missing channel ID';
-    else channelError = 'Reconnect Discourse before checking the channel.';
+    else channelError = discourseConfigured
+      ? 'Reconnect Discourse before checking the channel.'
+      : 'Connect Discourse before checking the channel.';
 
     const categoryIdValid = /^\d+$/.test(config.communityCategoryId);
     const identityMatches = Boolean(discourseIdentity)
@@ -330,10 +356,10 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
       { id: 'discourse', label: 'Discourse connection', ok: discourseReachable, detail: discourseIdentity || discourseError || 'Not connected' },
       { id: 'category', label: 'Community category', ok: categoryIdValid, detail: categoryIdValid ? config.communityCategoryId : 'Category ID must be numeric.' },
       { id: 'channel', label: 'Community channel', ok: channelReachable, detail: channelReachable ? config.communityChatChannelId : channelError },
-      { id: 'username', label: 'Discourse identity', ok: identityMatches, detail: identityMatches ? discourseIdentity : discourseIdentity ? `Connected as ${discourseIdentity}; expected ${project.discourse_username}.` : project.discourse_username || 'Missing username' },
+      { id: 'username', label: 'Discourse identity', ok: identityMatches, detail: identityMatches ? discourseIdentity : discourseIdentity ? `Connected as ${discourseIdentity}; expected ${project.discourse_username}.` : discourseConfigured ? project.discourse_username || 'Missing username' : `Expected ${project.discourse_username || 'username not set'}; reconnect to verify.` },
       { id: 'guidelines', label: 'Project guidelines', ok: project.project_guidelines.trim().length >= 100, detail: `${project.project_guidelines.length} characters` },
       { id: 'gemini', label: 'Gemini platform service', ok: aiStatus.connected, detail: aiStatus.connected ? `${aiStatus.model}, ${aiStatus.managed ? 'managed by the platform' : 'personal fallback active'}` : 'Platform Gemini configuration is pending' },
-      { id: 'automation', label: 'Project automation', ok: project.enabled && project.status !== 'archived', detail: project.status || (project.enabled ? 'active' : 'paused') },
+      { id: 'automation', label: 'Project automation', ok: project.enabled && project.status !== 'archived' && discourseReachable, detail: !discourseReachable && project.enabled ? 'Not operational until Discourse is connected' : project.status || (project.enabled ? 'active' : 'paused') },
     ];
     res.json({ projectId: project.id, generatedAt: new Date().toISOString(), healthy: checks.every((check) => check.ok), checks });
   } catch (err) {

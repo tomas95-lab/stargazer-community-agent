@@ -15,7 +15,22 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/auth"
 import { usePlatform } from "@/platform"
-import { guidesForGroup } from "@/lib/workspace-guides"
+import { workspaceGuides } from "@/lib/workspace-guides"
+
+const sidebarSections = [
+  { label: undefined, paths: ["/"] },
+  { label: "Inbox", paths: ["/agent", "/dms", "/review", "/summary"] },
+  { label: "Content", paths: ["/topics", "/comms", "/composer", "/webinars"] },
+  { label: "Project", paths: ["/projects", "/project", "/guidelines", "/memory", "/links"] },
+  { label: "Monitor", paths: ["/quality", "/history", "/runs", "/sandbox"] },
+  { label: "System", paths: ["/settings", "/help"] },
+] as const
+
+function guidesForPaths(paths: readonly string[]) {
+  return paths
+    .map((path) => workspaceGuides.find((guide) => guide.path === path))
+    .filter((guide): guide is NonNullable<typeof guide> => Boolean(guide))
+}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { currentProject } = usePlatform()
@@ -48,13 +63,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="py-2">
-        <NavMain items={guidesForGroup("Overview")} />
-        <NavMain label="Inbox" items={guidesForGroup("Inbox")} />
-        <NavMain label="Content" items={guidesForGroup("Content")} />
-        <NavMain label="Project" items={guidesForGroup("Project")} />
-        <SidebarSeparator className="mx-3 w-auto" />
-        <NavMain label="System" items={guidesForGroup("System")} />
+      <SidebarContent className="overflow-x-hidden py-2">
+        {sidebarSections.map((section, index) => (
+          <div key={section.label || "overview"}>
+            {index === sidebarSections.length - 1 ? <SidebarSeparator className="mx-3 w-auto" /> : null}
+            <NavMain label={section.label} items={guidesForPaths(section.paths)} />
+          </div>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-2">

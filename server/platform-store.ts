@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEq
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { BotConfig } from '../src/config';
 import { platformGeminiConfigured } from '../src/ai-runtime';
+import { assertDiscourseUserApiKey } from '../src/discourse-credentials';
 import { readDataJSON, writeDataJSON } from '../src/data-store';
 import {
   canonicalProjectId,
@@ -9,6 +10,7 @@ import {
   LEGACY_PROJECT_ALIAS,
   LEGACY_PROJECT_ID,
   ProjectContext,
+  runWithProjectContext,
 } from '../src/project-context';
 
 export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
@@ -444,8 +446,7 @@ export async function saveUserDiscourseKey(
   apiVersion = '',
   nonce = '',
 ): Promise<UserDiscourseKeyRow> {
-  const key = text(apiKey);
-  if (!key) throw new Error('Discourse API key is required.');
+  const key = assertDiscourseUserApiKey(apiKey);
   const existing = await getUserDiscourseKey(userId);
   const encryptedKey = encryptSecret(key);
   const now = new Date().toISOString();
@@ -1207,7 +1208,12 @@ async function initializeProjectFiles(row: QmProjectRow): Promise<void> {
   if (isLegacyProjectId(projectKey)) return;
 
   const base = `data/projects/${projectKey}`;
-  await Promise.all([
+  await runWithProjectContext({
+    projectId: projectKey,
+    ownerId: row.owner_id,
+    projectName: row.project_name,
+    source: 'header',
+  }, () => Promise.all([
     writeDataJSONIfMissing(`${base}/topics.json`, [], `initialize ${row.project_name} topics`),
     writeDataJSONIfMissing(`${base}/webinars.json`, [], `initialize ${row.project_name} sessions`),
     writeDataJSONIfMissing(`${base}/links.json`, {
@@ -1241,7 +1247,7 @@ async function initializeProjectFiles(row: QmProjectRow): Promise<void> {
         },
       ],
     }, `initialize ${row.project_name} memory`),
-  ]);
+  ]));
 }
 
 export function projectBotConfig(row: QmProjectRow, userKey?: UserDiscourseKeyRow | null): BotConfig {

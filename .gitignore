@@ -4,6 +4,7 @@ dist/
 .browser-profile/
 .browser-profile-mobile/
 .visual-*/
+.codex-dev.*.log
 output/**
 data/demo-community-state.json
 !output/.gitkeep

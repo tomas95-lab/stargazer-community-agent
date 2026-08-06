@@ -1,7 +1,5 @@
 import {
-  constants,
   generateKeyPairSync,
-  privateDecrypt,
   randomBytes,
 } from 'crypto';
 import { NextFunction, Router, Request, Response } from 'express';
@@ -13,6 +11,12 @@ import {
   getUserProject,
   text,
 } from '../platform-store';
+import {
+  assertDiscourseUserApiKey,
+  validateDiscourseProjectAccess,
+  validateDiscourseUserApiKey,
+} from '../../src/discourse-credentials';
+import { decryptDiscoursePayload } from '../../src/discourse-auth-crypto';
 
 const router = Router();
 
@@ -119,18 +123,8 @@ export function buildDiscourseAuthorizationUrl(params: {
   return `${authUrl.toString()}?${query}`;
 }
 
-function encryptedPayloadBuffer(payload: string): Buffer {
-  return Buffer.from(payload.trim().replace(/ /g, '+').replace(/[\r\n\t]/g, ''), 'base64');
-}
-
 function decryptPayload(payload: string, privateKeyPem: string): DiscoursePayload {
-  const encrypted = encryptedPayloadBuffer(payload);
-  try {
-    const decrypted = privateDecrypt({ key: privateKeyPem, padding: constants.RSA_PKCS1_OAEP_PADDING }, encrypted);
-    return JSON.parse(decrypted.toString('utf8')) as DiscoursePayload;
-  } catch (err) {
-    throw new Error(`Authorization payload could not be decrypted. ${err instanceof Error ? err.message : String(err)}`.trim());
-  }
+  return decryptDiscoursePayload(payload, privateKeyPem) as DiscoursePayload;
 }
 
 async function deleteExpiredAttempts(): Promise<void> {
@@ -186,28 +180,16 @@ function verifyPayload(
   }
 }
 
-async function fetchDiscourseUsername(userApiKey: string): Promise<string> {
-  try {
-    const res = await fetch(`${DISCOURSE_AUTH_BASE_URL}/session/current.json`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Api-Key': userApiKey,
-        'User-Api-Client-Id': CLIENT_ID,
-      },
-    });
-    if (!res.ok) return '';
-    const data = await res.json() as { current_user?: { username?: string }; username?: string };
-    return text(data.current_user?.username) || text(data.username);
-  } catch {
-    return '';
-  }
-}
-
 async function storeAuthorizedDiscourseKey(attempt: DiscourseAuthAttempt, payload: DiscoursePayload): Promise<string> {
   verifyPayload(attempt, payload);
 
-  const username = await fetchDiscourseUsername(payload.key);
-  const encryptedKey = encryptSecret(payload.key);
+  const apiKey = assertDiscourseUserApiKey(payload.key);
+  const { username } = await validateDiscourseUserApiKey({
+    baseUrl: DISCOURSE_AUTH_BASE_URL,
+    apiKey,
+    apiClientId: CLIENT_ID,
+  });
+  const encryptedKey = encryptSecret(apiKey);
   const now = new Date().toISOString();
 
   const { error: upsertError } = await getSupabaseAdmin()
@@ -283,6 +265,7 @@ router.post('/start', requirePlatformUser, async (req: Request, res: Response) =
       scopes: SCOPES,
       publicKey,
       nonce,
+      padding: 'oaep',
     });
 
     res.json({
@@ -306,15 +289,68 @@ router.get('/status', requirePlatformUser, async (req: Request, res: Response) =
       .maybeSingle();
 
     if (error) throw new Error(error.message);
+    let connected = false;
+    let username = data?.discourse_username || '';
+    let connectionError = '';
+    if (data?.owner_id) {
+      const { data: secretRow, error: secretError } = await getSupabaseAdmin()
+        .from(USER_KEYS_TABLE)
+        .select('discourse_api_key_ciphertext')
+        .eq('owner_id', authReq.authUser!.id)
+        .single();
+      if (secretError) throw new Error(secretError.message);
+      try {
+        const result = await validateDiscourseUserApiKey({
+          baseUrl: DISCOURSE_AUTH_BASE_URL,
+          apiKey: decryptSecret(secretRow.discourse_api_key_ciphertext),
+          apiClientId: CLIENT_ID,
+        });
+        connected = true;
+        username = result.username;
+      } catch (err) {
+        connectionError = err instanceof Error ? err.message : String(err);
+      }
+    }
     res.json({
-      connected: Boolean(data),
-      username: data?.discourse_username || '',
+      connected,
+      username,
+      error: connectionError,
       apiVersion: data?.api_version || '',
       createdAt: data?.created_at || '',
       updatedAt: data?.updated_at || '',
     });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/check', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const projectId = text(req.body?.projectId);
+    const project = projectId ? await getUserProject(authReq.authUser!.id, projectId) : null;
+    const { data, error } = await getSupabaseAdmin()
+      .from(USER_KEYS_TABLE)
+      .select('discourse_api_key_ciphertext, discourse_username')
+      .eq('owner_id', authReq.authUser!.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data?.discourse_api_key_ciphertext) {
+      res.status(400).json({ error: 'Connect Discourse before checking project access.' });
+      return;
+    }
+
+    const result = await validateDiscourseProjectAccess({
+      baseUrl: text(req.body?.communityBaseUrl) || project?.community_base_url || DISCOURSE_AUTH_BASE_URL,
+      apiKey: decryptSecret(data.discourse_api_key_ciphertext),
+      apiClientId: text(req.body?.discourseApiClientId) || project?.discourse_api_client_id || CLIENT_ID,
+      categoryId: text(req.body?.categoryId) || project?.community_category_id || '',
+      channelId: text(req.body?.channelId) || project?.community_chat_channel_id || '',
+      knownUsername: text(data.discourse_username),
+    });
+    res.json({ connected: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
 

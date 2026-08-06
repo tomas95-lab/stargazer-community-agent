@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { projectKeyForDataPath } from '../dist/supabase-data-store.js';
-import { activeDataStore } from '../dist/data-store.js';
+import { activeDataStore, isMissingDataFileError } from '../dist/data-store.js';
 import { runWithProjectContext } from '../dist/project-context.js';
 
 test('Supabase data paths resolve explicit project folders', () => {
@@ -16,6 +16,14 @@ test('Supabase legacy data paths use the active project fallback', () => {
 test('Supabase data paths reject traversal', () => {
   assert.throws(() => projectKeyForDataPath('data/projects/alpha-project/../secret.txt'), /Invalid data path/);
   assert.throws(() => projectKeyForDataPath('data/projects/alpha_project/%/secret.txt'), /Invalid data path/);
+});
+
+test('missing project data files are recognized across storage backends', () => {
+  const enoent = new Error('missing');
+  enoent.code = 'ENOENT';
+  assert.equal(isMissingDataFileError(enoent), true);
+  assert.equal(isMissingDataFileError(new Error('GitHub API error 404: Not Found')), true);
+  assert.equal(isMissingDataFileError(new Error('Database unavailable')), false);
 });
 
 test('the new storage backend setting overrides the legacy data store setting', () => {

@@ -47,7 +47,7 @@ export const workspaceGuides: WorkspaceGuide[] = [
   {
     path: "/agent",
     title: "Community inbox",
-    shortTitle: "Inbox",
+    shortTitle: "Community",
     description: "Review channel messages, generated replies, confidence, and items that need a QM.",
     group: "Inbox",
     icon: Bot,
@@ -97,7 +97,7 @@ export const workspaceGuides: WorkspaceGuide[] = [
   {
     path: "/comms",
     title: "Project communications",
-    shortTitle: "Comms",
+    shortTitle: "Communications",
     description: "Create reusable project messages and schedule or publish them with preserved formatting.",
     group: "Content",
     icon: MessageSquareText,
@@ -107,7 +107,7 @@ export const workspaceGuides: WorkspaceGuide[] = [
   {
     path: "/composer",
     title: "Message composer",
-    shortTitle: "Content",
+    shortTitle: "Composer",
     description: "Generate a polished one-off message from an objective, audience, tone, and channel.",
     group: "Content",
     icon: PenLine,
@@ -137,7 +137,7 @@ export const workspaceGuides: WorkspaceGuide[] = [
   {
     path: "/project",
     title: "Project setup",
-    shortTitle: "Project setup",
+    shortTitle: "Setup",
     description: "Manage Community identifiers, personal Discourse access, and the project's knowledge source.",
     group: "Project",
     icon: SlidersHorizontal,
@@ -147,7 +147,7 @@ export const workspaceGuides: WorkspaceGuide[] = [
   {
     path: "/memory",
     title: "Project memory",
-    shortTitle: "Project memory",
+    shortTitle: "Memory",
     description: "Maintain concise facts and decisions that help the agent answer recurring project questions.",
     group: "Project",
     icon: Database,
@@ -157,7 +157,7 @@ export const workspaceGuides: WorkspaceGuide[] = [
   {
     path: "/guidelines",
     title: "Guidelines history",
-    shortTitle: "Guidelines history",
+    shortTitle: "Guidelines",
     description: "Compare project guideline versions, see who changed them, and restore a trusted previous version.",
     group: "Project",
     icon: ScrollText,
@@ -207,7 +207,7 @@ export const workspaceGuides: WorkspaceGuide[] = [
   {
     path: "/runs",
     title: "Automation runs",
-    shortTitle: "Run details",
+    shortTitle: "Runs",
     description: "Inspect scheduler checks, application outcomes, counts, and errors for each automated job.",
     group: "System",
     icon: ScrollText,
