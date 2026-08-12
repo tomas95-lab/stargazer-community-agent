@@ -79,6 +79,14 @@ export interface DiscourseDirectMessageChannel {
   };
 }
 
+export interface DiscoursePublicChannel {
+  id: number;
+  title?: string | null;
+  slug?: string | null;
+  unicode_title?: string | null;
+  last_message?: DiscourseChannelLastMessage;
+}
+
 export interface DiscourseTopicSummary {
   title: string;
   posts_count: number;
@@ -115,6 +123,9 @@ export class DiscourseClient {
   private baseUrl: string;
   private apiKey: string;
   private apiClientId: string;
+  private requestStartQueue: Promise<void> = Promise.resolve();
+  private blockedUntil = 0;
+  private lastRequestStartedAt = 0;
 
   constructor(config: DiscourseClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/+$/, '');
@@ -136,14 +147,32 @@ export class DiscourseClient {
   }
 
   private rateLimitRetryCount(): number {
-    const retries = Number(process.env.DISCOURSE_RATE_LIMIT_RETRIES || 2);
-    return Math.max(0, Number.isFinite(retries) ? Math.floor(retries) : 2);
+    const retries = Number(process.env.DISCOURSE_RATE_LIMIT_RETRIES || 3);
+    return Math.max(0, Number.isFinite(retries) ? Math.floor(retries) : 3);
+  }
+
+  private requestIntervalMs(): number {
+    const milliseconds = Number(process.env.DISCOURSE_REQUEST_INTERVAL_MS || 250);
+    return Math.max(0, Number.isFinite(milliseconds) ? milliseconds : 250);
+  }
+
+  private rateLimitBufferMs(): number {
+    const milliseconds = Number(process.env.DISCOURSE_RATE_LIMIT_BUFFER_MS || 500);
+    return Math.max(0, Number.isFinite(milliseconds) ? milliseconds : 500);
   }
 
   private parseRateLimitWaitMs(res: Response, body: string): number {
-    const retryAfter = Number(res.headers.get('retry-after'));
-    if (Number.isFinite(retryAfter)) {
-      return Math.min(this.rateLimitMaxWaitMs(), Math.max(0, retryAfter * 1000));
+    const retryAfterHeader = res.headers.get('retry-after');
+    if (retryAfterHeader?.trim()) {
+      const retryAfterSeconds = Number(retryAfterHeader);
+      if (Number.isFinite(retryAfterSeconds)) {
+        return Math.min(this.rateLimitMaxWaitMs(), Math.max(0, retryAfterSeconds * 1000));
+      }
+
+      const retryAt = Date.parse(retryAfterHeader);
+      if (Number.isFinite(retryAt)) {
+        return Math.min(this.rateLimitMaxWaitMs(), Math.max(0, retryAt - Date.now()));
+      }
     }
 
     try {
@@ -166,9 +195,32 @@ export class DiscourseClient {
     await new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  private async waitForRequestSlot(): Promise<void> {
+    let release: () => void = () => undefined;
+    const previous = this.requestStartQueue;
+    this.requestStartQueue = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    await previous;
+    try {
+      const now = Date.now();
+      const waitMs = Math.max(
+        0,
+        this.blockedUntil - now,
+        this.lastRequestStartedAt + this.requestIntervalMs() - now,
+      );
+      await this.sleep(waitMs);
+      this.lastRequestStartedAt = Date.now();
+    } finally {
+      release();
+    }
+  }
+
   private async request<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
     const method = (init?.method || 'GET').toUpperCase();
     if (!['GET', 'HEAD'].includes(method)) assertExternalWriteAllowed();
+    await this.waitForRequestSlot();
     const res = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: {
@@ -180,7 +232,11 @@ export class DiscourseClient {
     if (!res.ok) {
       const body = await res.text();
       if (res.status === 429 && method === 'GET' && attempt < this.rateLimitRetryCount()) {
-        await this.sleep(this.parseRateLimitWaitMs(res, body));
+        const waitMs = Math.min(
+          this.rateLimitMaxWaitMs(),
+          this.parseRateLimitWaitMs(res, body) + this.rateLimitBufferMs(),
+        );
+        this.blockedUntil = Math.max(this.blockedUntil, Date.now() + waitMs);
         return this.request<T>(path, init, attempt + 1);
       }
       throw new Error(`Discourse API error ${res.status}: ${body.slice(0, 500)}`);
@@ -269,11 +325,11 @@ export class DiscourseClient {
   }
 
   async readMyChatChannels(): Promise<{
-    publicChannels: unknown[];
+    publicChannels: DiscoursePublicChannel[];
     directMessageChannels: DiscourseDirectMessageChannel[];
   }> {
     const data = await this.request<{
-      public_channels?: unknown[];
+      public_channels?: DiscoursePublicChannel[];
       direct_message_channels?: DiscourseDirectMessageChannel[];
     }>('/chat/api/me/channels.json');
 

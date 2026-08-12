@@ -1286,12 +1286,23 @@ async function initializeProjectFiles(row: QmProjectRow): Promise<void> {
 export function projectBotConfig(row: QmProjectRow, userKey?: UserDiscourseKeyRow | null): BotConfig {
   const keyCiphertext = text(userKey?.discourse_api_key_ciphertext) || row.discourse_api_key_ciphertext;
   const channelIds = managedChannelIdsForRow(row);
+  const configuredChannels = Array.isArray(row.settings?.managedChannels)
+    ? row.settings.managedChannels
+    : [];
+  const communityChatChannels = configuredChannels.flatMap((value) => {
+    if (!value || typeof value !== 'object') return [];
+    const channel = value as Record<string, unknown>;
+    const id = text(channel.id);
+    const title = text(channel.title);
+    return /^\d+$/.test(id) && title ? [{ id, title }] : [];
+  });
   return {
     communityBaseUrl: row.community_base_url || 'https://community.outlier.ai',
     communityCategoryId: row.community_category_id,
     communityCategorySlug: row.community_category_slug,
     communityChatChannelId: row.community_chat_channel_id,
     communityChatChannelIds: channelIds,
+    communityChatChannels,
     discourseApiKey: decryptSecret(keyCiphertext),
     discourseApiClientId: row.discourse_api_client_id || 'daily-thread-bot',
     discourseUsername: text(userKey?.discourse_username) || row.discourse_username,

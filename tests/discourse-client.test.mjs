@@ -199,3 +199,49 @@ test('DiscourseClient paginates chat messages toward the past', async () => {
     global.fetch = previousFetch;
   }
 });
+
+test('DiscourseClient honors the JSON wait time when Retry-After is absent', async () => {
+  const previousFetch = global.fetch;
+  const previousInterval = process.env.DISCOURSE_REQUEST_INTERVAL_MS;
+  const previousBuffer = process.env.DISCOURSE_RATE_LIMIT_BUFFER_MS;
+  const previousRetries = process.env.DISCOURSE_RATE_LIMIT_RETRIES;
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    if (calls === 1) {
+      return new Response(JSON.stringify({ extras: { wait_seconds: 0.02 } }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify({ messages: [] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  process.env.DISCOURSE_REQUEST_INTERVAL_MS = '0';
+  process.env.DISCOURSE_RATE_LIMIT_BUFFER_MS = '0';
+  process.env.DISCOURSE_RATE_LIMIT_RETRIES = '1';
+
+  try {
+    const client = new DiscourseClient({
+      baseUrl: 'https://community.example/',
+      apiKey: 'key',
+      apiClientId: 'client',
+    });
+    const startedAt = Date.now();
+
+    await client.readChatMessages('42', 25);
+
+    assert.equal(calls, 2);
+    assert.ok(Date.now() - startedAt >= 15, 'expected the JSON wait_seconds value to delay the retry');
+  } finally {
+    global.fetch = previousFetch;
+    if (previousInterval === undefined) delete process.env.DISCOURSE_REQUEST_INTERVAL_MS;
+    else process.env.DISCOURSE_REQUEST_INTERVAL_MS = previousInterval;
+    if (previousBuffer === undefined) delete process.env.DISCOURSE_RATE_LIMIT_BUFFER_MS;
+    else process.env.DISCOURSE_RATE_LIMIT_BUFFER_MS = previousBuffer;
+    if (previousRetries === undefined) delete process.env.DISCOURSE_RATE_LIMIT_RETRIES;
+    else process.env.DISCOURSE_RATE_LIMIT_RETRIES = previousRetries;
+  }
+});

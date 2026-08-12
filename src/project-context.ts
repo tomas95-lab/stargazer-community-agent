@@ -13,6 +13,7 @@ export interface RuntimeBotConfig {
   communityCategorySlug: string;
   communityChatChannelId: string;
   communityChatChannelIds?: string[];
+  communityChatChannels?: Array<{ id: string; title: string }>;
   discourseApiKey: string;
   discourseApiClientId: string;
   discourseUsername: string;

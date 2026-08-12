@@ -259,6 +259,7 @@ export interface CommunityAgentItem {
   id: string;
   source: CommunityAgentSource;
   channelId?: string;
+  channelTitle?: string;
   username: string;
   message: string;
   createdAt: string;
@@ -774,7 +775,8 @@ export interface ProjectHealthResult {
   projectId: string;
   generatedAt: string;
   healthy: boolean;
-  checks: Array<{ id: string; label: string; ok: boolean; detail: string }>;
+  warning?: boolean;
+  checks: Array<{ id: string; label: string; ok: boolean; warning?: boolean; detail: string }>;
 }
 
 export interface GuidelinesExtractionResult {

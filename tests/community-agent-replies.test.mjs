@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { annotateProbableReplies, isLikelyAnswerReply } from '../dist/community-agent.js';
+import { annotateProbableReplies, fetchCommunityAgentItems, isLikelyAnswerReply } from '../dist/community-agent.js';
+import { runWithProjectContext } from '../dist/project-context.js';
 
 function item(overrides) {
   return {
@@ -16,6 +17,55 @@ function item(overrides) {
     isStaff: overrides.isStaff,
   };
 }
+
+test('multi-channel scans use the channel index to skip channels without activity today', async () => {
+  const previousFetch = global.fetch;
+  const previousInterval = process.env.DISCOURSE_REQUEST_INTERVAL_MS;
+  const calls = [];
+  const now = new Date().toISOString();
+  const old = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  process.env.DISCOURSE_REQUEST_INTERVAL_MS = '0';
+  global.fetch = async (url) => {
+    calls.push(String(url));
+    if (String(url).endsWith('/chat/api/me/channels.json')) {
+      return new Response(JSON.stringify({
+        public_channels: [
+          { id: 10, title: 'Active channel', last_message: { id: 100, created_at: now } },
+          { id: 20, title: 'Quiet channel', last_message: { id: 200, created_at: old } },
+        ],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return new Response(JSON.stringify({
+      messages: [{ id: 100, message: 'Can someone help me?', created_at: now, user: { username: 'contributor' } }],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+
+  try {
+    const result = await runWithProjectContext({
+      projectId: 'multi-channel-test',
+      source: 'header',
+      botConfig: {
+        communityBaseUrl: 'https://community.example',
+        communityCategoryId: '',
+        communityCategorySlug: '',
+        communityChatChannelId: '10',
+        communityChatChannelIds: ['10', '20'],
+        communityChatChannels: [{ id: '10', title: 'Active channel' }, { id: '20', title: 'Quiet channel' }],
+        discourseApiKey: 'key',
+        discourseApiClientId: 'client',
+        discourseUsername: 'manager',
+      },
+    }, () => fetchCommunityAgentItems({ includeCommunity: true, onlyToday: true, messageCount: 50 }));
+
+    assert.equal(calls.some((url) => url.includes('/channels/10/messages.json')), true);
+    assert.equal(calls.some((url) => url.includes('/channels/20/messages.json')), false);
+    assert.equal(result.items[0].channelTitle, 'Active channel');
+  } finally {
+    global.fetch = previousFetch;
+    if (previousInterval === undefined) delete process.env.DISCOURSE_REQUEST_INTERVAL_MS;
+    else process.env.DISCOURSE_REQUEST_INTERVAL_MS = previousInterval;
+  }
+});
 
 test('annotateProbableReplies links direct chat replies to the original question', () => {
   const annotated = annotateProbableReplies([

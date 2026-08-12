@@ -24,6 +24,7 @@ const REPLY_LOOKAHEAD_MINUTES = 45;
 const THREAD_SCAN_LIMIT = parseInt(process.env.AGENT_THREAD_SCAN_LIMIT || '6', 10);
 const THREAD_MESSAGE_COUNT = parseInt(process.env.AGENT_THREAD_MESSAGE_COUNT || '30', 10);
 const DAY_SCAN_MESSAGE_LIMIT = parseInt(process.env.AGENT_DAY_SCAN_MESSAGE_LIMIT || '300', 10);
+const MULTI_CHANNEL_DAY_SCAN_MESSAGE_LIMIT = parseInt(process.env.AGENT_MULTI_CHANNEL_MESSAGE_LIMIT || '50', 10);
 const DEFAULT_REACTION_EMOJI = process.env.AGENT_REACTION_EMOJI || '+1';
 const STATE_FILE = 'output/community-agent-state.json';
 
@@ -46,6 +47,7 @@ export interface CommunityAgentItem {
   id: string;
   source: CommunityAgentSource;
   channelId?: string;
+  channelTitle?: string;
   username: string;
   message: string;
   createdAt: string;
@@ -118,7 +120,7 @@ interface AiDecision {
   reaction?: string;
 }
 
-function createClient(): { client: DiscourseClient; channelId: string; channelIds: string[] } {
+function createClient(): { client: DiscourseClient; channelId: string; channelIds: string[]; channelTitles: Map<string, string> } {
   const config = loadBotConfig();
   const channelIds = Array.from(new Set([
     config.communityChatChannelId,
@@ -127,6 +129,7 @@ function createClient(): { client: DiscourseClient; channelId: string; channelId
   return {
     channelId: config.communityChatChannelId,
     channelIds,
+    channelTitles: new Map((config.communityChatChannels || []).map((channel) => [channel.id, channel.title])),
     client: new DiscourseClient({
       baseUrl: config.communityBaseUrl,
       apiKey: config.discourseApiKey,
@@ -565,11 +568,12 @@ async function readCommunityMessagesForOptions(
   channelId: string,
   options: Required<Pick<CommunityAgentOptions, 'onlyToday' | 'messageCount'>>,
   window: ReturnType<typeof todayWindow>,
+  scanMessageLimit = DAY_SCAN_MESSAGE_LIMIT,
 ): Promise<DiscourseChatMessage[]> {
   const pageSize = Math.min(100, Math.max(1, options.messageCount));
   if (!options.onlyToday) return client.readChatMessages(channelId, pageSize);
 
-  const maxMessages = Math.max(pageSize, DAY_SCAN_MESSAGE_LIMIT);
+  const maxMessages = Math.max(pageSize, scanMessageLimit);
   const messagesById = new Map<number, DiscourseChatMessage>();
   let targetMessageId: number | undefined;
 
@@ -628,20 +632,40 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
   errors: string[];
   window: ReturnType<typeof todayWindow>;
 }> {
-  const { client, channelId, channelIds } = createClient();
+  const { client, channelId, channelIds, channelTitles } = createClient();
   const window = todayWindow();
   const items: CommunityAgentItem[] = [];
   const errors: string[] = [];
 
   if (options.includeCommunity) {
     const demo = isDemoMode();
-    const scanChannelIds = demo ? [channelId] : channelIds;
-    const concurrency = Math.max(1, Math.min(8, Number(process.env.AGENT_CHANNEL_SCAN_CONCURRENCY || 5)));
+    let scanChannelIds = demo ? [channelId] : channelIds;
+    const multiChannelScan = scanChannelIds.length > 1;
+    if (multiChannelScan && options.onlyToday) {
+      try {
+        const channelIndex = await client.readMyChatChannels();
+        const knownChannelIds = new Set(channelIndex.publicChannels.map((channel) => String(channel.id)));
+        const activeChannelIds = new Set(channelIndex.publicChannels.flatMap((channel) => {
+          const lastMessage = channel.last_message;
+          if (!lastMessage?.id || !isWithinWindow(lastMessage.created_at, window)) return [];
+          if (channel.title) channelTitles.set(String(channel.id), channel.title);
+          return [String(channel.id)];
+        }));
+        scanChannelIds = scanChannelIds.filter((id) => !knownChannelIds.has(id) || activeChannelIds.has(id));
+      } catch (err) {
+        errors.push(`channel activity index: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    const perChannelMessageLimit = multiChannelScan
+      ? Math.max(1, MULTI_CHANNEL_DAY_SCAN_MESSAGE_LIMIT)
+      : DAY_SCAN_MESSAGE_LIMIT;
+    const defaultConcurrency = multiChannelScan ? 1 : 5;
+    const concurrency = Math.max(1, Math.min(8, Number(process.env.AGENT_CHANNEL_SCAN_CONCURRENCY || defaultConcurrency)));
     const channelScans = await mapWithConcurrency(scanChannelIds, concurrency, async (currentChannelId) => {
       try {
         const messages = demo
           ? await demoCommunityMessages(options.messageCount)
-          : await readCommunityMessagesForOptions(client, currentChannelId, options, window);
+          : await readCommunityMessagesForOptions(client, currentChannelId, options, window, perChannelMessageLimit);
         const seenMessageIds = new Set<number>();
         const threadRoots = new Map<number, number>();
         for (const msg of messages) {
@@ -653,6 +677,7 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
             id: `community:${currentChannelId}:${msg.id}`,
             source: 'community',
             channelId: currentChannelId,
+            channelTitle: channelTitles.get(currentChannelId),
             username: msg.user.username,
             message: msg.message,
             createdAt: msg.created_at,
@@ -672,7 +697,7 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
 
     const threadScans = demo ? [] : channelScans.flatMap((scan) => (
       Array.from(scan.threadRoots.entries()).map(([threadId, rootMessageId]) => ({ ...scan, threadId, rootMessageId }))
-    )).slice(0, Math.max(0, THREAD_SCAN_LIMIT));
+    )).slice(0, Math.max(0, multiChannelScan ? Math.min(3, THREAD_SCAN_LIMIT) : THREAD_SCAN_LIMIT));
     await mapWithConcurrency(threadScans, Math.min(3, concurrency), async (scan) => {
       try {
         const threadMessages = await client.readChatThreadMessages(scan.channelId, scan.threadId, THREAD_MESSAGE_COUNT);
@@ -685,6 +710,7 @@ async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions,
             id: `community:${scan.channelId}:${msg.id}`,
             source: 'community',
             channelId: scan.channelId,
+            channelTitle: channelTitles.get(scan.channelId),
             username: msg.user.username,
             message: msg.message,
             createdAt: msg.created_at,

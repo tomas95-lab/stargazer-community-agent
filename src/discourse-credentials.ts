@@ -86,7 +86,8 @@ async function discourseRequest(
     const body = await response.json().catch(() => ({})) as DiscourseResponseBody;
     if (response.status !== 429 || attempt >= retries) return { response, body };
 
-    const headerSeconds = Number(response.headers.get('retry-after'));
+    const retryAfterHeader = response.headers.get('retry-after');
+    const headerSeconds = retryAfterHeader?.trim() ? Number(retryAfterHeader) : NaN;
     const bodySeconds = Number(body.extras?.wait_seconds);
     const waitSeconds = Number.isFinite(headerSeconds)
       ? headerSeconds

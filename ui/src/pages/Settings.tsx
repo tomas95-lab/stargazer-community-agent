@@ -257,8 +257,8 @@ export default function Settings() {
             <p className="mt-1 text-sm text-muted-foreground">Live checks for {currentProject?.projectName || 'the active project'}.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={projectHealth?.healthy ? 'secondary' : 'outline'}>
-              {projectHealthLoading ? 'checking' : projectHealth?.healthy ? 'healthy' : 'attention needed'}
+            <Badge variant={projectHealth?.healthy && !projectHealth?.warning ? 'secondary' : 'outline'}>
+              {projectHealthLoading ? 'checking' : projectHealth?.warning ? 'temporarily limited' : projectHealth?.healthy ? 'healthy' : 'attention needed'}
             </Badge>
             {currentProject?.settings?.demoMode !== true ? (
               <Button
@@ -291,7 +291,7 @@ export default function Settings() {
           {(projectHealth?.checks || []).map((check) => (
             <div key={check.id} className="bg-background p-4">
               <p className="text-sm font-medium text-foreground">{check.label}</p>
-              <p className={`mt-1 text-xs ${check.ok ? 'text-muted-foreground' : 'text-destructive'}`}>{check.detail}</p>
+              <p className={`mt-1 text-xs ${check.warning ? 'text-amber-700' : check.ok ? 'text-muted-foreground' : 'text-destructive'}`}>{check.detail}</p>
             </div>
           ))}
         </div>

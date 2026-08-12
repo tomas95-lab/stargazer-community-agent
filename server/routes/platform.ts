@@ -395,6 +395,7 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
       return;
     }
     let discourseReachable = false;
+    let discourseRateLimited = false;
     let discourseIdentity = '';
     let discourseError = '';
     let channelReachable = false;
@@ -414,6 +415,9 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
           discourseIdentity = body.current_user?.username || '';
         } else if (response.status === 401 || response.status === 403) {
           discourseError = 'The saved Discourse key was rejected or is no longer authorized. Reconnect Discourse.';
+        } else if (response.status === 429) {
+          discourseRateLimited = true;
+          discourseError = 'Community is temporarily rate limiting live checks. The saved connection remains configured.';
         } else discourseError = `Discourse returned ${response.status}.`;
       } catch (err) {
         discourseError = err instanceof Error ? err.message : String(err);
@@ -437,24 +441,28 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
         channelError = err instanceof Error ? err.message : String(err);
       }
     } else if (!config.communityChatChannelId) channelError = 'Missing channel ID';
+    else if (discourseRateLimited) channelError = 'Channel verification was deferred because Community is temporarily rate limiting checks.';
     else channelError = discourseConfigured
       ? 'Reconnect Discourse before checking the channel.'
       : 'Connect Discourse before checking the channel.';
 
     const categoryIdValid = /^\d+$/.test(config.communityCategoryId);
+    const storedIdentity = project.discourse_username || config.discourseUsername;
     const identityMatches = Boolean(discourseIdentity)
-      && discourseIdentity.toLowerCase() === project.discourse_username.toLowerCase();
+      && discourseIdentity.toLowerCase() === storedIdentity.toLowerCase();
+    const connectionOperational = discourseConfigured && (discourseReachable || discourseRateLimited);
+    const automationOperational = project.enabled && project.status !== 'archived' && connectionOperational;
 
     const checks = [
-      { id: 'discourse', label: 'Discourse connection', ok: discourseReachable, detail: discourseIdentity || discourseError || 'Not connected' },
+      { id: 'discourse', label: 'Discourse connection', ok: connectionOperational, warning: discourseRateLimited, detail: discourseIdentity || discourseError || 'Not connected' },
       { id: 'category', label: 'Community category', ok: categoryIdValid, detail: categoryIdValid ? config.communityCategoryId : 'Category ID must be numeric.' },
-      { id: 'channel', label: 'Community channel', ok: channelReachable, detail: channelReachable ? config.communityChatChannelId : channelError },
-      { id: 'username', label: 'Discourse identity', ok: identityMatches, detail: identityMatches ? discourseIdentity : discourseIdentity ? `Connected as ${discourseIdentity}; expected ${project.discourse_username}.` : discourseConfigured ? project.discourse_username || 'Missing username' : `Expected ${project.discourse_username || 'username not set'}; reconnect to verify.` },
+      { id: 'channel', label: 'Community channel', ok: channelReachable || discourseRateLimited, warning: discourseRateLimited, detail: channelReachable ? config.communityChatChannelId : channelError },
+      { id: 'username', label: 'Discourse identity', ok: identityMatches || (discourseRateLimited && Boolean(storedIdentity)), warning: discourseRateLimited, detail: identityMatches ? discourseIdentity : discourseRateLimited && storedIdentity ? `${storedIdentity} (live verification deferred)` : discourseIdentity ? `Connected as ${discourseIdentity}; expected ${storedIdentity}.` : discourseConfigured ? storedIdentity || 'Missing username' : `Expected ${storedIdentity || 'username not set'}; reconnect to verify.` },
       { id: 'guidelines', label: 'Project guidelines', ok: project.project_guidelines.trim().length >= 100, detail: `${project.project_guidelines.length} characters` },
       { id: 'gemini', label: 'Gemini platform service', ok: aiStatus.connected, detail: aiStatus.connected ? `${aiStatus.model}, ${aiStatus.managed ? 'managed by the platform' : 'personal fallback active'}` : 'Platform Gemini configuration is pending' },
-      { id: 'automation', label: 'Project automation', ok: project.enabled && project.status !== 'archived' && discourseReachable, detail: !discourseReachable && project.enabled ? 'Not operational until Discourse is connected' : project.status || (project.enabled ? 'active' : 'paused') },
+      { id: 'automation', label: 'Project automation', ok: automationOperational, warning: discourseRateLimited, detail: automationOperational ? discourseRateLimited ? 'Active; Community rate limits are retried automatically' : project.status || 'active' : !discourseConfigured && project.enabled ? 'Not operational until Discourse is connected' : project.status || (project.enabled ? 'active' : 'paused') },
     ];
-    res.json({ projectId: project.id, generatedAt: new Date().toISOString(), healthy: checks.every((check) => check.ok), checks });
+    res.json({ projectId: project.id, generatedAt: new Date().toISOString(), healthy: checks.every((check) => check.ok), warning: checks.some((check) => check.warning), checks });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
