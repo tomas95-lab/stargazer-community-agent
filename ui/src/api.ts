@@ -320,6 +320,7 @@ export interface CommunityAgentOverview {
   guidelines: {
     available: boolean;
     characters: number;
+    channelGuidelines?: number;
   };
 }
 
@@ -731,6 +732,17 @@ export interface CommunityGuidelinesImportResult {
   author: string;
   sourceUrl: string;
   characters: number;
+}
+
+export interface ChannelGuideline {
+  channelId: string;
+  channelTitle: string;
+  sourceUrl: string;
+  sourceTitle: string;
+  sourceAuthor: string;
+  text: string;
+  characters: number;
+  syncedAt: string;
 }
 
 export interface GeminiConnectionStatus {

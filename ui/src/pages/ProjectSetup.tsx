@@ -33,6 +33,7 @@ import { ConnectionsStep } from "@/components/project-setup/ConnectionsStep"
 import { IdentityStep } from "@/components/project-setup/IdentityStep"
 import { KnowledgeStep } from "@/components/project-setup/KnowledgeStep"
 import type {
+  ChannelGuidelineForm,
   GuidelinesFileStatus,
   PersistedProjectFormState,
   ProjectFormState,
@@ -134,10 +135,33 @@ const DEFAULT_FORM: ProjectFormState = {
   discourseApiKey: "",
   projectGuidelines: "",
   guidelinesSourceUrl: "",
+  channelGuidelines: [],
   warRoomLink: "",
   agentMode: "supervised",
   autoReplyEnabled: false,
   minConfidence: "0.50",
+}
+
+function channelGuidelinesFromSettings(value: unknown, channelIds: string[]): ChannelGuidelineForm[] {
+  if (!Array.isArray(value)) return []
+  const allowed = new Set(channelIds)
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return []
+    const raw = item as Record<string, unknown>
+    const channelId = typeof raw.channelId === "string" ? raw.channelId : ""
+    if (!/^\d+$/.test(channelId) || !allowed.has(channelId)) return []
+    const text = typeof raw.text === "string" ? raw.text : ""
+    return [{
+      channelId,
+      channelTitle: typeof raw.channelTitle === "string" ? raw.channelTitle : "",
+      sourceUrl: typeof raw.sourceUrl === "string" ? raw.sourceUrl : "",
+      sourceTitle: typeof raw.sourceTitle === "string" ? raw.sourceTitle : "",
+      sourceAuthor: typeof raw.sourceAuthor === "string" ? raw.sourceAuthor : "",
+      text,
+      characters: text.length,
+      syncedAt: typeof raw.syncedAt === "string" ? raw.syncedAt : "",
+    }]
+  })
 }
 
 function projectToForm(project: NonNullable<ReturnType<typeof usePlatform>["currentProject"]>): ProjectFormState {
@@ -158,6 +182,7 @@ function projectToForm(project: NonNullable<ReturnType<typeof usePlatform>["curr
     discourseApiKey: "",
     projectGuidelines: project.projectGuidelines,
     guidelinesSourceUrl: typeof project.settings?.guidelinesSourceUrl === "string" ? project.settings.guidelinesSourceUrl : "",
+    channelGuidelines: channelGuidelinesFromSettings(project.settings?.channelGuidelines, managedChannelIds),
     warRoomLink: project.warRoomLink,
     agentMode: project.agentMode,
     autoReplyEnabled: project.autoReplyEnabled,
@@ -260,6 +285,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   const [geminiModel, setGeminiModel] = useState("Gemini Flash-Lite")
   const [extractingGuidelines, setExtractingGuidelines] = useState(false)
   const [importingCommunityGuidelines, setImportingCommunityGuidelines] = useState(false)
+  const [syncingChannelGuideline, setSyncingChannelGuideline] = useState("")
+  const [syncingAllChannelGuidelines, setSyncingAllChannelGuidelines] = useState(false)
   const [guidelinesFile, setGuidelinesFile] = useState<GuidelinesFileStatus | null>(null)
   const [draggingGuidelines, setDraggingGuidelines] = useState(false)
   const [lookingUpProject, setLookingUpProject] = useState(false)
@@ -370,6 +397,29 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     || (discourseConnected && (editing || discourseAccess)),
   )
 
+  const managedChannelOptions = useMemo(() => {
+    const savedChannels = Array.isArray(activeProject?.settings?.managedChannels)
+      ? activeProject.settings.managedChannels
+      : []
+    return form.managedChannelIds.map((id) => {
+      const discovered = availableChannels.find((channel) => channel.id === id)
+      const saved = savedChannels.find((channel) => {
+        if (!channel || typeof channel !== "object") return false
+        return String((channel as Record<string, unknown>).id || "") === id
+      }) as Record<string, unknown> | undefined
+      const guideline = form.channelGuidelines.find((item) => item.channelId === id)
+      return {
+        id,
+        title: discovered?.title
+          || (typeof saved?.title === "string" ? saved.title : "")
+          || guideline?.channelTitle
+          || `Channel ${id}`,
+      }
+    })
+  }, [activeProject, availableChannels, form.channelGuidelines, form.managedChannelIds])
+  const knowledgeReady = form.projectGuidelines.trim().length >= 100
+    || (isCsm && form.channelGuidelines.some((item) => item.text.trim().length >= 100))
+
   const completedSteps = useMemo(() => [
     Boolean(form.ownerName.trim() && form.projectName.trim() && form.projectKey.trim()),
     Boolean(
@@ -379,12 +429,12 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       && form.discourseUsername.trim(),
     ),
     connectionReady,
-    form.projectGuidelines.trim().length >= 100,
+    knowledgeReady,
     Boolean(form.agentMode)
       && Number.isFinite(Number(form.minConfidence))
       && Number(form.minConfidence) >= 0
       && Number(form.minConfidence) <= 1,
-  ], [connectionReady, form, isCsm])
+  ], [connectionReady, form, isCsm, knowledgeReady])
 
   const completedCount = completedSteps.filter(Boolean).length
   const progress = ((currentStep + 1) / setupSteps.length) * 100
@@ -425,8 +475,10 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         return "Check category and channel access before continuing."
       }
     }
-    if (stepIndex === 3 && form.projectGuidelines.trim().length < 100) {
-      return "Upload or paste enough project context for the agent to answer safely."
+    if (stepIndex === 3 && !knowledgeReady) {
+      return isCsm
+        ? "Sync at least one channel guideline or add enough global context for the agent."
+        : "Upload or paste enough project context for the agent to answer safely."
     }
     if (stepIndex === 4) {
       const confidence = Number(form.minConfidence)
@@ -466,6 +518,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         setMessage("New Project ID. You will create its shared configuration.")
         return
       }
+      const sharedManagedChannelIds = Array.isArray(project.settings?.managedChannelIds)
+        ? project.settings.managedChannelIds.map(String).filter(Boolean)
+        : [project.channelId].filter(Boolean)
       setForm((current) => ({
         ...current,
         projectKey: project.projectKey,
@@ -474,13 +529,12 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         categoryId: project.categoryId,
         categorySlug: project.categorySlug,
         channelId: project.channelId,
-        managedChannelIds: Array.isArray(project.settings?.managedChannelIds)
-          ? project.settings.managedChannelIds.map(String).filter(Boolean)
-          : [project.channelId].filter(Boolean),
+        managedChannelIds: sharedManagedChannelIds,
         projectGuidelines: project.projectGuidelines,
         guidelinesSourceUrl: typeof project.settings?.guidelinesSourceUrl === "string"
           ? project.settings.guidelinesSourceUrl
           : "",
+        channelGuidelines: channelGuidelinesFromSettings(project.settings?.channelGuidelines, sharedManagedChannelIds),
         warRoomLink: project.warRoomLink,
         agentMode: project.agentMode,
         autoReplyEnabled: project.autoReplyEnabled,
@@ -679,6 +733,87 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     }
   }
 
+  async function syncChannelGuideline(channelId: string) {
+    const channel = managedChannelOptions.find((item) => item.id === channelId)
+    const guideline = form.channelGuidelines.find((item) => item.channelId === channelId)
+    if (!guideline?.sourceUrl.trim()) {
+      setError(`Add the Community instructions URL for ${channel?.title || channelId}.`)
+      return
+    }
+    setSyncingChannelGuideline(channelId)
+    setError("")
+    setMessage("")
+    try {
+      const result = await api.importGuidelinesFromCommunity({
+        url: guideline.sourceUrl,
+        projectId: activeProject?.id,
+        discourseApiClientId: form.discourseApiClientId,
+      })
+      setForm((current) => ({
+        ...current,
+        channelGuidelines: current.channelGuidelines.map((item) => item.channelId === channelId ? {
+          ...item,
+          channelTitle: channel?.title || item.channelTitle,
+          sourceUrl: result.sourceUrl,
+          sourceTitle: result.title,
+          sourceAuthor: result.author,
+          text: result.text,
+          characters: result.characters,
+          syncedAt: new Date().toISOString(),
+        } : item),
+      }))
+      setMessage(`Synced instructions for ${channel?.title || channelId}. Save the project to apply them.`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSyncingChannelGuideline("")
+    }
+  }
+
+  async function syncAllChannelGuidelines() {
+    const configured = form.channelGuidelines.filter((item) => item.sourceUrl.trim())
+    if (!configured.length) {
+      setError("Add at least one Community instructions URL before syncing.")
+      return
+    }
+    setSyncingAllChannelGuidelines(true)
+    setError("")
+    setMessage("")
+    const updates = new Map<string, ChannelGuidelineForm>()
+    const failures: string[] = []
+    for (const guideline of configured) {
+      const channel = managedChannelOptions.find((item) => item.id === guideline.channelId)
+      setSyncingChannelGuideline(guideline.channelId)
+      try {
+        const result = await api.importGuidelinesFromCommunity({
+          url: guideline.sourceUrl,
+          projectId: activeProject?.id,
+          discourseApiClientId: form.discourseApiClientId,
+        })
+        updates.set(guideline.channelId, {
+          ...guideline,
+          channelTitle: channel?.title || guideline.channelTitle,
+          sourceUrl: result.sourceUrl,
+          sourceTitle: result.title,
+          sourceAuthor: result.author,
+          text: result.text,
+          characters: result.characters,
+          syncedAt: new Date().toISOString(),
+        })
+      } catch {
+        failures.push(channel?.title || guideline.channelId)
+      }
+    }
+    setForm((current) => ({
+      ...current,
+      channelGuidelines: current.channelGuidelines.map((item) => updates.get(item.channelId) || item),
+    }))
+    setSyncingChannelGuideline("")
+    setSyncingAllChannelGuidelines(false)
+    if (failures.length) setError(`Could not sync: ${failures.join(", ")}. The successful channels are ready to save.`)
+    else setMessage(`Synced ${updates.size} channel guidelines. Save the project to apply them.`)
+  }
+
   async function verifyDiscourseAuthorization() {
     if (!pendingDiscourseAuthorization) {
       setError("Authorization expired. Open Community and authorize the app again.")
@@ -760,7 +895,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         workspaceType: isCsm ? "csm" : "project",
         ...(isCsm ? {
           managedChannelIds: form.managedChannelIds,
+          managedChannels: managedChannelOptions.map((channel) => ({ id: channel.id, title: channel.title })),
           guidelinesSourceUrl: form.guidelinesSourceUrl.trim(),
+          channelGuidelines: form.channelGuidelines.filter((item) => form.managedChannelIds.includes(item.channelId)),
           dailyThreadEnabled: false,
         } : {}),
       },
@@ -852,6 +989,11 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         isCsm={isCsm}
         importingCommunityGuidelines={importingCommunityGuidelines}
         onImportCommunityGuidelines={() => void importCommunityGuidelines()}
+        managedChannels={managedChannelOptions}
+        syncingChannelId={syncingChannelGuideline}
+        syncingAllChannels={syncingAllChannelGuidelines}
+        onSyncChannel={(channelId) => void syncChannelGuideline(channelId)}
+        onSyncAllChannels={() => void syncAllChannelGuidelines()}
       />
     )
   } else {

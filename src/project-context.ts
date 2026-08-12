@@ -62,6 +62,17 @@ export interface RuntimeAgentPolicy {
   blockedTopics?: string[];
 }
 
+export interface RuntimeChannelGuideline {
+  channelId: string;
+  channelTitle: string;
+  sourceUrl: string;
+  sourceTitle: string;
+  sourceAuthor: string;
+  text: string;
+  characters: number;
+  syncedAt: string;
+}
+
 export interface ProjectContext {
   projectId: string;
   source: ProjectContextSource;
@@ -70,6 +81,7 @@ export interface ProjectContext {
   botConfig?: RuntimeBotConfig;
   aiConfig?: RuntimeAiConfig;
   projectGuidelines?: string;
+  channelGuidelines?: RuntimeChannelGuideline[];
   projectLinks?: RuntimeProjectLinks;
   projectMemoryFacts?: RuntimeProjectMemoryFact[];
   automationPaused?: boolean;

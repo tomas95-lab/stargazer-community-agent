@@ -488,7 +488,9 @@ export default function CommunityAgent() {
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-y py-3 text-sm">
         <Badge tone={overview?.guidelines.available ? 'green' : 'yellow'}>
-          {overview?.guidelines.available ? 'Guidelines ready' : 'Guidelines missing'}
+          {overview?.guidelines.channelGuidelines
+            ? `${overview.guidelines.channelGuidelines} channel guidelines ready`
+            : overview?.guidelines.available ? 'Global guidelines ready' : 'Guidelines missing'}
         </Badge>
         <span><strong className="font-semibold text-foreground">{counts.activeChannels}</strong> <span className="text-muted-foreground">of {configuredChannelCount || counts.activeChannels} channels active</span></span>
         <span><strong className="font-semibold text-foreground">{counts.community}</strong> <span className="text-muted-foreground">messages today</span></span>

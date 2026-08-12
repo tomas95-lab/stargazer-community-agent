@@ -42,6 +42,7 @@ import {
 } from '../../src/ai-runtime';
 import { validateDiscourseProjectAccess, validateDiscourseWorkspaceAccess } from '../../src/discourse-credentials';
 import { DiscourseClient } from '../../src/discourse-client';
+import { normalizeChannelGuidelines } from '../../src/channel-guidelines';
 
 const router = Router();
 
@@ -447,6 +448,11 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
       : 'Connect Discourse before checking the channel.';
 
     const categoryIdValid = /^\d+$/.test(config.communityCategoryId);
+    const managedChannelIds = Array.isArray(project.settings?.managedChannelIds)
+      ? project.settings.managedChannelIds.map(String).filter((id) => /^\d+$/.test(id))
+      : [config.communityChatChannelId].filter(Boolean);
+    const channelGuidelines = normalizeChannelGuidelines(project.settings?.channelGuidelines, managedChannelIds);
+    const globalGuidelinesReady = project.project_guidelines.trim().length >= 100;
     const storedIdentity = project.discourse_username || config.discourseUsername;
     const identityMatches = Boolean(discourseIdentity)
       && discourseIdentity.toLowerCase() === storedIdentity.toLowerCase();
@@ -458,7 +464,7 @@ router.get('/projects/:id/health', requirePlatformUser, async (req: Request, res
       { id: 'category', label: 'Community category', ok: categoryIdValid, detail: categoryIdValid ? config.communityCategoryId : 'Category ID must be numeric.' },
       { id: 'channel', label: 'Community channel', ok: channelReachable || discourseRateLimited, warning: discourseRateLimited, detail: channelReachable ? config.communityChatChannelId : channelError },
       { id: 'username', label: 'Discourse identity', ok: identityMatches || (discourseRateLimited && Boolean(storedIdentity)), warning: discourseRateLimited, detail: identityMatches ? discourseIdentity : discourseRateLimited && storedIdentity ? `${storedIdentity} (live verification deferred)` : discourseIdentity ? `Connected as ${discourseIdentity}; expected ${storedIdentity}.` : discourseConfigured ? storedIdentity || 'Missing username' : `Expected ${storedIdentity || 'username not set'}; reconnect to verify.` },
-      { id: 'guidelines', label: 'Project guidelines', ok: project.project_guidelines.trim().length >= 100, detail: `${project.project_guidelines.length} characters` },
+      { id: 'guidelines', label: 'Project guidelines', ok: globalGuidelinesReady || channelGuidelines.length > 0, warning: channelGuidelines.length > 0 && channelGuidelines.length < managedChannelIds.length, detail: channelGuidelines.length > 0 ? `${channelGuidelines.length}/${managedChannelIds.length} channels configured${globalGuidelinesReady ? `, ${project.project_guidelines.length} global characters` : ''}` : `${project.project_guidelines.length} global characters` },
       { id: 'gemini', label: 'Gemini platform service', ok: aiStatus.connected, detail: aiStatus.connected ? `${aiStatus.model}, ${aiStatus.managed ? 'managed by the platform' : 'personal fallback active'}` : 'Platform Gemini configuration is pending' },
       { id: 'automation', label: 'Project automation', ok: automationOperational, warning: discourseRateLimited, detail: automationOperational ? discourseRateLimited ? 'Active; Community rate limits are retried automatically' : project.status || 'active' : !discourseConfigured && project.enabled ? 'Not operational until Discourse is connected' : project.status || (project.enabled ? 'active' : 'paused') },
     ];

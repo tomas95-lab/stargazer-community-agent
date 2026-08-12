@@ -68,16 +68,37 @@ export async function loadProjectGuidelines(): Promise<string> {
 }
 
 export async function findProjectGuidelineSnippets(query: string, limit = 4): Promise<string[]> {
-  const text = await loadProjectGuidelines();
-  if (!text.trim()) return [];
-  const filteredQuery = query.split(/\s+/).filter((word) => !STOP_WORDS.has(word.toLowerCase())).join(' ');
-  return rankGuidelineChunks(guidelineChunks(getCurrentProjectId(), text), filteredQuery || query, limit).map((chunk) => chunk.text);
+  return findGuidelineSnippetsForChannel(query, '', limit);
 }
 
-export async function projectGuidelinesStatus(): Promise<{ available: boolean; characters: number }> {
+export async function findGuidelineSnippetsForChannel(query: string, channelId = '', limit = 4): Promise<string[]> {
   const text = await loadProjectGuidelines();
+  const filteredQuery = query.split(/\s+/).filter((word) => !STOP_WORDS.has(word.toLowerCase())).join(' ');
+  const rankedQuery = filteredQuery || query;
+  const projectId = getCurrentProjectId();
+  const channelGuideline = getProjectContext().channelGuidelines?.find((item) => item.channelId === channelId);
+  const channelLimit = channelGuideline?.text.trim() ? Math.max(1, limit - 1) : 0;
+  const channelSnippets = channelGuideline?.text.trim()
+    ? rankGuidelineChunks(
+      guidelineChunks(`${projectId}:channel:${channelId}`, channelGuideline.text),
+      rankedQuery,
+      channelLimit,
+    ).map((chunk) => `[Channel guideline: ${channelGuideline.channelTitle || channelId}]\n${chunk.text}`)
+    : [];
+  const globalLimit = Math.max(0, limit - channelSnippets.length);
+  const globalSnippets = text.trim() && globalLimit > 0
+    ? rankGuidelineChunks(guidelineChunks(projectId, text), rankedQuery, globalLimit)
+      .map((chunk) => `[Global guideline]\n${chunk.text}`)
+    : [];
+  return [...channelSnippets, ...globalSnippets];
+}
+
+export async function projectGuidelinesStatus(): Promise<{ available: boolean; characters: number; channelGuidelines: number }> {
+  const text = await loadProjectGuidelines();
+  const channelGuidelines = getProjectContext().channelGuidelines?.filter((item) => item.text.trim()).length || 0;
   return {
-    available: text.trim().length > 0,
+    available: text.trim().length > 0 || channelGuidelines > 0,
     characters: text.length,
+    channelGuidelines,
   };
 }

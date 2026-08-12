@@ -3,6 +3,7 @@ import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { BotConfig } from '../src/config';
 import { platformGeminiConfigured } from '../src/ai-runtime';
 import { assertDiscourseUserApiKey } from '../src/discourse-credentials';
+import { normalizeChannelGuidelines } from '../src/channel-guidelines';
 import { readDataJSON, writeDataJSON } from '../src/data-store';
 import {
   canonicalProjectId,
@@ -682,6 +683,7 @@ function normalizeProjectInput(
     ...configuredChannels,
   ].map((value) => text(value)).filter((value) => /^\d+$/.test(value)))).slice(0, 30);
   const channelId = managedChannelIds[0] || requestedChannelId;
+  const channelGuidelines = normalizeChannelGuidelines(baseSettings.channelGuidelines, managedChannelIds);
   const discourseUsername = text(input.discourseUsername, existing?.discourse_username || '');
 
   if (!projectName) throw new Error('Project name is required.');
@@ -720,7 +722,7 @@ function normalizeProjectInput(
     settings: {
       ...baseSettings,
       workspaceType,
-      ...(workspaceType === 'csm' ? { managedChannelIds } : {}),
+      ...(workspaceType === 'csm' ? { managedChannelIds, channelGuidelines } : {}),
     },
     updated_at: new Date().toISOString(),
   };
@@ -1322,6 +1324,7 @@ export function projectRuntimeContext(
   if (text(row.war_room_link)) projectLinks.warRoom = text(row.war_room_link);
   const demoMode = row.settings?.demoMode === true;
   const gemini = userGeminiStatus(aiKey);
+  const channelGuidelines = normalizeChannelGuidelines(row.settings?.channelGuidelines, managedChannelIdsForRow(row));
 
   return {
     projectId: projectKeyFromRow(row),
@@ -1350,6 +1353,7 @@ export function projectRuntimeContext(
       enforceLimits: true,
     },
     ...(text(row.project_guidelines) ? { projectGuidelines: text(row.project_guidelines) } : {}),
+    ...(channelGuidelines.length ? { channelGuidelines } : {}),
     ...(Object.keys(projectLinks).length > 0 ? { projectLinks } : {}),
   };
 }

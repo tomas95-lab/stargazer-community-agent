@@ -6,7 +6,7 @@ import { loadBotConfig } from './config';
 import { DiscourseChatMessage, DiscourseClient } from './discourse-client';
 import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
-import { findProjectGuidelineSnippets } from './project-guidelines';
+import { findGuidelineSnippetsForChannel } from './project-guidelines';
 import { projectMemoryText } from './project-memory';
 import { loadProjectLinks } from './links';
 import { getProjectContext, projectScheduleAllowsNow } from './project-context';
@@ -826,6 +826,7 @@ export async function evaluateSupportMessage(
   context: string,
   warRoomLink: string,
   canUseWarRoomLink: boolean,
+  channelId = '',
 ): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'reacted' | 'needsHuman'>> {
   const policy = getProjectContext().agentPolicy;
   const blockedTopic = (policy?.blockedTopics || []).find((topic) => message.toLowerCase().includes(topic.toLowerCase()));
@@ -838,7 +839,7 @@ export async function evaluateSupportMessage(
       guidelineSnippets: [],
     };
   }
-  const snippets = await findProjectGuidelineSnippets(message, 4);
+  const snippets = await findGuidelineSnippetsForChannel(message, channelId, 4);
   const memory = await projectMemoryText(25);
   const projectName = getProjectContext().projectName || 'the active project';
   const warRoomInstruction = canUseWarRoomLink && warRoomLink
@@ -1042,7 +1043,8 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
     .sort((a, b) => candidatePriority(a) - candidatePriority(b) || a.createdAt.localeCompare(b.createdAt))
     .slice(0, maxAnswers);
 
-  const context = fetched.items
+  const contextForChannel = (candidate: CommunityAgentItem) => fetched.items
+    .filter((item) => item.channelId === candidate.channelId)
     .slice(-12)
     .map((item) => `[${item.source}/${item.username}]: ${item.message.slice(0, 220)}`)
     .join('\n');
@@ -1054,7 +1056,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
   for (const item of candidates) {
     try {
       const decision = warRoomAvailabilityDecision(item.message, warRoomLink) ||
-        await evaluateSupportMessage(item.username, item.message, context, warRoomLink, canUseWarRoomLink);
+        await evaluateSupportMessage(item.username, item.message, contextForChannel(item), warRoomLink, canUseWarRoomLink, item.channelId);
       let posted = false;
       let reacted = false;
       if (post && decision.action === 'reply') {

@@ -1,3 +1,14 @@
+export interface ChannelGuidelineForm {
+  channelId: string
+  channelTitle: string
+  sourceUrl: string
+  sourceTitle: string
+  sourceAuthor: string
+  text: string
+  characters: number
+  syncedAt: string
+}
+
 export interface ProjectFormState {
   ownerName: string
   projectKey: string
@@ -12,6 +23,7 @@ export interface ProjectFormState {
   discourseApiKey: string
   projectGuidelines: string
   guidelinesSourceUrl: string
+  channelGuidelines: ChannelGuidelineForm[]
   warRoomLink: string
   agentMode: "draft" | "supervised" | "auto"
   autoReplyEnabled: boolean
