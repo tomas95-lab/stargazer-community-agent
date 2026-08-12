@@ -1,7 +1,7 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
 import { Link, Navigate } from "react-router-dom"
-import { LoaderCircle as IconLoader2, UserPlus as IconUserPlus, Orbit } from "lucide-react"
+import { BriefcaseBusiness, Headphones, LoaderCircle as IconLoader2, UserPlus as IconUserPlus, Orbit } from "lucide-react"
 
 import { useAuth } from "@/auth"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,7 @@ export default function Signup() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [accountRole, setAccountRole] = useState<"qm" | "csm">("qm")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
@@ -46,7 +47,7 @@ export default function Signup() {
       email: cleanEmail,
       password,
       options: {
-        data: { name: cleanName },
+        data: { name: cleanName, account_role: accountRole },
         emailRedirectTo,
       },
     })
@@ -89,7 +90,7 @@ export default function Signup() {
             <IconUserPlus className="size-5" />
           </div>
           <CardTitle>Create account</CardTitle>
-          <CardDescription>Start a QM workspace for your community project.</CardDescription>
+          <CardDescription>Start a workspace that matches the Community work you manage.</CardDescription>
         </CardHeader>
         <CardContent className="min-w-0 px-4 sm:px-6">
           {!configured ? (
@@ -119,6 +120,19 @@ export default function Signup() {
                   required
                 />
               </div>
+              <fieldset className="grid gap-2">
+                <legend className="text-sm font-medium">Role</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button type="button" variant={accountRole === "qm" ? "default" : "outline"} className="h-auto justify-start py-3" onClick={() => setAccountRole("qm")}>
+                    <BriefcaseBusiness />
+                    <span className="text-left"><span className="block">QM</span><span className="block text-xs font-normal opacity-75">Project operations</span></span>
+                  </Button>
+                  <Button type="button" variant={accountRole === "csm" ? "default" : "outline"} className="h-auto justify-start py-3" onClick={() => setAccountRole("csm")}>
+                    <Headphones />
+                    <span className="text-left"><span className="block">CSM</span><span className="block text-xs font-normal opacity-75">Multi-channel support</span></span>
+                  </Button>
+                </div>
+              </fieldset>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
                 <Input

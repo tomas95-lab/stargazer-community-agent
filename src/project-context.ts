@@ -12,6 +12,7 @@ export interface RuntimeBotConfig {
   communityCategoryId: string;
   communityCategorySlug: string;
   communityChatChannelId: string;
+  communityChatChannelIds?: string[];
   discourseApiKey: string;
   discourseApiClientId: string;
   discourseUsername: string;
@@ -52,6 +53,7 @@ export interface RuntimeAutomationSettings {
   dmAutoReply?: boolean;
   communityMaxAnswers?: number;
   dmMaxAutoReplies?: number;
+  dailyThreadEnabled?: boolean;
 }
 
 export interface RuntimeAgentPolicy {

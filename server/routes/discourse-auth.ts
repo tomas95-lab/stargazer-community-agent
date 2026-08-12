@@ -14,9 +14,11 @@ import {
 import {
   assertDiscourseUserApiKey,
   validateDiscourseProjectAccess,
+  validateDiscourseWorkspaceAccess,
   validateDiscourseUserApiKey,
 } from '../../src/discourse-credentials';
 import { decryptDiscoursePayload } from '../../src/discourse-auth-crypto';
+import { DiscourseClient } from '../../src/discourse-client';
 
 const router = Router();
 
@@ -33,6 +35,16 @@ const USER_KEYS_TABLE = 'user_discourse_keys';
 const PROJECTS_TABLE = 'qm_projects';
 const APPLICATION_NAME = process.env.DISCOURSE_AUTH_APPLICATION_NAME || 'DailyThreadBot';
 const CLIENT_ID = process.env.DISCOURSE_AUTH_CLIENT_ID || 'daily-thread-bot';
+
+function publicChannelSummary(value: unknown): { id: string; title: string } | null {
+  if (!value || typeof value !== 'object') return null;
+  const row = value as Record<string, unknown>;
+  const nested = row.channel && typeof row.channel === 'object' ? row.channel as Record<string, unknown> : {};
+  const id = text(row.id || row.chat_channel_id || nested.id);
+  if (!/^\d+$/.test(id)) return null;
+  const title = text(row.title || row.name || row.slug || nested.title || nested.name, `Channel ${id}`);
+  return { id, title };
+}
 const SCOPES = process.env.DISCOURSE_AUTH_SCOPES || 'read,write';
 const DISCOURSE_AUTH_BASE_URL = (process.env.DISCOURSE_AUTH_BASE_URL || 'https://community.outlier.ai').replace(/\/+$/, '');
 const ATTEMPT_TTL_MS = Math.max(60_000, Number(process.env.DISCOURSE_AUTH_TTL_SECONDS || 600) * 1000);
@@ -324,6 +336,37 @@ router.get('/status', requirePlatformUser, async (req: Request, res: Response) =
   }
 });
 
+router.get('/channels', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const { data, error } = await getSupabaseAdmin()
+      .from(USER_KEYS_TABLE)
+      .select('discourse_api_key_ciphertext')
+      .eq('owner_id', authReq.authUser!.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data?.discourse_api_key_ciphertext) {
+      res.status(400).json({ error: 'Connect Discourse before discovering channels.' });
+      return;
+    }
+    const projectId = text(req.query.projectId);
+    const project = projectId ? await getUserProject(authReq.authUser!.id, projectId) : null;
+    const client = new DiscourseClient({
+      baseUrl: project?.community_base_url || DISCOURSE_AUTH_BASE_URL,
+      apiKey: decryptSecret(data.discourse_api_key_ciphertext),
+      apiClientId: project?.discourse_api_client_id || CLIENT_ID,
+    });
+    const result = await client.readMyChatChannels();
+    const channels = result.publicChannels
+      .map(publicChannelSummary)
+      .filter((channel): channel is { id: string; title: string } => Boolean(channel))
+      .sort((left, right) => left.title.localeCompare(right.title));
+    res.json({ channels });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 router.post('/check', requirePlatformUser, async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthenticatedRequest;
@@ -340,14 +383,29 @@ router.post('/check', requirePlatformUser, async (req: Request, res: Response) =
       return;
     }
 
-    const result = await validateDiscourseProjectAccess({
+    const csmWorkspace = req.body?.workspaceType === 'csm' || project?.settings?.workspaceType === 'csm';
+    const requestedChannelIds = Array.isArray(req.body?.channelIds)
+      ? req.body.channelIds.map((value: unknown) => text(value))
+      : [];
+    const connectionOptions = {
       baseUrl: text(req.body?.communityBaseUrl) || project?.community_base_url || DISCOURSE_AUTH_BASE_URL,
       apiKey: decryptSecret(data.discourse_api_key_ciphertext),
       apiClientId: text(req.body?.discourseApiClientId) || project?.discourse_api_client_id || CLIENT_ID,
-      categoryId: text(req.body?.categoryId) || project?.community_category_id || '',
-      channelId: text(req.body?.channelId) || project?.community_chat_channel_id || '',
-      knownUsername: text(data.discourse_username),
-    });
+      knownUsername: req.body?.full === true ? undefined : text(data.discourse_username),
+    };
+    const result = csmWorkspace
+      ? await validateDiscourseWorkspaceAccess({
+        ...connectionOptions,
+        categoryId: text(req.body?.categoryId) || project?.community_category_id || '',
+        channelIds: requestedChannelIds.length
+          ? requestedChannelIds
+          : [text(req.body?.channelId) || project?.community_chat_channel_id || ''],
+      })
+      : await validateDiscourseProjectAccess({
+        ...connectionOptions,
+        categoryId: text(req.body?.categoryId) || project?.community_category_id || '',
+        channelId: text(req.body?.channelId) || project?.community_chat_channel_id || '',
+      });
     res.json({ connected: true, ...result });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });

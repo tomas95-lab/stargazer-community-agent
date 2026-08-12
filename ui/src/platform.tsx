@@ -1,13 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 
-import { api, projectSelection, type QmProject } from "@/api"
+import { api, projectSelection, type AccountRole, type QmProject } from "@/api"
 import { useAuth } from "@/auth"
 
 interface PlatformContextValue {
   loading: boolean
   projects: QmProject[]
   currentProject: QmProject | null
+  accountRole: AccountRole
   refreshProjects: () => Promise<void>
   selectProject: (projectId: string) => void
 }
@@ -20,6 +21,7 @@ export function PlatformProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<QmProject[]>([])
   const [loading, setLoading] = useState(configured && Boolean(session))
   const [selectedId, setSelectedId] = useState(projectSelection.getProjectId())
+  const [accountRole, setAccountRole] = useState<AccountRole>("qm")
 
   const refreshProjects = useCallback(async () => {
     if (!configured || !userId) {
@@ -30,8 +32,9 @@ export function PlatformProvider({ children }: { children: ReactNode }) {
 
     setLoading(true)
     try {
-      const result = await api.getProjects()
+      const [result, identity] = await Promise.all([api.getProjects(), api.getPlatformMe()])
       setProjects(result.projects)
+      setAccountRole(identity.user.accountRole || "qm")
       const storedId = projectSelection.getProjectId()
       const next =
         result.projects.find((project) => project.id === storedId) ||
@@ -69,8 +72,8 @@ export function PlatformProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo<PlatformContextValue>(
-    () => ({ loading, projects, currentProject, refreshProjects, selectProject }),
-    [loading, projects, currentProject, refreshProjects, selectProject]
+    () => ({ loading, projects, currentProject, accountRole, refreshProjects, selectProject }),
+    [loading, projects, currentProject, accountRole, refreshProjects, selectProject]
   )
 
   return <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>

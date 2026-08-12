@@ -6,10 +6,12 @@ export interface ProjectFormState {
   categoryId: string
   categorySlug: string
   channelId: string
+  managedChannelIds: string[]
   discourseUsername: string
   discourseApiClientId: string
   discourseApiKey: string
   projectGuidelines: string
+  guidelinesSourceUrl: string
   warRoomLink: string
   agentMode: "draft" | "supervised" | "auto"
   autoReplyEnabled: boolean

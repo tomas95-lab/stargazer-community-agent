@@ -28,6 +28,7 @@ export interface BotConfig {
   communityCategoryId: string;
   communityCategorySlug: string;
   communityChatChannelId: string;
+  communityChatChannelIds?: string[];
   discourseApiKey: string;
   discourseApiClientId: string;
   discourseUsername: string;

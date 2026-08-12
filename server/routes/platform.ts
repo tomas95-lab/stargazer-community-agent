@@ -24,6 +24,7 @@ import {
   restoreGuidelineVersion,
   setProjectAutomationPaused,
   setProjectLifecycleStatus,
+  text,
   toPublicProject,
   userGeminiStatus,
   updateUserProject,
@@ -39,7 +40,8 @@ import {
   platformGeminiConfigured,
   validateGeminiApiKey,
 } from '../../src/ai-runtime';
-import { validateDiscourseProjectAccess } from '../../src/discourse-credentials';
+import { validateDiscourseProjectAccess, validateDiscourseWorkspaceAccess } from '../../src/discourse-credentials';
+import { DiscourseClient } from '../../src/discourse-client';
 
 const router = Router();
 
@@ -69,6 +71,44 @@ router.use((req: Request, res: Response, next: NextFunction) => {
 
 function routeParam(value: unknown): string {
   return Array.isArray(value) ? String(value[0] || '') : String(value || '');
+}
+
+function communityTopicReference(value: string): { url: URL; topicId: number; postNumber?: number } {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error('Paste a valid Outlier Community topic URL.');
+  }
+  if (url.protocol !== 'https:' || url.hostname.toLowerCase() !== 'community.outlier.ai') {
+    throw new Error('The instructions URL must be from community.outlier.ai.');
+  }
+  const parts = url.pathname.split('/').filter(Boolean);
+  const topicIndex = parts.indexOf('t');
+  const numericParts = topicIndex >= 0
+    ? parts.slice(topicIndex + 1).filter((part) => /^\d+$/.test(part)).map(Number)
+    : [];
+  if (!numericParts[0]) throw new Error('The URL does not contain a Community topic ID.');
+  return { url, topicId: numericParts[0], postNumber: numericParts[1] };
+}
+
+function communityPostText(raw: string | undefined, cooked: string): string {
+  if (raw?.trim()) return raw.trim();
+  return cooked
+    .replace(/<br\s*\/?\s*>/gi, '\n')
+    .replace(/<\/p>|<\/li>|<\/tr>|<\/h[1-6]>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
 }
 
 function projectInput(body: unknown): QmProjectInput {
@@ -237,6 +277,47 @@ router.post('/guidelines/extract', requirePlatformUser, async (req: Request, res
   }
 });
 
+router.post('/guidelines/import-community', requirePlatformUser, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const reference = communityTopicReference(text(req.body?.url));
+    const projectId = text(req.body?.projectId);
+    const project = projectId ? await getUserProject(authReq.authUser!.id, projectId) : null;
+    const storedKey = await getUserDiscourseKey(authReq.authUser!.id);
+    if (!storedKey?.discourse_api_key_ciphertext) throw new Error('Connect Discourse before importing Community instructions.');
+
+    const baseUrl = (project?.community_base_url || reference.url.origin).replace(/\/+$/, '');
+    if (new URL(baseUrl).origin !== reference.url.origin) {
+      throw new Error('The instructions URL must belong to the connected Community.');
+    }
+    const client = new DiscourseClient({
+      baseUrl,
+      apiKey: decryptSecret(storedKey.discourse_api_key_ciphertext),
+      apiClientId: project?.discourse_api_client_id || text(req.body?.discourseApiClientId, 'daily-thread-bot'),
+    });
+    const topic = await client.readTopic(reference.topicId);
+    const posts = topic.post_stream?.posts || [];
+    const post = reference.postNumber
+      ? posts.find((item) => item.post_number === reference.postNumber)
+      : posts[0];
+    if (!post) throw new Error('The requested Community post was not returned or is not accessible.');
+    const content = communityPostText(post.raw, post.cooked);
+    if (content.length < 100) throw new Error('The Community post does not contain enough instructions to use as agent context.');
+
+    res.json({
+      text: content,
+      topicId: reference.topicId,
+      postNumber: post.post_number || reference.postNumber || 1,
+      title: topic.title || `Community topic ${reference.topicId}`,
+      author: post.username,
+      sourceUrl: reference.url.toString(),
+      characters: content.length,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 router.post('/projects', requirePlatformUser, async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthenticatedRequest;
@@ -246,13 +327,25 @@ router.post('/projects', requirePlatformUser, async (req: Request, res: Response
       || (storedKey?.discourse_api_key_ciphertext ? decryptSecret(storedKey.discourse_api_key_ciphertext) : '');
     if (!apiKey) throw new Error('Connect Discourse before creating the project.');
     if (input.discourseApiKey?.trim()) {
-      const access = await validateDiscourseProjectAccess({
-        baseUrl: input.communityBaseUrl || 'https://community.outlier.ai',
-        apiKey,
-        apiClientId: input.discourseApiClientId || 'daily-thread-bot',
-        categoryId: input.categoryId || '',
-        channelId: input.channelId || '',
-      });
+      const csmWorkspace = input.settings?.workspaceType === 'csm' || authReq.authUser!.accountRole === 'csm';
+      const managedChannelIds = Array.isArray(input.settings?.managedChannelIds)
+        ? input.settings.managedChannelIds.map(String)
+        : [input.channelId || ''];
+      const access = csmWorkspace
+        ? await validateDiscourseWorkspaceAccess({
+          baseUrl: input.communityBaseUrl || 'https://community.outlier.ai',
+          apiKey,
+          apiClientId: input.discourseApiClientId || 'daily-thread-bot',
+          categoryId: input.categoryId || '',
+          channelIds: managedChannelIds,
+        })
+        : await validateDiscourseProjectAccess({
+          baseUrl: input.communityBaseUrl || 'https://community.outlier.ai',
+          apiKey,
+          apiClientId: input.discourseApiClientId || 'daily-thread-bot',
+          categoryId: input.categoryId || '',
+          channelId: input.channelId || '',
+        });
       input.discourseUsername = access.username;
     } else if (storedKey?.discourse_username) {
       input.discourseUsername = storedKey.discourse_username;

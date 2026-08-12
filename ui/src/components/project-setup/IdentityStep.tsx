@@ -12,6 +12,7 @@ interface IdentityStepProps {
   editing: boolean
   lookingUpProject: boolean
   onLookupProject: () => void
+  isCsm?: boolean
 }
 
 export function IdentityStep({
@@ -20,12 +21,13 @@ export function IdentityStep({
   editing,
   lookingUpProject,
   onLookupProject,
+  isCsm = false,
 }: IdentityStepProps) {
   return (
     <div className="grid gap-6">
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor="ownerName">Your QM name</Label>
+          <Label htmlFor="ownerName">Your {isCsm ? "CSM" : "QM"} name</Label>
           <Input
             id="ownerName"
             autoComplete="name"
@@ -36,12 +38,12 @@ export function IdentityStep({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="projectName">Project name</Label>
+          <Label htmlFor="projectName">{isCsm ? "Workspace name" : "Project name"}</Label>
           <Input
             id="projectName"
             value={form.projectName}
             onChange={(event) => update("projectName", event.target.value)}
-            placeholder="Example: Aurora"
+            placeholder={isCsm ? "Example: WFM Operations" : "Example: Aurora"}
             required
           />
         </div>
@@ -49,8 +51,8 @@ export function IdentityStep({
 
       <div className="grid gap-2">
         <div className="flex items-center justify-between gap-3">
-          <Label htmlFor="projectKey">Shared Project ID</Label>
-          <Badge variant="outline">Shared by all QMs</Badge>
+          <Label htmlFor="projectKey">{isCsm ? "Shared workspace ID" : "Shared Project ID"}</Label>
+          <Badge variant="outline">Shared by all {isCsm ? "CSMs" : "QMs"}</Badge>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
@@ -76,14 +78,14 @@ export function IdentityStep({
           ) : null}
         </div>
         <p className="text-xs leading-5 text-muted-foreground">
-          Matching IDs share topics, comms, links, guidelines, and project settings.
+          Matching IDs share content, links, instructions, and workspace settings.
         </p>
       </div>
 
       <div className="flex gap-3 rounded-md border bg-muted/40 px-4 py-3">
         <Users className="mt-0.5 size-4 shrink-0 text-primary" />
         <p className="text-sm leading-6 text-muted-foreground">
-          Joining an existing project loads its shared configuration. Your Community access remains private to your account, while Gemini is managed by the platform.
+          Joining an existing workspace loads its shared configuration. Your Community access remains private to your account, while Gemini is managed by the platform.
         </p>
       </div>
     </div>

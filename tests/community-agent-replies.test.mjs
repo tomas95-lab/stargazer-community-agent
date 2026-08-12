@@ -6,6 +6,7 @@ function item(overrides) {
   return {
     id: overrides.id,
     source: 'community',
+    channelId: overrides.channelId,
     username: overrides.username || 'contributor',
     message: overrides.message,
     createdAt: overrides.createdAt,
@@ -188,4 +189,29 @@ test('contributor follow-up questions in a thread still reach the agent', () => 
     message: 'No puedo entrar a mi proyecto, me pueden ayudar?',
     replyToChatMessageId: 10,
   }), false);
+});
+
+test('messages from another managed channel never count as reply evidence', () => {
+  const annotated = annotateProbableReplies([
+    item({
+      id: 'community:761050:80',
+      channelId: '761050',
+      username: 'learner',
+      message: 'Can someone help me access the tool?',
+      createdAt: '2026-08-12T14:00:00.000Z',
+      chatMessageId: 80,
+    }),
+    item({
+      id: 'community:761051:81',
+      channelId: '761051',
+      username: 'ops',
+      message: 'Yes, please use this link.',
+      createdAt: '2026-08-12T14:03:00.000Z',
+      chatMessageId: 81,
+      replyToChatMessageId: 80,
+      isStaff: true,
+    }),
+  ]);
+
+  assert.deepEqual(annotated[0].probableReplies, []);
 });

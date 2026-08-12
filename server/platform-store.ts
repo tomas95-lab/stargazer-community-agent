@@ -16,11 +16,13 @@ import {
 export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
 export type ProjectRole = 'owner' | 'admin' | 'qm' | 'viewer';
 export type ProjectStatus = 'setup' | 'active' | 'paused' | 'completed' | 'archived';
+export type AccountRole = 'qm' | 'csm';
 
 export interface AuthenticatedUser {
   id: string;
   email: string;
   name: string;
+  accountRole: AccountRole;
   isDemo?: boolean;
 }
 
@@ -205,6 +207,14 @@ function userName(user: User): string {
   return text(user.user_metadata?.name) || text(user.user_metadata?.full_name) || text(user.email).split('@')[0] || 'QM';
 }
 
+function accountRole(value: unknown): AccountRole {
+  return value === 'csm' ? 'csm' : 'qm';
+}
+
+function userAccountRole(user: User): AccountRole {
+  return accountRole(user.app_metadata?.account_role || user.user_metadata?.account_role);
+}
+
 function projectRole(value: unknown): ProjectRole {
   return value === 'admin' || value === 'qm' || value === 'viewer' || value === 'owner' ? value : 'owner';
 }
@@ -373,8 +383,19 @@ export async function getUserFromAccessToken(accessToken: string): Promise<Authe
     id: data.user.id,
     email: data.user.email || '',
     name: userName(data.user),
+    accountRole: userAccountRole(data.user),
     isDemo: data.user.app_metadata?.demo_account === true,
   };
+}
+
+export function managedChannelIdsForRow(row: Pick<QmProjectRow, 'community_chat_channel_id' | 'settings'>): string[] {
+  const configured = Array.isArray(row.settings?.managedChannelIds)
+    ? row.settings.managedChannelIds
+    : [];
+  return Array.from(new Set([
+    row.community_chat_channel_id,
+    ...configured,
+  ].map((value) => text(value)).filter((value) => /^\d+$/.test(value)))).slice(0, 30);
 }
 
 function publicProject(row: QmProjectRow, aiKey?: UserAiKeyRow | null): QmProjectPublic {
@@ -650,14 +671,22 @@ function normalizeProjectInput(
   const discourseApiKey = text(input.discourseApiKey);
   const projectKey = projectKeyFromInput(input, existing);
   const legacyDefaults = legacyStargazerDefaults(projectKey);
+  const baseSettings = input.settings ?? existing?.settings ?? shared?.settings ?? {};
+  const workspaceType = user.accountRole === 'csm' || baseSettings.workspaceType === 'csm' ? 'csm' : 'project';
   const projectName = text(input.projectName, existing?.project_name || shared?.project_name || legacyDefaults.project_name || 'Community project');
   const categoryId = text(input.categoryId, existing?.community_category_id || shared?.community_category_id || legacyDefaults.community_category_id || '');
-  const channelId = text(input.channelId, existing?.community_chat_channel_id || shared?.community_chat_channel_id || legacyDefaults.community_chat_channel_id || '');
+  const requestedChannelId = text(input.channelId, existing?.community_chat_channel_id || shared?.community_chat_channel_id || legacyDefaults.community_chat_channel_id || '');
+  const configuredChannels = Array.isArray(baseSettings.managedChannelIds) ? baseSettings.managedChannelIds : [];
+  const managedChannelIds = Array.from(new Set([
+    requestedChannelId,
+    ...configuredChannels,
+  ].map((value) => text(value)).filter((value) => /^\d+$/.test(value)))).slice(0, 30);
+  const channelId = managedChannelIds[0] || requestedChannelId;
   const discourseUsername = text(input.discourseUsername, existing?.discourse_username || '');
 
   if (!projectName) throw new Error('Project name is required.');
   if (!projectKey) throw new Error('Project ID is required.');
-  if (!categoryId) throw new Error('Category ID is required.');
+  if (!categoryId && workspaceType !== 'csm') throw new Error('Category ID is required.');
   if (!channelId) throw new Error('Community channel ID is required.');
   if (!discourseUsername) throw new Error('Discourse username is required so the agent can identify your own Community messages.');
   if (!existing && !discourseApiKey && !storedDiscourseKeyCiphertext) {
@@ -688,7 +717,11 @@ function normalizeProjectInput(
     min_confidence: clampConfidence(input.minConfidence ?? existing?.min_confidence),
     enabled: existing?.enabled ?? shared?.enabled ?? true,
     status: projectStatus(input.status ?? existing?.status ?? shared?.status, existing?.enabled ?? shared?.enabled ?? true),
-    settings: input.settings ?? existing?.settings ?? shared?.settings ?? {},
+    settings: {
+      ...baseSettings,
+      workspaceType,
+      ...(workspaceType === 'csm' ? { managedChannelIds } : {}),
+    },
     updated_at: new Date().toISOString(),
   };
 }
@@ -1252,11 +1285,13 @@ async function initializeProjectFiles(row: QmProjectRow): Promise<void> {
 
 export function projectBotConfig(row: QmProjectRow, userKey?: UserDiscourseKeyRow | null): BotConfig {
   const keyCiphertext = text(userKey?.discourse_api_key_ciphertext) || row.discourse_api_key_ciphertext;
+  const channelIds = managedChannelIdsForRow(row);
   return {
     communityBaseUrl: row.community_base_url || 'https://community.outlier.ai',
     communityCategoryId: row.community_category_id,
     communityCategorySlug: row.community_category_slug,
     communityChatChannelId: row.community_chat_channel_id,
+    communityChatChannelIds: channelIds,
     discourseApiKey: decryptSecret(keyCiphertext),
     discourseApiClientId: row.discourse_api_client_id || 'daily-thread-bot',
     discourseUsername: text(userKey?.discourse_username) || row.discourse_username,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BellRing, Plus, RefreshCw, Send, ShieldAlert, ShieldCheck, X } from 'lucide-react';
+import { BellRing, Check, Plus, RefreshCw, Send, ShieldAlert, ShieldCheck, X } from 'lucide-react';
 import { api, type AiUsageSummary, type AutomationHealthJob, type AutomationHealthResult, type ProjectHealthResult, type PushStatus } from '../api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -88,6 +88,8 @@ export default function Settings() {
   const [usageError, setUsageError] = useState('');
   const [projectHealth, setProjectHealth] = useState<ProjectHealthResult | null>(null);
   const [projectHealthLoading, setProjectHealthLoading] = useState(false);
+  const [connectionTesting, setConnectionTesting] = useState(false);
+  const [connectionTest, setConnectionTest] = useState<{ ok: boolean; message: string } | null>(null);
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [schedule, setSchedule] = useState<PolicyState>(DEFAULT_POLICY);
   const [blockedTopicDraft, setBlockedTopicDraft] = useState('');
@@ -104,6 +106,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (!currentProject) return;
+    setConnectionTest(null);
     const settings = currentProject.settings || {};
     setSchedule({
       timezone: typeof settings.timezone === 'string' ? settings.timezone : 'America/Los_Angeles',
@@ -130,6 +133,33 @@ export default function Settings() {
       })
       .catch(() => { setPushStatus(null); setPushSubscribed(false); });
   }, [currentProject]);
+
+  const testCommunityConnection = async () => {
+    if (!currentProject) return;
+    setConnectionTesting(true);
+    setConnectionTest(null);
+    try {
+      const result = await api.checkDiscourseAccess({
+        projectId: currentProject.id,
+        communityBaseUrl: currentProject.communityBaseUrl,
+        discourseApiClientId: currentProject.discourseApiClientId,
+        categoryId: currentProject.categoryId,
+        channelId: currentProject.channelId,
+        full: true,
+      });
+      setConnectionTest({
+        ok: true,
+        message: `API key accepted. Connected as ${result.username}; category ${result.categoryId} and channel ${result.channelId} are accessible.`,
+      });
+    } catch (err) {
+      setConnectionTest({
+        ok: false,
+        message: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setConnectionTesting(false);
+    }
+  };
 
   const saveSchedule = async () => {
     if (!currentProject) return;
@@ -226,10 +256,37 @@ export default function Settings() {
             </div>
             <p className="mt-1 text-sm text-muted-foreground">Live checks for {currentProject?.projectName || 'the active project'}.</p>
           </div>
-          <Badge variant={projectHealth?.healthy ? 'secondary' : 'outline'}>
-            {projectHealthLoading ? 'checking' : projectHealth?.healthy ? 'healthy' : 'attention needed'}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={projectHealth?.healthy ? 'secondary' : 'outline'}>
+              {projectHealthLoading ? 'checking' : projectHealth?.healthy ? 'healthy' : 'attention needed'}
+            </Badge>
+            {currentProject?.settings?.demoMode !== true ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void testCommunityConnection()}
+                disabled={!currentProject || connectionTesting}
+              >
+                {connectionTesting ? <RefreshCw className="animate-spin" /> : <ShieldCheck />}
+                {connectionTesting ? 'Testing' : 'Test connection'}
+              </Button>
+            ) : null}
+          </div>
         </div>
+        {connectionTest ? (
+          <div className={`flex items-start gap-3 border-b px-4 py-3 text-sm sm:px-6 ${connectionTest.ok ? 'bg-success/5' : 'bg-destructive/5'}`}>
+            {connectionTest.ok
+              ? <Check className="mt-0.5 size-4 shrink-0 text-success" />
+              : <ShieldAlert className="mt-0.5 size-4 shrink-0 text-destructive" />}
+            <div>
+              <p className="font-medium">{connectionTest.ok ? 'Community connection verified' : 'Community connection failed'}</p>
+              <p className={`mt-0.5 text-xs leading-5 ${connectionTest.ok ? 'text-muted-foreground' : 'text-destructive'}`}>
+                {connectionTest.message}
+              </p>
+            </div>
+          </div>
+        ) : null}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-px bg-border md:grid-cols-2 lg:grid-cols-4">
           {(projectHealth?.checks || []).map((check) => (
             <div key={check.id} className="bg-background p-4">

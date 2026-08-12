@@ -42,11 +42,11 @@ function formatMessageTime(value: string): string {
 
 function buildInboxThreads(items: CommunityAgentItem[]): InboxThread[] {
   const sorted = [...items].sort((a, b) => messageTime(a) - messageTime(b));
-  const byChatId = new Map<number, CommunityAgentItem>();
+  const byChatId = new Map<string, CommunityAgentItem>();
   const byRootId = new Map<string, InboxThread>();
 
   sorted.forEach((item) => {
-    if (item.chatMessageId !== undefined) byChatId.set(item.chatMessageId, item);
+    if (item.chatMessageId !== undefined) byChatId.set(`${item.channelId || ''}:${item.chatMessageId}`, item);
   });
 
   const ensureThread = (root: CommunityAgentItem): InboxThread => {
@@ -64,7 +64,9 @@ function buildInboxThreads(items: CommunityAgentItem[]): InboxThread[] {
   };
 
   for (const item of sorted) {
-    const parent = item.replyToChatMessageId !== undefined ? byChatId.get(item.replyToChatMessageId) : undefined;
+    const parent = item.replyToChatMessageId !== undefined
+      ? byChatId.get(`${item.channelId || ''}:${item.replyToChatMessageId}`)
+      : undefined;
     const root = parent || item;
     const thread = ensureThread(root);
     if (item.id !== root.id && !thread.replies.some((reply) => reply.id === item.id)) {
@@ -109,6 +111,7 @@ function MessageNode({
             <IconCornerDownRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           )}
           <span className="truncate text-sm font-semibold text-foreground">{item.username}</span>
+          {item.channelId ? <Badge tone="gray">{`Channel ${item.channelId}`}</Badge> : null}
           <Badge tone={status.tone}>{status.label}</Badge>
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">{formatMessageTime(item.createdAt)}</span>

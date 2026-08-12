@@ -22,6 +22,7 @@ import {
   projectSelection,
   type DiscourseAccessCheckResult,
   type DiscourseAuthStatus,
+  type DiscoursePublicChannel,
   type QmProjectInput,
 } from "@/api"
 import { useAuth } from "@/auth"
@@ -112,6 +113,13 @@ const SETUP_STEPS: SetupStep[] = [
   },
 ]
 
+const CSM_SETUP_STEPS: SetupStep[] = SETUP_STEPS.map((step) => {
+  if (step.id === "identity") return { ...step, label: "Workspace", eyebrow: "CSM workspace", title: "Name your operations workspace", description: "Use one workspace for the Community channels managed by the same CSM team." }
+  if (step.id === "community") return { ...step, label: "Channels", eyebrow: "Channel coverage", title: "Add the channels you manage", description: "Connect up to 30 Community channels with one personal Discourse authorization." }
+  if (step.id === "knowledge") return { ...step, label: "Instructions", eyebrow: "Operational knowledge", title: "Import the source of truth", description: "Load instructions from an Outlier Community post or upload a supporting PDF." }
+  return step
+})
+
 const DEFAULT_FORM: ProjectFormState = {
   ownerName: "",
   projectKey: "",
@@ -120,10 +128,12 @@ const DEFAULT_FORM: ProjectFormState = {
   categoryId: "",
   categorySlug: "",
   channelId: "",
+  managedChannelIds: [],
   discourseUsername: "",
   discourseApiClientId: "daily-thread-bot",
   discourseApiKey: "",
   projectGuidelines: "",
+  guidelinesSourceUrl: "",
   warRoomLink: "",
   agentMode: "supervised",
   autoReplyEnabled: false,
@@ -131,6 +141,9 @@ const DEFAULT_FORM: ProjectFormState = {
 }
 
 function projectToForm(project: NonNullable<ReturnType<typeof usePlatform>["currentProject"]>): ProjectFormState {
+  const managedChannelIds = Array.isArray(project.settings?.managedChannelIds)
+    ? project.settings.managedChannelIds.map(String).filter(Boolean)
+    : [project.channelId].filter(Boolean)
   return {
     ownerName: project.ownerName,
     projectKey: project.projectKey,
@@ -139,10 +152,12 @@ function projectToForm(project: NonNullable<ReturnType<typeof usePlatform>["curr
     categoryId: project.categoryId,
     categorySlug: project.categorySlug,
     channelId: project.channelId,
+    managedChannelIds,
     discourseUsername: project.discourseUsername,
     discourseApiClientId: project.discourseApiClientId,
     discourseApiKey: "",
     projectGuidelines: project.projectGuidelines,
+    guidelinesSourceUrl: typeof project.settings?.guidelinesSourceUrl === "string" ? project.settings.guidelinesSourceUrl : "",
     warRoomLink: project.warRoomLink,
     agentMode: project.agentMode,
     autoReplyEnabled: project.autoReplyEnabled,
@@ -230,9 +245,11 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   const navigate = useNavigate()
   const location = useLocation()
   const { user, signOut } = useAuth()
-  const { currentProject, refreshProjects } = usePlatform()
+  const { currentProject, accountRole, refreshProjects } = usePlatform()
   const activeProject = forceNew ? null : currentProject
   const editing = Boolean(activeProject)
+  const isCsm = accountRole === "csm" || activeProject?.settings?.workspaceType === "csm"
+  const setupSteps = isCsm ? CSM_SETUP_STEPS : SETUP_STEPS
 
   const [form, setForm] = useState<ProjectFormState>(DEFAULT_FORM)
   const [currentStep, setCurrentStep] = useState(0)
@@ -242,6 +259,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   const [platformGeminiReady, setPlatformGeminiReady] = useState(false)
   const [geminiModel, setGeminiModel] = useState("Gemini Flash-Lite")
   const [extractingGuidelines, setExtractingGuidelines] = useState(false)
+  const [importingCommunityGuidelines, setImportingCommunityGuidelines] = useState(false)
   const [guidelinesFile, setGuidelinesFile] = useState<GuidelinesFileStatus | null>(null)
   const [draggingGuidelines, setDraggingGuidelines] = useState(false)
   const [lookingUpProject, setLookingUpProject] = useState(false)
@@ -250,6 +268,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   const [authorizationCode, setAuthorizationCode] = useState("")
   const [verifyingAuthorization, setVerifyingAuthorization] = useState(false)
   const [discourseAccess, setDiscourseAccess] = useState<DiscourseAccessCheckResult | null>(null)
+  const [availableChannels, setAvailableChannels] = useState<DiscoursePublicChannel[]>([])
+  const [discoveringChannels, setDiscoveringChannels] = useState(false)
   const [activeDraftKey, setActiveDraftKey] = useState("")
   const [categoryUrl, setCategoryUrl] = useState("")
   const [error, setError] = useState("")
@@ -354,8 +374,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     Boolean(form.ownerName.trim() && form.projectName.trim() && form.projectKey.trim()),
     Boolean(
       form.communityBaseUrl.trim()
-      && form.categoryId.trim()
-      && form.channelId.trim()
+      && (isCsm || form.categoryId.trim())
+      && (isCsm ? form.managedChannelIds.length > 0 : form.channelId.trim())
       && form.discourseUsername.trim(),
     ),
     connectionReady,
@@ -364,11 +384,11 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       && Number.isFinite(Number(form.minConfidence))
       && Number(form.minConfidence) >= 0
       && Number(form.minConfidence) <= 1,
-  ], [connectionReady, form])
+  ], [connectionReady, form, isCsm])
 
   const completedCount = completedSteps.filter(Boolean).length
-  const progress = ((currentStep + 1) / SETUP_STEPS.length) * 100
-  const step = SETUP_STEPS[currentStep]
+  const progress = ((currentStep + 1) / setupSteps.length) * 100
+  const step = setupSteps[currentStep]
 
   function update<K extends keyof ProjectFormState>(key: K, value: ProjectFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -379,7 +399,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
 
   function validationMessage(stepIndex: number): string {
     if (stepIndex === 0) {
-      if (!form.ownerName.trim()) return "Add your QM name."
+      if (!form.ownerName.trim()) return `Add your ${isCsm ? "CSM" : "QM"} name.`
       if (!form.projectKey.trim()) return "Add the shared Project ID."
       if (!form.projectName.trim()) return "Add the project name."
     }
@@ -390,8 +410,11 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       } catch {
         return "Enter a valid Community base URL."
       }
-      if (!form.categoryId.trim()) return "Add the Community category ID."
-      if (!form.channelId.trim()) return "Add the Community channel ID."
+      if (!isCsm && !form.categoryId.trim()) return "Add the Community category ID."
+      const channelIds = isCsm ? form.managedChannelIds : [form.channelId]
+      if (!channelIds.length || channelIds.some((value) => !value.trim())) return "Add at least one Community channel ID."
+      if (channelIds.length > 30) return "A CSM workspace can manage up to 30 channels."
+      if (channelIds.some((value) => !/^\d+$/.test(value))) return "Every Community channel ID must be numeric."
       if (!form.discourseUsername.trim()) return "Add your Discourse username."
     }
     if (stepIndex === 2) {
@@ -415,7 +438,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   }
 
   function goToStep(nextStep: number) {
-    const bounded = Math.max(0, Math.min(SETUP_STEPS.length - 1, nextStep))
+    const bounded = Math.max(0, Math.min(setupSteps.length - 1, nextStep))
     setStepDirection(bounded >= currentStep ? "forward" : "back")
     setCurrentStep(bounded)
     setError("")
@@ -451,7 +474,13 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         categoryId: project.categoryId,
         categorySlug: project.categorySlug,
         channelId: project.channelId,
+        managedChannelIds: Array.isArray(project.settings?.managedChannelIds)
+          ? project.settings.managedChannelIds.map(String).filter(Boolean)
+          : [project.channelId].filter(Boolean),
         projectGuidelines: project.projectGuidelines,
+        guidelinesSourceUrl: typeof project.settings?.guidelinesSourceUrl === "string"
+          ? project.settings.guidelinesSourceUrl
+          : "",
         warRoomLink: project.warRoomLink,
         agentMode: project.agentMode,
         autoReplyEnabled: project.autoReplyEnabled,
@@ -590,6 +619,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         discourseApiClientId: form.discourseApiClientId,
         categoryId: form.categoryId,
         channelId: form.channelId,
+        channelIds: isCsm ? form.managedChannelIds : undefined,
+        workspaceType: isCsm ? "csm" : "project",
       })
       setDiscourseAccess(result)
       setDiscourseStatus((current) => ({
@@ -606,6 +637,45 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setVerifyingAuthorization(false)
+    }
+  }
+
+  async function discoverChannels() {
+    setDiscoveringChannels(true)
+    setError("")
+    setMessage("")
+    try {
+      const result = await api.getDiscourseChannels(activeProject?.id)
+      setAvailableChannels(result.channels)
+      setMessage(`Found ${result.channels.length} accessible Community channels. Select up to 30.`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setDiscoveringChannels(false)
+    }
+  }
+
+  async function importCommunityGuidelines() {
+    if (!form.guidelinesSourceUrl.trim()) {
+      setError("Paste the Community post URL that contains the instructions.")
+      return
+    }
+    setImportingCommunityGuidelines(true)
+    setError("")
+    setMessage("")
+    try {
+      const result = await api.importGuidelinesFromCommunity({
+        url: form.guidelinesSourceUrl,
+        projectId: activeProject?.id,
+        discourseApiClientId: form.discourseApiClientId,
+      })
+      update("projectGuidelines", result.text)
+      setGuidelinesFile(null)
+      setMessage(`Imported ${result.characters.toLocaleString()} characters from ${result.title}.`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setImportingCommunityGuidelines(false)
     }
   }
 
@@ -640,6 +710,8 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         discourseApiClientId: form.discourseApiClientId,
         categoryId: form.categoryId,
         channelId: form.channelId,
+        channelIds: isCsm ? form.managedChannelIds : undefined,
+        workspaceType: isCsm ? "csm" : "project",
       })
       setDiscourseAccess(access)
       setMessage(`Connected as ${access.username}. Category and channel access verified.`)
@@ -652,7 +724,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
   }
 
   async function submit() {
-    const firstInvalidStep = SETUP_STEPS.findIndex((_, index) => Boolean(validationMessage(index)))
+    const firstInvalidStep = setupSteps.findIndex((_, index) => Boolean(validationMessage(index)))
     if (firstInvalidStep >= 0) {
       goToStep(firstInvalidStep)
       setError(validationMessage(firstInvalidStep))
@@ -683,6 +755,15 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
       agentMode: form.agentMode,
       autoReplyEnabled: form.autoReplyEnabled,
       minConfidence: Number(form.minConfidence),
+      settings: {
+        ...(activeProject?.settings || {}),
+        workspaceType: isCsm ? "csm" : "project",
+        ...(isCsm ? {
+          managedChannelIds: form.managedChannelIds,
+          guidelinesSourceUrl: form.guidelinesSourceUrl.trim(),
+          dailyThreadEnabled: false,
+        } : {}),
+      },
     }
 
     try {
@@ -702,7 +783,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
 
   function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (currentStep < SETUP_STEPS.length - 1) {
+    if (currentStep < setupSteps.length - 1) {
       continueSetup()
       return
     }
@@ -718,6 +799,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         editing={editing}
         lookingUpProject={lookingUpProject}
         onLookupProject={() => void lookupSharedProject()}
+        isCsm={isCsm}
       />
     )
   } else if (currentStep === 1) {
@@ -728,6 +810,10 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         categoryUrl={categoryUrl}
         onCategoryUrlChange={setCategoryUrl}
         onExtractCategory={extractCategoryUrl}
+        isCsm={isCsm}
+        availableChannels={availableChannels}
+        discoveringChannels={discoveringChannels}
+        onDiscoverChannels={() => void discoverChannels()}
       />
     )
   } else if (currentStep === 2) {
@@ -763,6 +849,9 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         onDropFile={dropGuidelinesFile}
         onReadFile={readGuidelinesFile}
         onClearFile={clearGuidelinesFile}
+        isCsm={isCsm}
+        importingCommunityGuidelines={importingCommunityGuidelines}
+        onImportCommunityGuidelines={() => void importCommunityGuidelines()}
       />
     )
   } else {
@@ -771,7 +860,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         form={form}
         update={update}
         completedCount={completedCount}
-        totalSteps={SETUP_STEPS.length}
+        totalSteps={setupSteps.length}
         discourseConnected={discourseConnected}
       />
     )
@@ -814,7 +903,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
 
         <div className="mb-5 lg:hidden">
           <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-medium">Step {currentStep + 1} of {SETUP_STEPS.length}</span>
+            <span className="font-medium">Step {currentStep + 1} of {setupSteps.length}</span>
             <span className="text-muted-foreground">{step.label}</span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -824,7 +913,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
 
         <div className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
           <nav className="sticky top-6 hidden lg:grid lg:gap-1" aria-label="Project setup steps">
-            {SETUP_STEPS.map((item, index) => {
+            {setupSteps.map((item, index) => {
               const Icon = item.icon
               const active = index === currentStep
               return (
@@ -853,11 +942,11 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
               )
             })}
             <div className="mt-4 border-t px-3 pt-4">
-              <p className="text-xs text-muted-foreground">{completedCount} of {SETUP_STEPS.length} sections ready</p>
+              <p className="text-xs text-muted-foreground">{completedCount} of {setupSteps.length} sections ready</p>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-success transition-all duration-300"
-                  style={{ width: `${(completedCount / SETUP_STEPS.length) * 100}%` }}
+                  style={{ width: `${(completedCount / setupSteps.length) * 100}%` }}
                 />
               </div>
             </div>
@@ -927,7 +1016,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
                   <ArrowLeft />
                   Back
                 </Button>
-                {currentStep < SETUP_STEPS.length - 1 ? (
+                {currentStep < setupSteps.length - 1 ? (
                   <Button type="submit">
                     Continue
                     <ArrowRight />

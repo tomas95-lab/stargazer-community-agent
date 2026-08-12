@@ -258,6 +258,7 @@ export interface CommunityAgentReplyEvidence {
 export interface CommunityAgentItem {
   id: string;
   source: CommunityAgentSource;
+  channelId?: string;
   username: string;
   message: string;
   createdAt: string;
@@ -272,6 +273,7 @@ export interface CommunityAgentItem {
 export interface CommunityAgentDecision {
   itemId: string;
   source: CommunityAgentSource;
+  channelId?: string;
   username: string;
   message: string;
   action: CommunityAgentAction;
@@ -650,6 +652,7 @@ export interface AiUsageSummary {
 export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
 export type ProjectRole = 'owner' | 'admin' | 'qm' | 'viewer';
 export type ProjectStatus = 'setup' | 'active' | 'paused' | 'completed' | 'archived';
+export type AccountRole = 'qm' | 'csm';
 
 export interface QmProject {
   id: string;
@@ -717,6 +720,16 @@ export interface PlatformStatus {
   encryptionConfigured: boolean;
   schemaReady: boolean;
   schemaMessage: string;
+}
+
+export interface CommunityGuidelinesImportResult {
+  text: string;
+  topicId: number;
+  postNumber: number;
+  title: string;
+  author: string;
+  sourceUrl: string;
+  characters: number;
 }
 
 export interface GeminiConnectionStatus {
@@ -849,6 +862,11 @@ export interface DiscourseAccessCheckResult {
   username: string;
   categoryId: string;
   channelId: string;
+}
+
+export interface DiscoursePublicChannel {
+  id: string;
+  title: string;
 }
 
 export const api = {
@@ -1029,7 +1047,7 @@ export const api = {
     }),
   getAiUsage: () => request<AiUsageSummary>('/usage'),
   getPlatformStatus: () => request<PlatformStatus>('/platform/status'),
-  getPlatformMe: () => request<{ user: { id: string; email: string; name: string } }>('/platform/me'),
+  getPlatformMe: () => request<{ user: { id: string; email: string; name: string; accountRole: AccountRole } }>('/platform/me'),
   getGeminiStatus: () => request<GeminiConnectionStatus>('/platform/gemini/status'),
   connectGemini: (apiKey: string) =>
     request<GeminiConnectionStatus>('/platform/gemini/connect', {
@@ -1101,15 +1119,26 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(opts),
     }),
+  importGuidelinesFromCommunity: (opts: { url: string; projectId?: string; discourseApiClientId?: string }) =>
+    request<CommunityGuidelinesImportResult>('/platform/guidelines/import-community', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
   checkDiscourseAccess: (opts: {
     projectId?: string;
     communityBaseUrl: string;
     discourseApiClientId: string;
     categoryId: string;
     channelId: string;
+    channelIds?: string[];
+    workspaceType?: 'project' | 'csm';
+    full?: boolean;
   }) => request<DiscourseAccessCheckResult>('/discourse-auth/check', {
     method: 'POST',
     body: JSON.stringify(opts),
   }),
   getDiscourseAuthStatus: () => request<DiscourseAuthStatus>('/discourse-auth/status'),
+  getDiscourseChannels: (projectId?: string) => request<{ channels: DiscoursePublicChannel[] }>(
+    `/discourse-auth/channels${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`,
+  ),
 };

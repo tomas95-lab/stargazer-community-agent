@@ -45,6 +45,7 @@ export interface CommunityAgentOptions {
 export interface CommunityAgentItem {
   id: string;
   source: CommunityAgentSource;
+  channelId?: string;
   username: string;
   message: string;
   createdAt: string;
@@ -68,6 +69,7 @@ export interface CommunityAgentReplyEvidence {
 export interface CommunityAgentDecision {
   itemId: string;
   source: CommunityAgentSource;
+  channelId?: string;
   username: string;
   message: string;
   action: CommunityAgentAction;
@@ -116,10 +118,15 @@ interface AiDecision {
   reaction?: string;
 }
 
-function createClient(): { client: DiscourseClient; channelId: string } {
+function createClient(): { client: DiscourseClient; channelId: string; channelIds: string[] } {
   const config = loadBotConfig();
+  const channelIds = Array.from(new Set([
+    config.communityChatChannelId,
+    ...(config.communityChatChannelIds || []),
+  ].map((value) => value.trim()).filter((value) => /^\d+$/.test(value)))).slice(0, 30);
   return {
     channelId: config.communityChatChannelId,
+    channelIds,
     client: new DiscourseClient({
       baseUrl: config.communityBaseUrl,
       apiKey: config.discourseApiKey,
@@ -130,8 +137,14 @@ function createClient(): { client: DiscourseClient; channelId: string } {
 
 export async function fetchRecentCommunityMessages(count = 20): Promise<DiscourseChatMessage[]> {
   if (isDemoMode()) return demoCommunityMessages(count);
-  const { client, channelId } = createClient();
-  return client.readChatMessages(channelId, count);
+  const { client, channelIds } = createClient();
+  const messages = await mapWithConcurrency(channelIds, 5, async (channelId) => (
+    (await client.readChatMessages(channelId, count)).map((message) => ({
+      ...message,
+      chat_channel_id: message.chat_channel_id || Number(channelId),
+    }))
+  ));
+  return messages.flat().sort((left, right) => left.created_at.localeCompare(right.created_at));
 }
 
 function todayWindow(now = new Date()): CommunityAgentResult['window'] & { start: Date; end: Date } {
@@ -360,6 +373,7 @@ function isFirstVisibleFollowup(
   orderedItems: CommunityAgentItem[],
 ): boolean {
   const sameConversation = (item: CommunityAgentItem): boolean => {
+    if ((item.channelId || '') !== (question.channelId || '')) return false;
     if (question.threadId !== undefined && question.threadId !== null) {
       return item.threadId === question.threadId;
     }
@@ -383,6 +397,7 @@ function replyEvidenceFor(
   orderedItems: CommunityAgentItem[],
 ): CommunityAgentReplyEvidence | null {
   if (question.id === candidateReply.id) return null;
+  if ((question.channelId || '') !== (candidateReply.channelId || '')) return null;
   if (candidateReply.username.toLowerCase() === question.username.toLowerCase()) return null;
   if (messageTime(candidateReply) <= messageTime(question)) return null;
   if (shouldIgnoreMessage(candidateReply.message)) return null;
@@ -525,7 +540,7 @@ function withIgnoredReasons(items: CommunityAgentItem[]): CommunityAgentItem[] {
   }));
 }
 
-function threadPreviewReply(message: DiscourseChatMessage): CommunityAgentReplyEvidence | null {
+function threadPreviewReply(message: DiscourseChatMessage, channelId = ''): CommunityAgentReplyEvidence | null {
   if (shouldIgnoreMessage(message.message)) return null;
 
   const preview = message.thread?.preview;
@@ -536,7 +551,7 @@ function threadPreviewReply(message: DiscourseChatMessage): CommunityAgentReplyE
   if (!replyText) return null;
 
   return {
-    id: `community:${preview.last_reply_id}`,
+    id: `community:${channelId}:${preview.last_reply_id}`,
     username: preview.last_reply_user.username,
     message: replyText,
     createdAt: preview.last_reply_created_at,
@@ -590,73 +605,100 @@ async function readCommunityMessagesForOptions(
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 }
 
+async function mapWithConcurrency<T, R>(
+  values: T[],
+  concurrency: number,
+  mapper: (value: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(values.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(values.length, Math.max(1, concurrency)) }, async () => {
+    while (cursor < values.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await mapper(values[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions, 'includeCommunity' | 'onlyToday' | 'messageCount'>>): Promise<{
   items: CommunityAgentItem[];
   errors: string[];
   window: ReturnType<typeof todayWindow>;
 }> {
-  const { client, channelId } = createClient();
+  const { client, channelId, channelIds } = createClient();
   const window = todayWindow();
   const items: CommunityAgentItem[] = [];
   const errors: string[] = [];
 
   if (options.includeCommunity) {
-    try {
-      const demo = isDemoMode();
-      const messages = demo
-        ? await demoCommunityMessages(options.messageCount)
-        : await readCommunityMessagesForOptions(client, channelId, options, window);
-      const seenMessageIds = new Set<number>();
-      const threadRoots = new Map<number, number>();
-      for (const msg of messages) {
-        if (options.onlyToday && !isWithinWindow(msg.created_at, window)) continue;
-        const previewReply = threadPreviewReply(msg);
-        seenMessageIds.add(msg.id);
-        if (msg.thread_id) threadRoots.set(msg.thread_id, msg.id);
-        items.push({
-          id: `community:${msg.id}`,
-          source: 'community',
-          username: msg.user.username,
-          message: msg.message,
-          createdAt: msg.created_at,
-          chatMessageId: msg.id,
-          threadId: msg.thread_id,
-          replyToChatMessageId: replyTargetId(msg),
-          isStaff: Boolean(msg.user.staff || msg.user.moderator || msg.user.admin),
-          probableReplies: previewReply ? [previewReply] : [],
-        });
-      }
-
-      const threadIds = demo ? [] : Array.from(threadRoots.keys()).slice(0, Math.max(0, THREAD_SCAN_LIMIT));
-      for (const threadId of threadIds) {
-        try {
-          const threadMessages = await client.readChatThreadMessages(channelId, threadId, THREAD_MESSAGE_COUNT);
-          const rootMessageId = threadRoots.get(threadId);
-          for (const msg of threadMessages) {
-            if (seenMessageIds.has(msg.id)) continue;
-            if (options.onlyToday && !isWithinWindow(msg.created_at, window)) continue;
-            seenMessageIds.add(msg.id);
-            const previewReply = threadPreviewReply(msg);
-            items.push({
-              id: `community:${msg.id}`,
-              source: 'community',
-              username: msg.user.username,
-              message: msg.message,
-              createdAt: msg.created_at,
-              chatMessageId: msg.id,
-              threadId: msg.thread_id || threadId,
-              replyToChatMessageId: replyTargetId(msg) || rootMessageId,
-              isStaff: Boolean(msg.user.staff || msg.user.moderator || msg.user.admin),
-              probableReplies: previewReply ? [previewReply] : [],
-            });
-          }
-        } catch (err) {
-          errors.push(`community thread ${threadId}: ${err instanceof Error ? err.message : String(err)}`);
+    const demo = isDemoMode();
+    const scanChannelIds = demo ? [channelId] : channelIds;
+    const concurrency = Math.max(1, Math.min(8, Number(process.env.AGENT_CHANNEL_SCAN_CONCURRENCY || 5)));
+    const channelScans = await mapWithConcurrency(scanChannelIds, concurrency, async (currentChannelId) => {
+      try {
+        const messages = demo
+          ? await demoCommunityMessages(options.messageCount)
+          : await readCommunityMessagesForOptions(client, currentChannelId, options, window);
+        const seenMessageIds = new Set<number>();
+        const threadRoots = new Map<number, number>();
+        for (const msg of messages) {
+          if (options.onlyToday && !isWithinWindow(msg.created_at, window)) continue;
+          const previewReply = threadPreviewReply(msg, currentChannelId);
+          seenMessageIds.add(msg.id);
+          if (msg.thread_id) threadRoots.set(msg.thread_id, msg.id);
+          items.push({
+            id: `community:${currentChannelId}:${msg.id}`,
+            source: 'community',
+            channelId: currentChannelId,
+            username: msg.user.username,
+            message: msg.message,
+            createdAt: msg.created_at,
+            chatMessageId: msg.id,
+            threadId: msg.thread_id,
+            replyToChatMessageId: replyTargetId(msg),
+            isStaff: Boolean(msg.user.staff || msg.user.moderator || msg.user.admin),
+            probableReplies: previewReply ? [previewReply] : [],
+          });
         }
+        return { channelId: currentChannelId, seenMessageIds, threadRoots };
+      } catch (err) {
+        errors.push(`channel ${currentChannelId}: ${err instanceof Error ? err.message : String(err)}`);
+        return { channelId: currentChannelId, seenMessageIds: new Set<number>(), threadRoots: new Map<number, number>() };
       }
-    } catch (err) {
-      errors.push(`community: ${err instanceof Error ? err.message : String(err)}`);
-    }
+    });
+
+    const threadScans = demo ? [] : channelScans.flatMap((scan) => (
+      Array.from(scan.threadRoots.entries()).map(([threadId, rootMessageId]) => ({ ...scan, threadId, rootMessageId }))
+    )).slice(0, Math.max(0, THREAD_SCAN_LIMIT));
+    await mapWithConcurrency(threadScans, Math.min(3, concurrency), async (scan) => {
+      try {
+        const threadMessages = await client.readChatThreadMessages(scan.channelId, scan.threadId, THREAD_MESSAGE_COUNT);
+        for (const msg of threadMessages) {
+          if (scan.seenMessageIds.has(msg.id)) continue;
+          if (options.onlyToday && !isWithinWindow(msg.created_at, window)) continue;
+          scan.seenMessageIds.add(msg.id);
+          const previewReply = threadPreviewReply(msg, scan.channelId);
+          items.push({
+            id: `community:${scan.channelId}:${msg.id}`,
+            source: 'community',
+            channelId: scan.channelId,
+            username: msg.user.username,
+            message: msg.message,
+            createdAt: msg.created_at,
+            chatMessageId: msg.id,
+            threadId: msg.thread_id || scan.threadId,
+            replyToChatMessageId: replyTargetId(msg) || scan.rootMessageId,
+            isStaff: Boolean(msg.user.staff || msg.user.moderator || msg.user.admin),
+            probableReplies: previewReply ? [previewReply] : [],
+          });
+        }
+      } catch (err) {
+        errors.push(`channel ${scan.channelId}, thread ${scan.threadId}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    });
   }
 
   return { items: withIgnoredReasons(annotateProbableReplies(items)), errors, window };
@@ -992,17 +1034,18 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       if (post && decision.action === 'reply') {
         posted = isDemoMode()
           ? Boolean(await appendDemoCommunityReply(decision.reply, item))
-          : await postDecision(client, channelId, decision.reply, item);
+          : await postDecision(client, item.channelId || channelId, decision.reply, item);
       }
       if (react && decision.action === 'react') {
         reacted = isDemoMode()
           ? true
-          : await reactToDecision(client, channelId, item, decision.reaction || DEFAULT_REACTION_EMOJI);
+          : await reactToDecision(client, item.channelId || channelId, item, decision.reaction || DEFAULT_REACTION_EMOJI);
       }
 
       decisions.push({
         itemId: item.id,
         source: item.source,
+        channelId: item.channelId,
         username: item.username,
         message: item.message,
         posted,
@@ -1018,6 +1061,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       decisions.push({
         itemId: item.id,
         source: item.source,
+        channelId: item.channelId,
         username: item.username,
         message: item.message,
         action: 'human',

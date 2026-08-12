@@ -25,7 +25,8 @@
     "storage:migrate": "node node_modules/tsx/dist/cli.mjs src/migrate-data-store.ts",
     "storage:migrate:operations": "node node_modules/tsx/dist/cli.mjs src/migrate-operational-history.ts",
     "demo:seed": "node node_modules/tsx/dist/cli.mjs src/seed-demo-account.ts",
-    "storage:verify": "node node_modules/tsx/dist/cli.mjs src/migrate-data-store.ts --verify"
+    "storage:verify": "node node_modules/tsx/dist/cli.mjs src/migrate-data-store.ts --verify",
+    "migrate:jose-csm": "node scripts/migrate-jose-csm.mjs"
   },
   "keywords": [],
   "license": "PRIVATE",

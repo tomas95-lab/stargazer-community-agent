@@ -1,5 +1,5 @@
 import type { ChangeEvent, DragEvent, RefObject } from "react"
-import { FileText, FileUp, LoaderCircle, Upload, X } from "lucide-react"
+import { Download, FileText, FileUp, LoaderCircle, Upload, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,9 @@ interface KnowledgeStepProps {
   onDropFile: (event: DragEvent<HTMLDivElement>) => void
   onReadFile: (event: ChangeEvent<HTMLInputElement>) => void
   onClearFile: () => void
+  isCsm?: boolean
+  importingCommunityGuidelines?: boolean
+  onImportCommunityGuidelines?: () => void
 }
 
 function formatFileSize(bytes: number): string {
@@ -38,9 +41,42 @@ export function KnowledgeStep({
   onDropFile,
   onReadFile,
   onClearFile,
+  isCsm = false,
+  importingCommunityGuidelines = false,
+  onImportCommunityGuidelines,
 }: KnowledgeStepProps) {
   return (
     <div className="grid gap-5">
+      {isCsm ? (
+        <section className="grid gap-3 rounded-md border bg-muted/20 p-4 sm:p-5">
+          <div>
+            <p className="font-medium">Import instructions from Community</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Paste the topic or specific post URL used as the source of truth. Your connected Discourse account reads it privately.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              id="guidelinesSourceUrl"
+              type="url"
+              value={form.guidelinesSourceUrl}
+              onChange={(event) => update("guidelinesSourceUrl", event.target.value)}
+              placeholder="https://community.outlier.ai/t/instructions/12345"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="sm:min-w-32"
+              onClick={onImportCommunityGuidelines}
+              disabled={importingCommunityGuidelines || !form.guidelinesSourceUrl.trim()}
+            >
+              {importingCommunityGuidelines ? <LoaderCircle className="animate-spin" /> : <Download />}
+              Import
+            </Button>
+          </div>
+        </section>
+      ) : null}
+
       <div
         className={cn(
           "flex min-h-48 flex-col items-center justify-center gap-3 rounded-md border border-dashed px-5 py-6 text-center transition-colors",
@@ -57,7 +93,7 @@ export function KnowledgeStep({
           ? <LoaderCircle className="size-8 animate-spin text-primary" />
           : <FileUp className="size-8 text-primary" />}
         <div>
-          <p className="font-medium">{extractingGuidelines ? "Reading your PDF" : "Drop the project guidelines here"}</p>
+          <p className="font-medium">{extractingGuidelines ? "Reading your PDF" : isCsm ? "Or add a supporting PDF" : "Drop the project guidelines here"}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Processed privately in your browser. Tables and page context are preserved. PDF up to 12 MB.
           </p>

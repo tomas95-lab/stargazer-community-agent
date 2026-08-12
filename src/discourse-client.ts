@@ -89,6 +89,7 @@ export interface DiscourseTopicSummary {
 
 export interface DiscourseTopicPost {
   id?: number;
+  post_number?: number;
   username: string;
   name?: string;
   raw?: string;

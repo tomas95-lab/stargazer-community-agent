@@ -19,6 +19,19 @@ export interface DiscourseProjectAccessResult {
   channelId: string;
 }
 
+export interface DiscourseWorkspaceAccessOptions extends DiscourseCredentialOptions {
+  categoryId?: string;
+  channelIds: string[];
+  knownUsername?: string;
+}
+
+export interface DiscourseWorkspaceAccessResult {
+  username: string;
+  categoryId: string;
+  channelId: string;
+  channelIds: string[];
+}
+
 interface DiscourseResponseBody {
   errors?: string[];
   error_type?: string;
@@ -155,4 +168,32 @@ export async function validateDiscourseProjectAccess(
     username,
   );
   return { username, categoryId, channelId };
+}
+
+export async function validateDiscourseWorkspaceAccess(
+  options: DiscourseWorkspaceAccessOptions,
+): Promise<DiscourseWorkspaceAccessResult> {
+  const categoryId = options.categoryId?.trim() || '';
+  if (categoryId && !/^\d+$/.test(categoryId)) throw new Error('Community category ID must be numeric.');
+  const channelIds = Array.from(new Set(options.channelIds.map((value) => value.trim()).filter(Boolean)));
+  if (channelIds.length === 0) throw new Error('Add at least one Community channel ID.');
+  if (channelIds.length > 30) throw new Error('A CSM workspace can manage up to 30 Community channels.');
+  const invalidChannel = channelIds.find((value) => !/^\d+$/.test(value));
+  if (invalidChannel) throw new Error(`Community channel ID ${invalidChannel} must be numeric.`);
+
+  const username = options.knownUsername?.trim()
+    || (await validateDiscourseUserApiKey(options)).username;
+  if (categoryId) {
+    await validateReadableResource(options, `/c/${encodeURIComponent(categoryId)}.json?page=0`, 'category', categoryId, username);
+  }
+  for (const channelId of channelIds) {
+    await validateReadableResource(
+      options,
+      `/chat/api/channels/${encodeURIComponent(channelId)}/messages.json?page_size=1`,
+      'channel',
+      channelId,
+      username,
+    );
+  }
+  return { username, categoryId, channelId: channelIds[0], channelIds };
 }

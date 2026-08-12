@@ -33,10 +33,11 @@ function guidesForPaths(paths: readonly string[]) {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { currentProject } = usePlatform()
+  const { currentProject, accountRole } = usePlatform()
   const { user } = useAuth()
   const projectName = currentProject?.projectName || "Select a project"
-  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "QM"
+  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || accountRole.toUpperCase()
+  const productName = accountRole === "csm" ? "Community Operations" : "Community Agent"
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -46,15 +47,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton
               asChild
               size="lg"
-              tooltip={`${projectName} · Community Agent`}
+              tooltip={`${projectName} · ${productName}`}
               className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
             >
-              <Link to="/" aria-label={`${projectName} Community Agent`}>
+              <Link to="/" aria-label={`${projectName} ${productName}`}>
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
                   <Orbit className="size-4" />
                 </span>
                 <span className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="block truncate text-sm font-semibold">Community Agent</span>
+                  <span className="block truncate text-sm font-semibold">{productName}</span>
                   <span className="block truncate text-xs text-sidebar-foreground/60">{projectName}</span>
                 </span>
               </Link>
@@ -76,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser
           user={{
             name: userName,
-            email: user?.email || currentProject?.projectKey || "QM workspace",
+            email: user?.email || currentProject?.projectKey || `${accountRole.toUpperCase()} workspace`,
             avatar: "",
           }}
         />

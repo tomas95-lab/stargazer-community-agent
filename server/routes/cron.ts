@@ -248,6 +248,10 @@ async function handleDailyThreadCron(req: Request, res: Response): Promise<void>
         runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused', result: undefined });
         continue;
       }
+      if (context.automationSettings?.dailyThreadEnabled === false) {
+        runs.push({ projectId: context.projectId, skipped: true, reason: 'daily_threads_disabled', result: undefined });
+        continue;
+      }
       const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
       if (!withinSchedule) {
         runs.push({ projectId: context.projectId, skipped: true, reason: 'outside_project_schedule', result: undefined });

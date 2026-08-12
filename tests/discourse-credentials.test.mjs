@@ -5,6 +5,7 @@ import {
   looksLikeEncryptedDiscoursePayload,
   validateDiscourseProjectAccess,
   validateDiscourseUserApiKey,
+  validateDiscourseWorkspaceAccess,
 } from '../dist/discourse-credentials.js';
 
 test('encrypted authorization payloads are not accepted as user API keys', () => {
@@ -147,6 +148,35 @@ test('project access validation explains inaccessible channels', async () => {
       }),
       /Connected as qm\.user, but this account cannot access channel ID 681506/,
     );
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test('CSM workspace validation checks every channel without requiring a category', async () => {
+  const previousFetch = global.fetch;
+  const paths = [];
+  global.fetch = async (url) => {
+    paths.push(new URL(url).pathname);
+    const body = url.endsWith('/session/current.json')
+      ? { current_user: { username: 'csm.user' } }
+      : {};
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+
+  try {
+    const result = await validateDiscourseWorkspaceAccess({
+      baseUrl: 'https://community.example',
+      apiKey: 'actual-user-api-key',
+      channelIds: ['761050', '761051', '761050'],
+    });
+    assert.equal(result.username, 'csm.user');
+    assert.deepEqual(result.channelIds, ['761050', '761051']);
+    assert.deepEqual(paths, [
+      '/session/current.json',
+      '/chat/api/channels/761050/messages.json',
+      '/chat/api/channels/761051/messages.json',
+    ]);
   } finally {
     global.fetch = previousFetch;
   }
