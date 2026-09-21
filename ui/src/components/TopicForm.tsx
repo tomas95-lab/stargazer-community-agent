@@ -135,6 +135,20 @@ export default function TopicForm({ topic, onSave, onCancel }: Props) {
       )}
 
       <div>
+        <label className={labelCls}>Chat announcement</label>
+        <textarea
+          value={form.chatAnnouncement || ''}
+          onChange={(e) => set('chatAnnouncement', e.target.value)}
+          className={inputCls}
+          rows={5}
+          placeholder={'Today\'s [**{{projectName}} thread**]({{dailyThreadUrl}}) is ready.\n\nPlease review {{title}} before starting.'}
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Optional. Supports Markdown and {'{{dailyThreadUrl}}'}, {'{{projectName}}'}, {'{{title}}'}, and {'{{topic}}'}.
+        </p>
+      </div>
+
+      <div>
         <label className={labelCls}>Tags (comma-separated)</label>
         <input value={(form.tags || []).join(', ')} onChange={(e) => set('tags', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} className={inputCls} />
       </div>

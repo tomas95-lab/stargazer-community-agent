@@ -55,3 +55,18 @@ test('renderAnnouncement includes daily thread URL and neutral topic summary', (
   assert.match(output, /Observable beats vague/);
   assert.doesNotMatch(output, /Cursor|validation\/eval|Qwen/);
 });
+
+test('renderAnnouncement uses the topic-specific chat announcement and placeholders', () => {
+  const output = renderAnnouncement({
+    ...topic,
+    title: 'Welcome to Money Heist',
+    topic: 'Onboarding',
+    chatAnnouncement: 'Review [**{{title}}**]({{dailyThreadUrl}}) for {{topic}} in {{projectName}}.',
+  }, 'https://community.example/t/money-heist/456');
+
+  assert.equal(
+    output,
+    'Review [**Welcome to Money Heist**](https://community.example/t/money-heist/456) for Onboarding in Stargazer Axiom.',
+  );
+  assert.doesNotMatch(output, /Quick rule|project questions/);
+});

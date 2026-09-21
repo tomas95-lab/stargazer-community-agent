@@ -27,10 +27,12 @@ test('topics import accepts a complete Markdown thread without structured fields
     title: 'Welcome to Money Heist',
     topic: 'Onboarding',
     content: '# Welcome to Money Heist\n\nProject-specific instructions.',
+    chatAnnouncement: 'Read [today\'s thread]({{dailyThreadUrl}}).',
   }]);
 
   assert.equal(result.ok, true);
   assert.equal(result.topics[0].content, '# Welcome to Money Heist\n\nProject-specific instructions.');
+  assert.equal(result.topics[0].chatAnnouncement, 'Read [today\'s thread]({{dailyThreadUrl}}).');
   assert.equal(result.topics[0].quickRule, '');
 });
 

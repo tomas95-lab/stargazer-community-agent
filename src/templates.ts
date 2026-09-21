@@ -154,6 +154,15 @@ export function renderDailyThreadWithLinks(
 }
 
 export function renderAnnouncement(config: DailyThreadConfig, dailyThreadUrl: string): string {
+  if (config.chatAnnouncement?.trim()) {
+    return interpolate(config.chatAnnouncement, {
+      projectName: activeProjectName(),
+      dailyThreadUrl,
+      title: config.title,
+      topic: config.topic,
+    });
+  }
+
   return interpolate(ANNOUNCEMENT_TEMPLATE, {
     projectName: activeProjectName(),
     dailyThreadUrl,

@@ -18,6 +18,7 @@ export const TOPICS_JSON_EXAMPLE: DailyThreadConfig[] = [
     title: 'Daily Quality Focus',
     topic: 'Rubric Quality',
     content: '# Daily Quality Focus\n\nWrite the complete daily thread here using Markdown. Nothing else will be added.',
+    chatAnnouncement: 'Today\'s [**{{projectName}} thread**]({{dailyThreadUrl}}) is ready. Please review **{{title}}** before starting.',
     reminderTitle: '',
     reminderBody: '',
     goodExample: '',
@@ -80,6 +81,7 @@ function normalizeTopic(item: unknown, index: number): { topic?: DailyThreadConf
   }
   const rawContent = typeof raw.content === 'string' ? raw.content : '';
   const content = rawContent.trim();
+  const rawChatAnnouncement = typeof raw.chatAnnouncement === 'string' ? raw.chatAnnouncement : '';
   if (!content) {
     for (const field of STRUCTURED_TEXT_FIELDS) {
       if (!text(raw[field])) errors.push(error(index, field, `${field} is required when content is not provided.`));
@@ -125,6 +127,7 @@ function normalizeTopic(item: unknown, index: number): { topic?: DailyThreadConf
       title: text(raw.title),
       topic: text(raw.topic),
       ...(content ? { content: rawContent } : {}),
+      ...(rawChatAnnouncement.trim() ? { chatAnnouncement: rawChatAnnouncement } : {}),
       reminderTitle: text(raw.reminderTitle),
       reminderBody: text(raw.reminderBody),
       goodExample: text(raw.goodExample),

@@ -45,7 +45,7 @@ router.get('/import-schema', (_req: Request, res: Response) => {
       'title',
       'topic',
     ],
-    optionalFields: ['content', 'reminderTitle', 'reminderBody', 'goodExample', 'badExample', 'quickRule', 'tags', 'webinar'],
+    optionalFields: ['content', 'chatAnnouncement', 'reminderTitle', 'reminderBody', 'goodExample', 'badExample', 'quickRule', 'tags', 'webinar'],
     example: TOPICS_JSON_EXAMPLE,
   });
 });

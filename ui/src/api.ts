@@ -81,6 +81,7 @@ export interface Topic {
   title: string;
   topic: string;
   content?: string;
+  chatAnnouncement?: string;
   reminderTitle: string;
   reminderBody: string;
   goodExample: string;

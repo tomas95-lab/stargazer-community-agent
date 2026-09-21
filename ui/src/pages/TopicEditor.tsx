@@ -180,6 +180,7 @@ function TopicsImportPanel({ onImported }: { onImported: () => void }) {
               <span key={field}>{field}: required string</span>
             ))}
             <span>content: complete Markdown thread (recommended)</span>
+            <span>chatAnnouncement: optional Markdown sent to chat</span>
             <span>structured fields: required only without content</span>
             <span>tags: optional string[]</span>
             <span>webinar: optional object</span>
