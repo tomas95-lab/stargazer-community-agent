@@ -21,6 +21,19 @@ test('topics import accepts object payloads with topics array', () => {
   assert.equal(result.topics[0].date, '2026-07-20');
 });
 
+test('topics import accepts a complete Markdown thread without structured fields', () => {
+  const result = validateTopicsPayload([{
+    date: '2026-09-21',
+    title: 'Welcome to Money Heist',
+    topic: 'Onboarding',
+    content: '# Welcome to Money Heist\n\nProject-specific instructions.',
+  }]);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.topics[0].content, '# Welcome to Money Heist\n\nProject-specific instructions.');
+  assert.equal(result.topics[0].quickRule, '');
+});
+
 test('topics import reports required field errors', () => {
   const result = validateTopicsPayload([{ date: '2026-07-20', title: 'Missing fields' }]);
 

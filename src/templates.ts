@@ -19,77 +19,47 @@ export const DEFAULT_PROJECT_LINKS: ProjectLinks = {
   commonErrorsDocument: 'https://app.outlier.ai/en/expert/guidelines/69cd3d3788bf65e1468428b1?componentId=6a1888d2acc7aef0d78b71ea&type=attachment',
 };
 
-const DAILY_THREAD_TEMPLATE = `# 🚨 {{title}}
+const DAILY_THREAD_TEMPLATE = `# {{title}}
 
 > **TL;DR:** {{quickRule}}
 
-Daily **{{projectName}}** thread is up. Use this thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts.
-
----
-
-> ## 🚨 MODEL REMINDER
-> **Do NOT use Qwen.** The only approved model for this project is **Sonnet 4.6**.
-> Please double-check your model before starting or continuing any task.
+Daily **{{projectName}}** thread is up. Use this thread for project questions, blockers, and updates.
 
 {{webinarSection}}
 
 ---
 
-## 🎯 TODAY'S FOCUS — {{reminderTitle}}
+## Today's focus: {{reminderTitle}}
 
 {{reminderBody}}
 
 ---
 
-## ❌ What it looks like when it's wrong
+## What it looks like when it is wrong
 
 \`\`\`
 {{badExample}}
 \`\`\`
 
-## ✅ What it looks like when it's right
+## What it looks like when it is right
 
 \`\`\`
 {{goodExample}}
 \`\`\`
 
----
+{{linksSection}}`;
 
-## 🔗 LINKS
-
-📘 [Guidelines]({{guidelinesLink}})
-🧩 [Templates ZIP]({{templatesZipLink}})
-🧭 [War Room]({{warRoomLink}})
-✅ [Validation Script]({{validationScriptLink}})
-✅ [Evaluation Pack]({{stargazerEvalLink}})
-📚 [Common Errors Document]({{commonErrorsDocumentLink}})
-
----
-
-## ✅ FINAL CHECK BEFORE SUBMITTING
-
-\`\`\`
-F2P fails Phase 1 and passes Phase 2
-P2P passes both phases
-Tests validate behavior, not static patterns
-No phase detection or hardcoded outcomes
-Rubrics are atomic, measurable, and aligned
-Validation + eval were run
-\`\`\`
-
-Let's keep it clean and review-ready 🚀`;
-
-const ANNOUNCEMENT_TEMPLATE = `Hey team! 👋
+const ANNOUNCEMENT_TEMPLATE = `Hey team!
 
 Today's [**{{projectName}} daily thread**]({{dailyThreadUrl}}) is up.
 
-Please take a few minutes to read it before tasking today. The topic is **{{topic}}**, with a reminder about **{{reminderTitle}}**.
+Please take a few minutes to review it. Today's topic is **{{topic}}**.
 
-Quick rule: {{quickRule}}
+{{announcementSummary}}
 
 {{webinarAnnouncement}}
 
-Use the daily thread for blockers, Cursor issues, validation/eval problems, onboarding questions, or task-related doubts 🙌`;
+Use the daily thread for project questions, blockers, and updates.`;
 
 function buildWebinarSection(config: DailyThreadConfig): string {
   if (!config.webinar?.enabled) return '';
@@ -140,6 +110,20 @@ function interpolate(template: string, vars: Record<string, string>): string {
   return result;
 }
 
+function buildLinksSection(links: Partial<ProjectLinks>): string {
+  const entries = [
+    ['Guidelines', links.guidelines],
+    ['Templates', links.templatesZip],
+    ['War Room', links.warRoom],
+    ['Validation Script', links.validationScript],
+    ['Evaluation Pack', links.stargazerEval],
+    ['Common Errors Document', links.commonErrorsDocument],
+  ].filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
+
+  if (entries.length === 0) return '';
+  return `---\n\n## Links\n\n${entries.map(([label, url]) => `- [${label}](${url})`).join('\n')}`;
+}
+
 function activeProjectName(): string {
   const context = getProjectContext();
   return context.projectName || (isLegacyProjectId(context.projectId) ? 'Stargazer Axiom' : 'the active project');
@@ -153,7 +137,9 @@ export function renderDailyThreadWithLinks(
   config: DailyThreadConfig,
   links: Partial<ProjectLinks> = {}
 ): string {
-  const mergedLinks = { ...DEFAULT_PROJECT_LINKS, ...links };
+  if (config.content?.trim()) return config.content;
+
+  const mergedLinks = links;
   return interpolate(DAILY_THREAD_TEMPLATE, {
     projectName: activeProjectName(),
     title: config.title,
@@ -163,13 +149,8 @@ export function renderDailyThreadWithLinks(
     badExample: config.badExample,
     quickRule: config.quickRule,
     webinarSection: buildWebinarSection(config),
-    guidelinesLink: mergedLinks.guidelines,
-    templatesZipLink: mergedLinks.templatesZip,
-    warRoomLink: mergedLinks.warRoom,
-    validationScriptLink: mergedLinks.validationScript,
-    stargazerEvalLink: mergedLinks.stargazerEval,
-    commonErrorsDocumentLink: mergedLinks.commonErrorsDocument,
-  });
+    linksSection: buildLinksSection(mergedLinks),
+  }).replace(/\n{3,}/g, '\n\n').trim();
 }
 
 export function renderAnnouncement(config: DailyThreadConfig, dailyThreadUrl: string): string {
@@ -177,8 +158,9 @@ export function renderAnnouncement(config: DailyThreadConfig, dailyThreadUrl: st
     projectName: activeProjectName(),
     dailyThreadUrl,
     topic: config.topic,
-    reminderTitle: config.reminderTitle,
-    quickRule: config.quickRule,
+    announcementSummary: config.content?.trim()
+      ? `Title: **${config.title}**`
+      : `Quick rule: ${config.quickRule}`,
     webinarAnnouncement: buildWebinarAnnouncement(config),
-  });
+  }).replace(/\n{3,}/g, '\n\n').trim();
 }

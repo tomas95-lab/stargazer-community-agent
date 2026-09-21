@@ -8,6 +8,7 @@ export interface DailyThreadConfig {
   date: string;
   title: string;
   topic: string;
+  content?: string;
   reminderTitle: string;
   reminderBody: string;
   goodExample: string;

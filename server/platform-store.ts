@@ -4,6 +4,7 @@ import { BotConfig } from '../src/config';
 import { platformGeminiConfigured } from '../src/ai-runtime';
 import { assertDiscourseUserApiKey } from '../src/discourse-credentials';
 import { normalizeChannelGuidelines } from '../src/channel-guidelines';
+import { normalizeTimeZone } from '../src/time-zone';
 import { readDataJSON, writeDataJSON } from '../src/data-store';
 import {
   canonicalProjectId,
@@ -430,7 +431,10 @@ function publicProject(row: QmProjectRow, aiKey?: UserAiKeyRow | null): QmProjec
     role: projectRole(row.role),
     status: projectStatus(row.status, row.enabled),
     archivedAt: row.archived_at || '',
-    settings: row.settings && typeof row.settings === 'object' ? row.settings : {},
+    settings: {
+      ...(row.settings && typeof row.settings === 'object' ? row.settings : {}),
+      timezone: normalizeTimeZone(row.settings?.timezone),
+    },
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -684,6 +688,7 @@ function normalizeProjectInput(
   ].map((value) => text(value)).filter((value) => /^\d+$/.test(value)))).slice(0, 30);
   const channelId = managedChannelIds[0] || requestedChannelId;
   const channelGuidelines = normalizeChannelGuidelines(baseSettings.channelGuidelines, managedChannelIds);
+  const timezone = normalizeTimeZone(baseSettings.timezone);
   const discourseUsername = text(input.discourseUsername, existing?.discourse_username || '');
 
   if (!projectName) throw new Error('Project name is required.');
@@ -721,6 +726,7 @@ function normalizeProjectInput(
     status: projectStatus(input.status ?? existing?.status ?? shared?.status, existing?.enabled ?? shared?.enabled ?? true),
     settings: {
       ...baseSettings,
+      timezone,
       workspaceType,
       ...(workspaceType === 'csm' ? { managedChannelIds, channelGuidelines } : {}),
     },
@@ -1335,6 +1341,7 @@ export function projectRuntimeContext(
     automationPaused: row.enabled === false,
     automationSettings: {
       ...(row.settings && typeof row.settings === 'object' ? row.settings : {}),
+      timezone: normalizeTimeZone(row.settings?.timezone),
       ...((row.settings as Record<string, unknown> | undefined)?.autoPost === undefined ? { autoPost: row.auto_reply_enabled } : {}),
     },
     agentPolicy: {

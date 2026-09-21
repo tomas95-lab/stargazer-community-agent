@@ -196,11 +196,13 @@ function ThreadListItem({
   thread,
   selected,
   state,
+  decision,
   onSelect,
 }: {
   thread: InboxThread;
   selected: boolean;
   state: ThreadState;
+  decision?: CommunityAgentDecision;
   onSelect: () => void;
 }) {
   const replyCount = thread.replies.length + thread.evidence.length;
@@ -217,6 +219,11 @@ function ThreadListItem({
       <div className="flex items-center gap-2">
         <ThreadStateIcon state={state} />
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{thread.root.username}</span>
+        {decision ? (
+          <Badge tone={decision.error ? 'red' : decision.action === 'reply' ? 'green' : decision.action === 'human' ? 'yellow' : decision.action === 'react' ? 'blue' : 'gray'}>
+            {decision.error ? 'Error' : decision.action === 'reply' ? 'Draft ready' : decision.action === 'human' ? 'Human review' : decision.action === 'react' ? 'Reaction' : 'Skipped'}
+          </Badge>
+        ) : null}
         <span className="shrink-0 text-xs text-muted-foreground">{formatAppTimeWithSeconds(thread.root.createdAt)}</span>
       </div>
       <p className="mt-1.5 line-clamp-2 break-words text-sm leading-5 text-muted-foreground">{thread.root.message}</p>
@@ -314,7 +321,9 @@ function DecisionCard({ decision, embedded = false }: { decision: CommunityAgent
 
       {decision.reply && (
         <div className="sg-panel-muted p-3">
-          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Agent reply</p>
+          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+            {decision.action === 'human' ? 'Suggested acknowledgment' : 'Draft reply'}
+          </p>
           <p className="whitespace-pre-wrap text-sm text-foreground">{decision.reply}</p>
         </div>
       )}
@@ -375,6 +384,10 @@ export default function CommunityAgent() {
     () => new Map((result?.decisions || []).map((decision) => [decision.itemId, decision])),
     [result],
   );
+  const decisionForThread = useCallback((thread: InboxThread) => (
+    decisionsByItem.get(thread.root.id)
+      || thread.replies.map((reply) => decisionsByItem.get(reply.id)).find(Boolean)
+  ), [decisionsByItem]);
   const threadCounts = useMemo(() => {
     const counts: Record<ThreadFilter, number> = { attention: 0, answered: 0, skipped: 0, all: inboxThreads.length };
     for (const thread of inboxThreads) counts[threadState(thread, candidateIds)] += 1;
@@ -447,10 +460,18 @@ export default function CommunityAgent() {
         includeCommunity: true,
         skipProcessed,
         markProcessed: post || react,
-        maxAnswers: 4,
+        maxAnswers: 10,
         messageCount: 50,
       });
       setResult(next);
+      const firstSuggestion = next.decisions.find((decision) => Boolean(decision.reply));
+      if (firstSuggestion) {
+        const thread = inboxThreads.find((item) => (
+          item.root.id === firstSuggestion.itemId
+          || item.replies.some((reply) => reply.id === firstSuggestion.itemId)
+        ));
+        if (thread) setSelectedThreadId(thread.id);
+      }
       await api.getCommunityAgentOverview({ includeCommunity: true, messageCount: 50 }).then((updated) => {
         setOverview(updated);
         setLastUpdatedAt(new Date());
@@ -527,7 +548,7 @@ export default function CommunityAgent() {
           size="sm"
         >
           <Bot />
-          {running ? 'Running Gemini...' : 'Run Gemini'}
+          {running ? 'Generating drafts...' : 'Generate drafts'}
         </Button>
       </div>
 
@@ -535,7 +556,7 @@ export default function CommunityAgent() {
 
       {result ? (
         <p className="rounded-md border bg-muted/20 px-4 py-2.5 text-sm text-muted-foreground">
-          Last run: {result.handled} handled, {result.posted} posted, {result.reacted} reacted, {result.needsHuman} sent to review.
+          Last run: {result.decisions.filter((decision) => Boolean(decision.reply)).length} suggestions ready, {result.needsHuman} need human review, {result.reacted} reacted, {result.posted} posted.
         </p>
       ) : null}
 
@@ -636,6 +657,7 @@ export default function CommunityAgent() {
                         key={thread.id}
                         thread={thread}
                         state={threadState(thread, candidateIds)}
+                        decision={decisionForThread(thread)}
                         selected={selectedThread?.id === thread.id}
                         onSelect={() => setSelectedThreadId(thread.id)}
                       />

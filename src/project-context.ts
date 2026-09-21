@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'async_hooks';
+import { normalizeTimeZone } from './time-zone';
 
 export const STARGAZER_PROJECT_ID = '69cd3d3788bf65e1468428b1';
 export const LEGACY_PROJECT_ID = STARGAZER_PROJECT_ID;
@@ -166,7 +167,7 @@ export function assertExternalWriteAllowed(): void {
 export function projectScheduleAllowsNow(now = new Date()): boolean {
   const settings = getProjectContext().automationSettings;
   if (!settings) return true;
-  const timezone = settings.timezone || 'America/Los_Angeles';
+  const timezone = normalizeTimeZone(settings.timezone);
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     weekday: 'short',

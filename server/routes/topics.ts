@@ -39,18 +39,13 @@ router.get('/today', async (_req: Request, res: Response) => {
 
 router.get('/import-schema', (_req: Request, res: Response) => {
   res.json({
-    shape: 'Daily topics JSON must be an array of topic objects or an object with a "topics" array.',
+    shape: 'Daily topics JSON must be an array or an object with a "topics" array. Use content for a complete Markdown thread, or provide the structured fields.',
     requiredFields: [
       'date',
       'title',
       'topic',
-      'reminderTitle',
-      'reminderBody',
-      'goodExample',
-      'badExample',
-      'quickRule',
     ],
-    optionalFields: ['tags', 'webinar'],
+    optionalFields: ['content', 'reminderTitle', 'reminderBody', 'goodExample', 'badExample', 'quickRule', 'tags', 'webinar'],
     example: TOPICS_JSON_EXAMPLE,
   });
 });

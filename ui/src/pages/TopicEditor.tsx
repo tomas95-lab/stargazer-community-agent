@@ -179,6 +179,8 @@ function TopicsImportPanel({ onImported }: { onImported: () => void }) {
             {schema?.requiredFields.map((field) => (
               <span key={field}>{field}: required string</span>
             ))}
+            <span>content: complete Markdown thread (recommended)</span>
+            <span>structured fields: required only without content</span>
             <span>tags: optional string[]</span>
             <span>webinar: optional object</span>
           </div>

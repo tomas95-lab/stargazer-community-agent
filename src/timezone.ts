@@ -1,4 +1,6 @@
-export const APP_TIME_ZONE = process.env.APP_TIME_ZONE || 'America/Los_Angeles';
+import { normalizeTimeZone } from './time-zone';
+
+export const APP_TIME_ZONE = normalizeTimeZone(process.env.APP_TIME_ZONE);
 export const APP_TIME_ZONE_LABEL = process.env.APP_TIME_ZONE_LABEL || 'PST';
 
 export interface AppDateParts {

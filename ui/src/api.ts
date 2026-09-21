@@ -80,6 +80,7 @@ export interface Topic {
   date: string;
   title: string;
   topic: string;
+  content?: string;
   reminderTitle: string;
   reminderBody: string;
   goodExample: string;

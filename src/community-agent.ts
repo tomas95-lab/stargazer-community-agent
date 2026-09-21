@@ -820,6 +820,10 @@ export function warRoomAvailabilityDecision(
   return null;
 }
 
+export function humanReviewAcknowledgment(): string {
+  return 'Thanks for flagging this. This needs human review before we can provide an accurate answer. A team member will follow up after confirming the relevant project details.';
+}
+
 export async function evaluateSupportMessage(
   username: string,
   message: string,
@@ -835,7 +839,7 @@ export async function evaluateSupportMessage(
       action: 'human',
       confidence: 1,
       reason: `Project approval policy requires human review for: ${blockedTopic}`,
-      reply: '',
+      reply: humanReviewAcknowledgment(),
       guidelineSnippets: [],
     };
   }
@@ -918,7 +922,9 @@ export async function evaluateSupportMessage(
   const rawReaction = typeof parsed.reaction === 'string' ? parsed.reaction.trim() : '';
   const reply = finalAction === 'reply'
     ? cleanGeneratedReply(withWarRoomSupportInfo(rawReply, warRoomLink, canUseWarRoomLink))
-    : cleanGeneratedReply(rawReply);
+    : finalAction === 'human'
+      ? humanReviewAcknowledgment()
+      : cleanGeneratedReply(rawReply);
 
   return {
     action: finalAction,

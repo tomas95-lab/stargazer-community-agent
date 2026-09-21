@@ -17,11 +17,12 @@ export const TOPICS_JSON_EXAMPLE: DailyThreadConfig[] = [
     date: '2026-07-20',
     title: 'Daily Quality Focus',
     topic: 'Rubric Quality',
-    reminderTitle: 'Keep criteria observable',
-    reminderBody: 'Criteria should describe visible, verifiable behavior.',
-    goodExample: 'The response names the missing setup step and explains how to fix it.',
-    badExample: 'The response is good and helpful.',
-    quickRule: 'Observable beats vague.',
+    content: '# Daily Quality Focus\n\nWrite the complete daily thread here using Markdown. Nothing else will be added.',
+    reminderTitle: '',
+    reminderBody: '',
+    goodExample: '',
+    badExample: '',
+    quickRule: '',
     tags: ['daily_project_announcements'],
     webinar: {
       enabled: false,
@@ -33,10 +34,7 @@ export const TOPICS_JSON_EXAMPLE: DailyThreadConfig[] = [
   },
 ];
 
-const REQUIRED_TEXT_FIELDS: Array<keyof DailyThreadConfig> = [
-  'date',
-  'title',
-  'topic',
+const STRUCTURED_TEXT_FIELDS: Array<keyof DailyThreadConfig> = [
   'reminderTitle',
   'reminderBody',
   'goodExample',
@@ -77,8 +75,15 @@ function normalizeTopic(item: unknown, index: number): { topic?: DailyThreadConf
   }
 
   const raw = item as Record<string, unknown>;
-  for (const field of REQUIRED_TEXT_FIELDS) {
+  for (const field of ['date', 'title', 'topic'] as const) {
     if (!text(raw[field])) errors.push(error(index, field, `${field} is required.`));
+  }
+  const rawContent = typeof raw.content === 'string' ? raw.content : '';
+  const content = rawContent.trim();
+  if (!content) {
+    for (const field of STRUCTURED_TEXT_FIELDS) {
+      if (!text(raw[field])) errors.push(error(index, field, `${field} is required when content is not provided.`));
+    }
   }
 
   const date = text(raw.date);
@@ -119,6 +124,7 @@ function normalizeTopic(item: unknown, index: number): { topic?: DailyThreadConf
       date,
       title: text(raw.title),
       topic: text(raw.topic),
+      ...(content ? { content: rawContent } : {}),
       reminderTitle: text(raw.reminderTitle),
       reminderBody: text(raw.reminderBody),
       goodExample: text(raw.goodExample),

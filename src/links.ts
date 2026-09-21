@@ -1,14 +1,16 @@
 import { readDataJSON } from './data-store';
-import { getProjectContext } from './project-context';
+import { getProjectContext, isLegacyProjectId } from './project-context';
 import { DEFAULT_PROJECT_LINKS, ProjectLinks } from './templates';
 
 export async function loadProjectLinks(): Promise<ProjectLinks> {
-  const runtimeLinks = getProjectContext().projectLinks;
+  const context = getProjectContext();
+  const runtimeLinks = context.projectLinks;
+  const defaults = isLegacyProjectId(context.projectId) ? DEFAULT_PROJECT_LINKS : {};
 
   try {
     const links = await readDataJSON<Partial<ProjectLinks>>('data/links.json');
-    return { ...DEFAULT_PROJECT_LINKS, ...links, ...runtimeLinks };
+    return { ...defaults, ...links, ...runtimeLinks } as ProjectLinks;
   } catch {
-    return { ...DEFAULT_PROJECT_LINKS, ...runtimeLinks };
+    return { ...defaults, ...runtimeLinks } as ProjectLinks;
   }
 }

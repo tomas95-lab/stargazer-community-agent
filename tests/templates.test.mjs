@@ -34,12 +34,24 @@ test('renderDailyThread uses editable project links', () => {
   assert.match(output, /https:\/\/example\.test\/guidelines/);
   assert.match(output, /https:\/\/example\.test\/war-room/);
   assert.doesNotMatch(output, /\{\{guidelinesLink\}\}/);
+  assert.doesNotMatch(output, /Qwen|F2P|P2P|Sonnet 4\.6/);
 });
 
-test('renderAnnouncement includes daily thread URL and reminder', () => {
+test('full Markdown content is rendered without template additions', () => {
+  const content = '# Welcome to Money Heist\n\nCustom project instructions.\n\n## Start here\n\n[Viewer](https://example.test/viewer)';
+  const output = renderDailyThread({ ...topic, content }, {
+    guidelines: 'https://example.test/should-not-be-added',
+  });
+
+  assert.equal(output, content);
+  assert.doesNotMatch(output, /Daily .* thread is up|Qwen|F2P|FINAL CHECK/);
+});
+
+test('renderAnnouncement includes daily thread URL and neutral topic summary', () => {
   const output = renderAnnouncement(topic, 'https://community.example/t/thread/123');
 
   assert.match(output, /https:\/\/community\.example\/t\/thread\/123/);
-  assert.match(output, /Keep criteria observable/);
+  assert.match(output, /Rubric Quality/);
   assert.match(output, /Observable beats vague/);
+  assert.doesNotMatch(output, /Cursor|validation\/eval|Qwen/);
 });
