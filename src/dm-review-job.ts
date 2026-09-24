@@ -13,10 +13,11 @@ import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
 import { evaluateSupportMessage } from './community-agent';
 import { loadProjectLinks } from './links';
-import { appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
+import { APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
 import { assertProjectAutomationActive } from './project-context';
 import { appendDemoDmReply, demoDmMessages, demoDmReview } from './demo-mode';
 import { isDemoMode } from './project-context';
+import { configuredMessageLookbackHours, messageLookbackWindow } from './message-window';
 
 const DEFAULT_MESSAGE_COUNT = Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50);
 const DM_CHANNEL_SCAN_CAP = 5;
@@ -31,6 +32,7 @@ export interface DmReviewWindow {
   argentinaDate?: string;
   startUtc: string;
   endUtc: string;
+  lookbackHours: number;
 }
 
 export interface DmReviewPeer {
@@ -91,6 +93,7 @@ export interface DmReviewOptions {
   requestDelayMs?: number;
   autoReply?: boolean;
   maxAutoReplies?: number;
+  lookbackHours?: number;
 }
 
 export interface DmReplyResult {
@@ -150,16 +153,17 @@ interface DmAutoReplyState {
   }>;
 }
 
-export function getUtcDayWindow(now = new Date()): DmReviewWindow & { start: Date; end: Date } {
-  const window = appDayWindow(now);
+export function getUtcDayWindow(now = new Date(), lookbackHours?: number): DmReviewWindow & { start: Date; end: Date } {
+  const window = messageLookbackWindow(now, lookbackHours);
 
   return {
-    utcDate: window.date,
-    argentinaDate: window.date,
+    utcDate: window.utcDate,
+    argentinaDate: window.argentinaDate,
+    lookbackHours: window.lookbackHours,
     start: window.start,
     end: window.end,
-    startUtc: window.start.toISOString(),
-    endUtc: window.end.toISOString(),
+    startUtc: window.startUtc,
+    endUtc: window.endUtc,
   };
 }
 
@@ -380,9 +384,31 @@ function dmAutoReplyKey(channelId: number, lastIncomingMessageId: number): strin
 }
 
 export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise<DmReviewResult> {
-  if (isDemoMode()) return demoDmReview(options.now || new Date());
+  const now = options.now || new Date();
+  const lookbackHours = configuredMessageLookbackHours(options.lookbackHours);
+  const window = getUtcDayWindow(now, lookbackHours);
+  if (isDemoMode()) {
+    const result = await demoDmReview(now);
+    const messages = result.messages.filter((message) => isWithinWindow(message.createdAt, window));
+    const threads = summarizeDmThreads(messages);
+    return {
+      ...result,
+      window: {
+        utcDate: window.utcDate,
+        argentinaDate: window.argentinaDate,
+        startUtc: window.startUtc,
+        endUtc: window.endUtc,
+        lookbackHours,
+      },
+      incomingMessages: messages.filter((message) => message.incoming).length,
+      pendingIncomingMessages: threads.reduce((sum, thread) => sum + thread.pendingIncomingMessages, 0),
+      unresolvedChannels: threads.filter((thread) => thread.needsReply).length,
+      channelsWithTodayMessages: threads.length,
+      threads,
+      messages,
+    };
+  }
   const { client, ownUsername } = createClient();
-  const window = getUtcDayWindow(options.now || new Date());
   const messageCount = options.messageCount ?? DEFAULT_MESSAGE_COUNT;
   const maxChannels = Math.min(Math.max(1, options.maxChannels ?? DEFAULT_MAX_CHANNELS), DM_CHANNEL_SCAN_CAP);
   const fullScan = options.fullScan ?? true;
@@ -407,9 +433,9 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
       if (index > 0) await sleep(requestDelayMs);
 
       const channelMessages = await client.readChatMessages(String(channel.id), messageCount);
-      const todayMessages = filterTodayDmMessages(channelMessages, window);
-      if (todayMessages.length > 0) channelsWithTodayMessages += 1;
-      for (const message of todayMessages) {
+      const windowMessages = filterTodayDmMessages(channelMessages, window);
+      if (windowMessages.length > 0) channelsWithTodayMessages += 1;
+      for (const message of windowMessages) {
         messages.push(summarizeMessage(channel, message, ownUsername));
       }
     } catch (err) {
@@ -429,6 +455,7 @@ export async function fetchTodayDmReview(options: DmReviewOptions = {}): Promise
       argentinaDate: window.utcDate,
       startUtc: window.startUtc,
       endUtc: window.endUtc,
+      lookbackHours,
     },
     totalDirectChannels: directChannels.length,
     scannedChannels: channelsToScan.length,
@@ -466,8 +493,8 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
       status: result.errors.length > 0 ? 'error' : result.incomingMessages > 0 ? 'success' : 'skipped',
       message:
         result.incomingMessages > 0
-          ? `Found ${result.incomingMessages} incoming DM(s) for ${result.window.utcDate}.`
-          : `No incoming DMs found for ${result.window.utcDate}.`,
+          ? `Found ${result.incomingMessages} incoming DM(s) in the last ${result.window.lookbackHours} hours.`
+          : `No incoming DMs found in the last ${result.window.lookbackHours} hours.`,
       metadata: {
         utcDate: result.window.utcDate,
         argentinaDate: result.window.utcDate,
@@ -480,6 +507,7 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
         newIncomingMessageIds: newIncomingMessages.map((message) => message.messageId),
         newDmSenders: Array.from(new Set(newIncomingMessages.map((message) => message.username))),
         channelsWithTodayMessages: result.channelsWithTodayMessages,
+        lookbackHours: result.window.lookbackHours,
         autoReplyEnabled: result.autoReply?.enabled || false,
         autoReplied: result.autoReply?.replied || 0,
         autoNeedsHuman: result.autoReply?.needsHuman || 0,
@@ -493,6 +521,7 @@ export async function runDmReviewJob(options: DmReviewOptions = {}): Promise<DmR
         fullScan: options.fullScan ?? true,
         autoReply: options.autoReply === true,
         maxAutoReplies: options.maxAutoReplies ?? DEFAULT_DM_AUTO_REPLY_MAX,
+        lookbackHours: result.window.lookbackHours,
       },
       result,
       newIncomingMessages,
@@ -626,7 +655,7 @@ async function evaluateDirectMessageThread(
     .map((message) => `${message.username}: ${message.text}`)
     .join('\n\n');
   const window = getUtcDayWindow(now);
-  const context = `Private DM thread from ${window.utcDate} ${APP_TIME_ZONE_LABEL}:\n${buildDmContext(orderedMessages) || 'No messages today.'}`;
+  const context = `Private DM thread from the last ${window.lookbackHours} hours:\n${buildDmContext(orderedMessages) || 'No messages in the review window.'}`;
   const deterministicDecision = await evaluateSupportMessage(
     lastIncoming.username,
     pendingText,
@@ -669,7 +698,7 @@ async function evaluateDirectMessageThread(
 
 export async function draftDirectMessageReply(
   channelId: number,
-  options: Pick<DmReviewOptions, 'messageCount' | 'now'> = {}
+  options: Pick<DmReviewOptions, 'messageCount' | 'now' | 'lookbackHours'> = {}
 ): Promise<DmDraftResult> {
   if (!Number.isFinite(channelId) || channelId <= 0) throw new Error('Invalid DM channel ID');
 
@@ -679,7 +708,7 @@ export async function draftDirectMessageReply(
   }
 
   const { client, ownUsername } = createClient();
-  const window = getUtcDayWindow(options.now || new Date());
+  const window = getUtcDayWindow(options.now || new Date(), options.lookbackHours);
   const messageCount = options.messageCount ?? DEFAULT_MESSAGE_COUNT;
   const directChannels = await client.readDirectMessageChannels();
   const channel = directChannels.find((item) => item.id === channelId) || { id: channelId };

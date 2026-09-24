@@ -56,6 +56,7 @@ export interface RuntimeAutomationSettings {
   communityMaxAnswers?: number;
   dmMaxAutoReplies?: number;
   dailyThreadEnabled?: boolean;
+  messageLookbackHours?: number;
 }
 
 export interface RuntimeAgentPolicy {

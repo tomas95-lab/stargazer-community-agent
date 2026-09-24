@@ -187,7 +187,7 @@ export async function demoDmReview(now = new Date()): Promise<DmReviewResult> {
     mode: 'dm-review',
     scanMode: 'full',
     generatedAt: now.toISOString(),
-    window: { utcDate: window.date, argentinaDate: window.date, startUtc: window.start.toISOString(), endUtc: window.end.toISOString() },
+    window: { utcDate: window.date, argentinaDate: window.date, startUtc: window.start.toISOString(), endUtc: window.end.toISOString(), lookbackHours: 24 },
     totalDirectChannels: threads.length,
     scannedChannels: threads.length,
     skippedInactiveChannels: 0,

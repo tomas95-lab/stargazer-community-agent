@@ -191,8 +191,8 @@ export const workspaceGuides: WorkspaceGuide[] = [
     description: "Control project automation policy and diagnose credentials, schedules, usage, and cron execution.",
     group: "System",
     icon: Settings,
-    steps: ["Check Project Health first.", "Review the automation schedule and permissions.", "Inspect cron status and AI usage."],
-    tips: ["A paused or completed project cannot run automations.", "Warnings explain configuration gaps; they are not always failed runs."],
+    steps: ["Check Project Health first.", "Review the automation schedule, message lookback, and permissions.", "Inspect cron status and AI usage."],
+    tips: ["Message lookback defaults to the last 24 hours and applies to both Community and DMs.", "A paused or completed project cannot run automations."],
   },
   {
     path: "/history",

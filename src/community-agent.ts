@@ -13,9 +13,10 @@ import { getProjectContext, projectScheduleAllowsNow } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 import { generateAiText } from './ai-runtime';
-import { appDayWindow, APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
+import { APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
 import { appendDemoCommunityReply, demoCommunityMessages } from './demo-mode';
 import { isDemoMode } from './project-context';
+import { configuredMessageLookbackHours, messageLookbackWindow } from './message-window';
 
 const MAX_ANSWERS = parseInt(process.env.RESPONDER_MAX_ANSWERS || process.env.AGENT_MAX_ANSWERS || '4', 10);
 const MESSAGE_COUNT = parseInt(process.env.AGENT_MESSAGE_COUNT || '50', 10);
@@ -41,6 +42,7 @@ export interface CommunityAgentOptions {
   react?: boolean;
   maxAnswers?: number;
   messageCount?: number;
+  lookbackHours?: number;
 }
 
 export interface CommunityAgentItem {
@@ -101,6 +103,7 @@ export interface CommunityAgentResult {
     argentinaDate?: string;
     startUtc: string;
     endUtc: string;
+    lookbackHours: number;
     operatingHours: string;
   };
   items: CommunityAgentItem[];
@@ -150,16 +153,17 @@ export async function fetchRecentCommunityMessages(count = 20): Promise<Discours
   return messages.flat().sort((left, right) => left.created_at.localeCompare(right.created_at));
 }
 
-function todayWindow(now = new Date()): CommunityAgentResult['window'] & { start: Date; end: Date } {
-  const window = appDayWindow(now);
+function reviewWindow(now = new Date(), lookbackHours?: number): CommunityAgentResult['window'] & { start: Date; end: Date } {
+  const window = messageLookbackWindow(now, lookbackHours);
   return {
-    utcDate: window.date,
-    argentinaDate: window.date,
+    utcDate: window.utcDate,
+    argentinaDate: window.argentinaDate,
     start: window.start,
     end: window.end,
-    startUtc: window.start.toISOString(),
-    endUtc: window.end.toISOString(),
-    operatingHours: `Agent scans the current ${APP_TIME_ZONE_LABEL} day. Live-support hours come from project guidelines or project memory.`,
+    startUtc: window.startUtc,
+    endUtc: window.endUtc,
+    lookbackHours: window.lookbackHours,
+    operatingHours: `Agent scans the last ${window.lookbackHours} hours. Live-support hours come from project guidelines or project memory.`,
   };
 }
 
@@ -567,7 +571,7 @@ async function readCommunityMessagesForOptions(
   client: DiscourseClient,
   channelId: string,
   options: Required<Pick<CommunityAgentOptions, 'onlyToday' | 'messageCount'>>,
-  window: ReturnType<typeof todayWindow>,
+  window: ReturnType<typeof reviewWindow>,
   scanMessageLimit = DAY_SCAN_MESSAGE_LIMIT,
 ): Promise<DiscourseChatMessage[]> {
   const pageSize = Math.min(100, Math.max(1, options.messageCount));
@@ -627,13 +631,13 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions, 'includeCommunity' | 'onlyToday' | 'messageCount'>>): Promise<{
+async function fetchCommunityItems(options: Required<Pick<CommunityAgentOptions, 'includeCommunity' | 'onlyToday' | 'messageCount' | 'lookbackHours'>>): Promise<{
   items: CommunityAgentItem[];
   errors: string[];
-  window: ReturnType<typeof todayWindow>;
+  window: ReturnType<typeof reviewWindow>;
 }> {
   const { client, channelId, channelIds, channelTitles } = createClient();
-  const window = todayWindow();
+  const window = reviewWindow(new Date(), options.lookbackHours);
   const items: CommunityAgentItem[] = [];
   const errors: string[] = [];
 
@@ -969,6 +973,7 @@ export async function fetchCommunityAgentItems(options: CommunityAgentOptions = 
     includeCommunity: options.includeCommunity ?? true,
     onlyToday: options.onlyToday ?? true,
     messageCount: options.messageCount ?? MESSAGE_COUNT,
+    lookbackHours: configuredMessageLookbackHours(options.lookbackHours),
   });
 
   const candidates = relevantItems(result.items);
@@ -981,6 +986,7 @@ export async function fetchCommunityAgentItems(options: CommunityAgentOptions = 
       argentinaDate: result.window.utcDate,
       startUtc: result.window.startUtc,
       endUtc: result.window.endUtc,
+      lookbackHours: result.window.lookbackHours,
       operatingHours: result.window.operatingHours,
     },
   };
@@ -999,15 +1005,17 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
   const markProcessed = options.markProcessed ?? (post || react || respectSchedule);
   const maxAnswers = options.maxAnswers ?? MAX_ANSWERS;
   const messageCount = options.messageCount ?? MESSAGE_COUNT;
+  const lookbackHours = configuredMessageLookbackHours(options.lookbackHours);
   const withinSchedule = isWithinOperatingHours();
   const { client, channelId } = createClient();
 
-  const fetched = await fetchCommunityItems({ includeCommunity, onlyToday, messageCount });
+  const fetched = await fetchCommunityItems({ includeCommunity, onlyToday, messageCount, lookbackHours });
   const window = {
     utcDate: fetched.window.utcDate,
     argentinaDate: fetched.window.utcDate,
     startUtc: fetched.window.startUtc,
     endUtc: fetched.window.endUtc,
+    lookbackHours: fetched.window.lookbackHours,
     operatingHours: fetched.window.operatingHours,
   };
 
@@ -1034,7 +1042,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
       metadata: { window },
     }, {
       type: 'community_agent',
-      options: { post, react, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount },
+      options: { post, react, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount, lookbackHours },
       result,
       items: fetched.items,
       candidates: [],
@@ -1155,7 +1163,7 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
     },
   }, {
     type: 'community_agent',
-    options: { post, react, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount },
+    options: { post, react, includeCommunity, onlyToday, respectSchedule, skipProcessed, markProcessed, maxAnswers, messageCount, lookbackHours },
     result,
     items: fetched.items,
     candidates,

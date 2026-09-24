@@ -25,13 +25,14 @@ interface PolicyState {
   minConfidence: number;
   communityMaxAnswers: number;
   dmMaxAutoReplies: number;
+  messageLookbackHours: number;
   blockedTopics: string[];
 }
 
 const DEFAULT_POLICY: PolicyState = {
   timezone: 'America/Los_Angeles', weekdays: [1, 2, 3, 4, 5], startTime: '00:00', endTime: '23:59',
   autoPost: false, autoReact: false, dmAutoReply: false, minConfidence: 0.5,
-  communityMaxAnswers: 3, dmMaxAutoReplies: 3,
+  communityMaxAnswers: 3, dmMaxAutoReplies: 3, messageLookbackHours: 24,
   blockedTopics: ['pay', 'payment', 'account suspension', 'disciplinary action', 'legal', 'eligibility decision'],
 };
 
@@ -119,6 +120,7 @@ export default function Settings() {
       minConfidence: currentProject.minConfidence,
       communityMaxAnswers: settingNumber(settings, 'communityMaxAnswers', 3),
       dmMaxAutoReplies: settingNumber(settings, 'dmMaxAutoReplies', 3),
+      messageLookbackHours: settingNumber(settings, 'messageLookbackHours', 24),
       blockedTopics: Array.isArray(settings.blockedTopics) ? settings.blockedTopics.filter((value): value is string => typeof value === 'string') : DEFAULT_POLICY.blockedTopics,
     });
     setProjectHealthLoading(true);
@@ -172,6 +174,7 @@ export default function Settings() {
         ...automationSettings,
         communityMaxAnswers: Math.max(0, Math.floor(schedule.communityMaxAnswers)),
         dmMaxAutoReplies: Math.max(0, Math.floor(schedule.dmMaxAutoReplies)),
+        messageLookbackHours: Math.min(168, Math.max(1, Math.floor(schedule.messageLookbackHours || 24))),
       };
       await api.updateProject(currentProject.id, { minConfidence, autoReplyEnabled: schedule.autoPost, settings });
       await refreshProjects();
@@ -337,10 +340,11 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div className="grid gap-4 border-t pt-5 md:grid-cols-3">
+              <div className="grid gap-4 border-t pt-5 md:grid-cols-2 xl:grid-cols-4">
                 <label><span className="sg-label mb-1 block">Minimum confidence</span><Input type="number" min="0" max="1" step="0.05" value={schedule.minConfidence} onChange={(event) => setSchedule({ ...schedule, minConfidence: Number(event.target.value) })} /><span className="mt-1 block text-xs text-muted-foreground">Below this value, a QM reviews the message.</span></label>
                 <label><span className="sg-label mb-1 block">Community replies per run</span><Input type="number" min="0" max="25" value={schedule.communityMaxAnswers} onChange={(event) => setSchedule({ ...schedule, communityMaxAnswers: Number(event.target.value) })} /></label>
                 <label><span className="sg-label mb-1 block">DM replies per run</span><Input type="number" min="0" max="25" value={schedule.dmMaxAutoReplies} onChange={(event) => setSchedule({ ...schedule, dmMaxAutoReplies: Number(event.target.value) })} /></label>
+                <label><span className="sg-label mb-1 block">Message lookback</span><Input type="number" min="1" max="168" step="1" value={schedule.messageLookbackHours} onChange={(event) => setSchedule({ ...schedule, messageLookbackHours: Number(event.target.value) })} /><span className="mt-1 block text-xs text-muted-foreground">Hours reviewed on every Community and DM scan. Default: 24.</span></label>
               </div>
 
               <div className="border-t pt-5">
@@ -358,6 +362,7 @@ export default function Settings() {
               <div className="mt-4 space-y-4 text-sm">
                 <div><p className="font-medium">The agent can operate</p><p className="mt-1 leading-6 text-muted-foreground">{schedule.weekdays.length ? DAYS.filter((day) => schedule.weekdays.includes(day.value)).map((day) => day.label).join(', ') : 'No days selected'}, {schedule.startTime} to {schedule.endTime} in {schedule.timezone}.</p></div>
                 <div><p className="font-medium">It may answer</p><p className="mt-1 leading-6 text-muted-foreground">Community {schedule.autoPost ? 'automatically' : 'in suggestion mode'}, DMs {schedule.dmAutoReply ? 'automatically' : 'in suggestion mode'}, at {Math.round(schedule.minConfidence * 100)}% confidence or higher.</p></div>
+                <div><p className="font-medium">It reviews</p><p className="mt-1 leading-6 text-muted-foreground">Messages from the last {schedule.messageLookbackHours || 24} hours in Community and DMs.</p></div>
                 <div><p className="font-medium">It must escalate</p><p className="mt-1 leading-6 text-muted-foreground">Low-confidence questions and messages matching {schedule.blockedTopics.length} protected topic{schedule.blockedTopics.length === 1 ? '' : 's'}.</p></div>
               </div>
               {policyMessage ? <p className="mt-5 rounded-md border bg-background p-3 text-xs text-muted-foreground">{policyMessage}</p> : null}

@@ -306,6 +306,7 @@ export interface CommunityAgentResult {
     argentinaDate?: string;
     startUtc: string;
     endUtc: string;
+    lookbackHours: number;
     operatingHours: string;
   };
   items: CommunityAgentItem[];
@@ -366,6 +367,7 @@ export interface DmReviewResult {
     argentinaDate?: string;
     startUtc: string;
     endUtc: string;
+    lookbackHours: number;
   };
   totalDirectChannels: number;
   scannedChannels: number;

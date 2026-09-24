@@ -64,7 +64,7 @@ function DmThread({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline">{messages.length} today</Badge>
+          <Badge variant="outline">{messages.length} in range</Badge>
           <Badge variant="secondary">{incomingCount} incoming</Badge>
           {summary?.needsReply ? (
             <Badge className="border-transparent bg-warning text-warning-foreground">
@@ -228,8 +228,8 @@ export default function DirectMessages() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">DM Review</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge variant="outline">Today only</Badge>
-            {result && <Badge variant="secondary">{result.window.utcDate || result.window.argentinaDate} {APP_TIME_ZONE_LABEL}</Badge>}
+            <Badge variant="outline">Last {result?.window.lookbackHours || 24} hours</Badge>
+            {result && <Badge variant="secondary">Through {formatAppDateTime(result.window.endUtc)} {APP_TIME_ZONE_LABEL}</Badge>}
           </div>
         </div>
         <div>
@@ -284,7 +284,7 @@ export default function DirectMessages() {
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No DM messages found for today.</p>
+            <p className="text-sm text-muted-foreground">No DM messages found in the selected review window.</p>
           )}
         </div>
       </section>

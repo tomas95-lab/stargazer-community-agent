@@ -514,7 +514,7 @@ export default function CommunityAgent() {
             : overview?.guidelines.available ? 'Global guidelines ready' : 'Guidelines missing'}
         </Badge>
         <span><strong className="font-semibold text-foreground">{counts.activeChannels}</strong> <span className="text-muted-foreground">of {configuredChannelCount || counts.activeChannels} channels active</span></span>
-        <span><strong className="font-semibold text-foreground">{counts.community}</strong> <span className="text-muted-foreground">messages today</span></span>
+        <span><strong className="font-semibold text-foreground">{counts.community}</strong> <span className="text-muted-foreground">messages in range</span></span>
         <span><strong className="font-semibold text-foreground">{threadCounts.attention}</strong> <span className="text-muted-foreground">need attention</span></span>
         {lastUpdatedAt ? (
           <span className="ml-auto text-xs text-muted-foreground">
@@ -577,8 +577,8 @@ export default function CommunityAgent() {
             <div className="flex items-center gap-2">
               <Inbox className="size-5 text-primary" aria-hidden="true" />
               <div>
-                <h2 className="text-base font-semibold text-foreground">Today Inbox</h2>
-                <p className="text-xs text-muted-foreground">{inboxThreads.length} conversations in the current {APP_TIME_ZONE_LABEL} day</p>
+                <h2 className="text-base font-semibold text-foreground">Message Inbox</h2>
+                <p className="text-xs text-muted-foreground">{inboxThreads.length} conversations from the last {overview?.window.lookbackHours || 24} hours</p>
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">

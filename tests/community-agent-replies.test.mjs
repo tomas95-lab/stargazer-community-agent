@@ -18,7 +18,7 @@ function item(overrides) {
   };
 }
 
-test('multi-channel scans use the channel index to skip channels without activity today', async () => {
+test('multi-channel scans use the channel index to skip channels outside the review window', async () => {
   const previousFetch = global.fetch;
   const previousInterval = process.env.DISCOURSE_REQUEST_INTERVAL_MS;
   const calls = [];
