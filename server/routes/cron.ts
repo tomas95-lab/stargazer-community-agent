@@ -1,6 +1,8 @@
-import { Router, Request, Response } from 'express';
+import { waitUntil } from '@vercel/functions';
+import { Router, Request, Response, NextFunction } from 'express';
 import { runCommunityAgent } from '../../src/community-agent';
 import { isAuthorizedCronRequest } from '../../src/cron-auth';
+import { buildCronDispatchUrl, shouldDispatchExternalCron } from '../../src/cron-dispatch';
 import { runDailyPublishJob } from '../../src/daily-publish-job';
 import { runDmReviewJob } from '../../src/dm-review-job';
 import { appendOperationLog, OperationStatus } from '../../src/operations-log';
@@ -156,6 +158,58 @@ async function logCronRequest(
       ...metadata,
     },
   });
+}
+
+async function dispatchExternalCron(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const dispatch = shouldDispatchExternalCron({
+    endpoint: cronEndpoint(req),
+    method: req.method,
+    source: cronSource(req),
+    userAgent: req.header('user-agent') || '',
+    alreadyDispatched: req.header('x-cron-dispatched') === '1',
+    isVercel: process.env.VERCEL === '1',
+  });
+  if (!dispatch || !process.env.CRON_SECRET || !isCronAuthorized(req)) {
+    next();
+    return;
+  }
+
+  try {
+    const targetUrl = buildCronDispatchUrl({
+      originalUrl: req.originalUrl,
+      configuredBaseUrl: process.env.PUBLIC_APP_URL || process.env.APP_URL,
+      productionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+      forwardedHost: req.header('x-forwarded-host') || undefined,
+      host: req.header('host') || undefined,
+      forwardedProto: req.header('x-forwarded-proto') || undefined,
+    });
+    const task = fetch(targetUrl, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${process.env.CRON_SECRET}`,
+        'X-Cron-Dispatched': '1',
+        'X-Scheduler': 'cron-job.org-dispatched',
+      },
+      redirect: 'error',
+    }).then(async (response) => {
+      await response.arrayBuffer().catch(() => undefined);
+      if (!response.ok) {
+        console.error(`Dispatched cron failed: ${cronEndpoint(req)} returned ${response.status}`);
+      }
+    }).catch((err) => {
+      console.error(`Could not dispatch cron ${cronEndpoint(req)}:`, err);
+    });
+    waitUntil(task);
+    await logCronRequest(req, 'success', 'Cron request accepted for background execution', {
+      authorized: true,
+      httpStatus: 202,
+      dispatched: true,
+    }).catch((err) => console.warn('Could not log accepted cron request:', err));
+    res.status(202).json({ accepted: true, endpoint: cronEndpoint(req) });
+  } catch (err) {
+    console.warn('Could not dispatch cron in the background; running synchronously instead:', err);
+    next();
+  }
 }
 
 async function handleCommunityAgentCron(req: Request, res: Response): Promise<void> {
@@ -478,6 +532,7 @@ async function handleScheduledMessagesCron(req: Request, res: Response): Promise
   }
 }
 
+router.use(dispatchExternalCron);
 router.get('/daily-thread', handleDailyThreadCron);
 router.get('/daily-thread/:slot', handleDailyThreadCron);
 router.get('/community-agent', handleCommunityAgentCron);
