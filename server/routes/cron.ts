@@ -19,6 +19,19 @@ import {
 
 const router = Router();
 
+interface CronTargetRun<T> {
+  projectId: string;
+  ownerId?: string;
+  skipped: boolean;
+  reason?: string;
+  result?: T;
+  error?: string;
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 function isCronAuthorized(req: Request): boolean {
   return isAuthorizedCronRequest({
     authorization: req.header('authorization') || '',
@@ -160,40 +173,44 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
 
   try {
     const targets = await projectCronTargets(req);
-    const runs = [];
+    const runs: CronTargetRun<Awaited<ReturnType<typeof runCommunityAgent>>>[] = [];
 
     for (const context of targets) {
-      if (context.automationPaused) {
-        runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused', result: undefined });
-        continue;
+      try {
+        if (context.automationPaused) {
+          runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused' });
+          continue;
+        }
+        const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
+        if (!withinSchedule) {
+          runs.push({ projectId: context.projectId, skipped: true, reason: 'outside_project_schedule' });
+          continue;
+        }
+        const locked = await runInContext(context, () => withCronRunLock(
+          'community-agent',
+          context.projectId,
+          slot(req),
+          () => runCommunityAgent({
+            post: context.automationSettings?.autoPost ?? process.env.AGENT_AUTO_POST === 'true',
+            react: context.automationSettings?.autoReact ?? process.env.AGENT_AUTO_REACT === 'true',
+            includeCommunity: true,
+            onlyToday: true,
+            respectSchedule: true,
+            skipProcessed: true,
+            markProcessed: true,
+            maxAnswers: context.automationSettings?.communityMaxAnswers ?? Number(process.env.AGENT_MAX_ANSWERS || 4),
+            messageCount: Number(process.env.AGENT_MESSAGE_COUNT || 50),
+          })
+        ));
+        runs.push({
+          projectId: context.projectId,
+          skipped: locked.skipped,
+          reason: locked.reason,
+          result: locked.result,
+        });
+      } catch (err) {
+        runs.push({ projectId: context.projectId, skipped: false, reason: 'project_error', error: errorMessage(err) });
       }
-      const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
-      if (!withinSchedule) {
-        runs.push({ projectId: context.projectId, skipped: true, reason: 'outside_project_schedule', result: undefined });
-        continue;
-      }
-      const locked = await runInContext(context, () => withCronRunLock(
-        'community-agent',
-        context.projectId,
-        slot(req),
-        () => runCommunityAgent({
-          post: context.automationSettings?.autoPost ?? process.env.AGENT_AUTO_POST === 'true',
-          react: context.automationSettings?.autoReact ?? process.env.AGENT_AUTO_REACT === 'true',
-          includeCommunity: true,
-          onlyToday: true,
-          respectSchedule: true,
-          skipProcessed: true,
-          markProcessed: true,
-          maxAnswers: context.automationSettings?.communityMaxAnswers ?? Number(process.env.AGENT_MAX_ANSWERS || 4),
-          messageCount: Number(process.env.AGENT_MESSAGE_COUNT || 50),
-        })
-      ));
-      runs.push({
-        projectId: context.projectId,
-        skipped: locked.skipped,
-        reason: locked.reason,
-        result: locked.result,
-      });
     }
 
     const posted = runs.reduce((sum, run) => sum + (run.result?.posted || 0), 0);
@@ -202,8 +219,9 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
     const candidates = runs.reduce((sum, run) => sum + (run.result?.candidates || 0), 0);
     const needsHuman = runs.reduce((sum, run) => sum + (run.result?.needsHuman || 0), 0);
     const skipped = runs.filter((run) => run.skipped).length;
+    const failures = runs.filter((run) => run.error).length;
 
-    await logCronRequest(req, skipped === runs.length ? 'skipped' : 'success', 'Community agent cron completed', {
+    await logCronRequest(req, failures > 0 ? 'error' : skipped === runs.length ? 'skipped' : 'success', 'Community agent cron completed', {
       authorized: true,
       httpStatus: 200,
       job: 'community_agent',
@@ -214,8 +232,9 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
       reacted,
       needsHuman,
       skipped,
+      failures,
     });
-    res.json({ ok: true, targets: runs });
+    res.json({ ok: failures === 0, targets: runs });
   } catch (err) {
     await logCronRequest(req, 'error', err instanceof Error ? err.message : String(err), {
       authorized: true,
@@ -241,48 +260,54 @@ async function handleDailyThreadCron(req: Request, res: Response): Promise<void>
 
   try {
     const targets = await projectCronTargets(req);
-    const runs = [];
+    const runs: CronTargetRun<Awaited<ReturnType<typeof runDailyPublishJob>>>[] = [];
 
     for (const context of targets) {
-      if (context.automationPaused) {
-        runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused', result: undefined });
-        continue;
+      try {
+        if (context.automationPaused) {
+          runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused' });
+          continue;
+        }
+        if (context.automationSettings?.dailyThreadEnabled === false) {
+          runs.push({ projectId: context.projectId, skipped: true, reason: 'daily_threads_disabled' });
+          continue;
+        }
+        const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
+        if (!withinSchedule) {
+          runs.push({ projectId: context.projectId, skipped: true, reason: 'outside_project_schedule' });
+          continue;
+        }
+        const locked = await runInContext(context, () => withCronRunLock(
+          'daily-thread',
+          context.projectId,
+          slot(req),
+          () => runDailyPublishJob()
+        ));
+        runs.push({
+          projectId: context.projectId,
+          skipped: locked.skipped,
+          reason: locked.reason,
+          result: locked.result,
+        });
+      } catch (err) {
+        runs.push({ projectId: context.projectId, skipped: false, reason: 'project_error', error: errorMessage(err) });
       }
-      if (context.automationSettings?.dailyThreadEnabled === false) {
-        runs.push({ projectId: context.projectId, skipped: true, reason: 'daily_threads_disabled', result: undefined });
-        continue;
-      }
-      const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
-      if (!withinSchedule) {
-        runs.push({ projectId: context.projectId, skipped: true, reason: 'outside_project_schedule', result: undefined });
-        continue;
-      }
-      const locked = await runInContext(context, () => withCronRunLock(
-        'daily-thread',
-        context.projectId,
-        slot(req),
-        () => runDailyPublishJob()
-      ));
-      runs.push({
-        projectId: context.projectId,
-        skipped: locked.skipped,
-        reason: locked.reason,
-        result: locked.result,
-      });
     }
 
     const published = runs.filter((run) => run.result?.status === 'published').length;
     const skipped = runs.filter((run) => run.skipped || run.result?.status === 'skipped').length;
+    const failures = runs.filter((run) => run.error).length;
 
-    await logCronRequest(req, published > 0 ? 'success' : 'skipped', 'Daily thread cron completed', {
+    await logCronRequest(req, failures > 0 ? 'error' : published > 0 ? 'success' : 'skipped', 'Daily thread cron completed', {
       authorized: true,
       httpStatus: 200,
       job: 'daily_publish_job',
       targets: runs.map((run) => run.projectId),
       published,
       skipped,
+      failures,
     });
-    res.json({ ok: true, targets: runs });
+    res.json({ ok: failures === 0, targets: runs });
   } catch (err) {
     await logCronRequest(req, 'error', err instanceof Error ? err.message : String(err), {
       authorized: true,
@@ -308,37 +333,47 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
 
   try {
     const targets = await dmCronTargets(req);
-    const runs = [];
+    const runs: CronTargetRun<Awaited<ReturnType<typeof runDmReviewJob>>>[] = [];
 
     for (const context of targets) {
-      if (context.automationPaused) {
-        runs.push({ projectId: context.projectId, ownerId: context.ownerId, skipped: true, reason: 'project_paused', result: undefined });
-        continue;
+      try {
+        if (context.automationPaused) {
+          runs.push({ projectId: context.projectId, ownerId: context.ownerId, skipped: true, reason: 'project_paused' });
+          continue;
+        }
+        const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
+        if (!withinSchedule) {
+          runs.push({ projectId: context.projectId, ownerId: context.ownerId, skipped: true, reason: 'outside_project_schedule' });
+          continue;
+        }
+        const locked = await runInContext(context, () => withCronRunLock(
+          'dm-review',
+          context.ownerId || context.projectId,
+          slot(req),
+          () => runDmReviewJob({
+            messageCount: Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50),
+            maxChannels: Number(process.env.DM_REVIEW_MAX_CHANNELS || 5),
+            requestDelayMs: Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500),
+            autoReply: context.automationSettings?.dmAutoReply ?? process.env.DM_AUTO_REPLY === 'true',
+            maxAutoReplies: context.automationSettings?.dmMaxAutoReplies ?? Number(process.env.DM_AUTO_REPLY_MAX || 3),
+          })
+        ));
+        runs.push({
+          projectId: context.projectId,
+          ownerId: context.ownerId,
+          skipped: locked.skipped,
+          reason: locked.reason,
+          result: locked.result,
+        });
+      } catch (err) {
+        runs.push({
+          projectId: context.projectId,
+          ownerId: context.ownerId,
+          skipped: false,
+          reason: 'project_error',
+          error: errorMessage(err),
+        });
       }
-      const withinSchedule = await runInContext(context, () => projectScheduleAllowsNow());
-      if (!withinSchedule) {
-        runs.push({ projectId: context.projectId, ownerId: context.ownerId, skipped: true, reason: 'outside_project_schedule', result: undefined });
-        continue;
-      }
-      const locked = await runInContext(context, () => withCronRunLock(
-        'dm-review',
-        context.ownerId || context.projectId,
-        slot(req),
-        () => runDmReviewJob({
-          messageCount: Number(process.env.DM_REVIEW_MESSAGE_COUNT || 50),
-          maxChannels: Number(process.env.DM_REVIEW_MAX_CHANNELS || 5),
-          requestDelayMs: Number(process.env.DM_REVIEW_REQUEST_DELAY_MS || 1500),
-          autoReply: context.automationSettings?.dmAutoReply ?? process.env.DM_AUTO_REPLY === 'true',
-          maxAutoReplies: context.automationSettings?.dmMaxAutoReplies ?? Number(process.env.DM_AUTO_REPLY_MAX || 3),
-        })
-      ));
-      runs.push({
-        projectId: context.projectId,
-        ownerId: context.ownerId,
-        skipped: locked.skipped,
-        reason: locked.reason,
-        result: locked.result,
-      });
     }
 
     const incomingMessages = runs.reduce((sum, run) => sum + (run.result?.incomingMessages || 0), 0);
@@ -347,8 +382,9 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
     const autoNeedsHuman = runs.reduce((sum, run) => sum + (run.result?.autoReply?.needsHuman || 0), 0);
     const errors = runs.reduce((sum, run) => sum + (run.result?.errors.length || 0), 0);
     const skipped = runs.filter((run) => run.skipped).length;
+    const failures = runs.filter((run) => run.error).length;
 
-    await logCronRequest(req, errors > 0 ? 'error' : incomingMessages > 0 ? 'success' : 'skipped', 'DM review cron completed', {
+    await logCronRequest(req, errors > 0 || failures > 0 ? 'error' : incomingMessages > 0 ? 'success' : 'skipped', 'DM review cron completed', {
       authorized: true,
       httpStatus: 200,
       job: 'dm_review',
@@ -359,8 +395,9 @@ async function handleDmReviewCron(req: Request, res: Response): Promise<void> {
       autoNeedsHuman,
       errors,
       skipped,
+      failures,
     });
-    res.json({ ok: true, targets: runs });
+    res.json({ ok: errors === 0 && failures === 0, targets: runs });
   } catch (err) {
     await logCronRequest(req, 'error', err instanceof Error ? err.message : String(err), {
       authorized: true,
@@ -386,25 +423,29 @@ async function handleScheduledMessagesCron(req: Request, res: Response): Promise
 
   try {
     const targets = await projectCronTargets(req);
-    const runs = [];
+    const runs: CronTargetRun<Awaited<ReturnType<typeof processDueScheduledMessages>>>[] = [];
 
     for (const context of targets) {
-      if (context.automationPaused) {
-        runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused', result: undefined });
-        continue;
+      try {
+        if (context.automationPaused) {
+          runs.push({ projectId: context.projectId, skipped: true, reason: 'project_paused' });
+          continue;
+        }
+        const locked = await runInContext(context, () => withCronRunLock(
+          'scheduled-messages',
+          context.projectId,
+          slot(req),
+          () => processDueScheduledMessages()
+        ));
+        runs.push({
+          projectId: context.projectId,
+          skipped: locked.skipped,
+          reason: locked.reason,
+          result: locked.result,
+        });
+      } catch (err) {
+        runs.push({ projectId: context.projectId, skipped: false, reason: 'project_error', error: errorMessage(err) });
       }
-      const locked = await runInContext(context, () => withCronRunLock(
-        'scheduled-messages',
-        context.projectId,
-        slot(req),
-        () => processDueScheduledMessages()
-      ));
-      runs.push({
-        projectId: context.projectId,
-        skipped: locked.skipped,
-        reason: locked.reason,
-        result: locked.result,
-      });
     }
 
     const sent = runs.reduce((sum, run) => sum + (run.result?.sent || 0), 0);
@@ -412,8 +453,9 @@ async function handleScheduledMessagesCron(req: Request, res: Response): Promise
     const due = runs.reduce((sum, run) => sum + (run.result?.due || 0), 0);
     const checked = runs.reduce((sum, run) => sum + (run.result?.checked || 0), 0);
     const skipped = runs.filter((run) => run.skipped).length;
+    const failures = runs.filter((run) => run.error).length;
 
-    await logCronRequest(req, failed > 0 ? 'error' : sent > 0 ? 'success' : 'skipped', 'Scheduled messages cron completed', {
+    await logCronRequest(req, failed > 0 || failures > 0 ? 'error' : sent > 0 ? 'success' : 'skipped', 'Scheduled messages cron completed', {
       authorized: true,
       httpStatus: 200,
       job: 'scheduled_messages',
@@ -423,8 +465,9 @@ async function handleScheduledMessagesCron(req: Request, res: Response): Promise
       sent,
       failed,
       skipped,
+      failures,
     });
-    res.json({ ok: true, targets: runs });
+    res.json({ ok: failed === 0 && failures === 0, targets: runs });
   } catch (err) {
     await logCronRequest(req, 'error', err instanceof Error ? err.message : String(err), {
       authorized: true,

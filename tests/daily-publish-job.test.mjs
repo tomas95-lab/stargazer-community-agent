@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dailyPublishSkipReason } from '../dist/daily-publish-job.js';
-import { isUtcBusinessDay, todayDate } from '../dist/utils.js';
+import { runWithProjectContext } from '../dist/project-context.js';
+import { getTodayTopic, isUtcBusinessDay, loadTopics, todayDate } from '../dist/utils.js';
 
 test('todayDate follows the PST calendar day', () => {
   assert.equal(todayDate(new Date('2026-07-11T02:30:00.000Z')), '2026-07-10');
@@ -23,4 +24,22 @@ test('daily publish runs on weekdays and can be forced on weekends', () => {
 
   assert.equal(dailyPublishSkipReason(friday), null);
   assert.equal(dailyPublishSkipReason(saturday, true), null);
+});
+
+test('a project without a topics file is treated as an empty configuration', async () => {
+  const previousBackend = process.env.STORAGE_BACKEND;
+  process.env.STORAGE_BACKEND = 'local';
+
+  try {
+    await runWithProjectContext({
+      projectId: 'missing-topics-cron-regression',
+      source: 'default',
+    }, async () => {
+      assert.deepEqual(await loadTopics(), []);
+      await assert.rejects(() => getTodayTopic('2026-09-24'), /No topics found/);
+    });
+  } finally {
+    if (previousBackend === undefined) delete process.env.STORAGE_BACKEND;
+    else process.env.STORAGE_BACKEND = previousBackend;
+  }
 });

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { PATHS, DailyThreadConfig } from './config';
-import { readDataJSON } from './data-store';
+import { readDataJSONOrDefault } from './data-store';
 import { appDateParts, appDayOfWeek, isAppBusinessDay, isAppWeekend } from './timezone';
 
 export function utcDateParts(date = new Date()): { year: number; month: number; day: number; label: string } {
@@ -30,7 +30,7 @@ export function formatPostTitle(date: string): string {
 }
 
 export async function loadTopics(): Promise<DailyThreadConfig[]> {
-  return readDataJSON<DailyThreadConfig[]>('data/topics.json');
+  return readDataJSONOrDefault<DailyThreadConfig[]>('data/topics.json', []);
 }
 
 export async function getTodayTopic(date: string): Promise<DailyThreadConfig> {

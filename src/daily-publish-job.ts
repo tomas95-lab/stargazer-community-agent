@@ -103,7 +103,23 @@ export async function runDailyPublishJob(options: DailyPublishJobOptions = {}): 
     return { status: 'skipped', date, reason: 'already_published' };
   }
 
-  const topic = await getTodayTopic(date);
+  let topic;
+  try {
+    topic = await getTodayTopic(date);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!/No topics found/i.test(message)) throw err;
+
+    const skipMessage = `Daily thread for ${date} skipped because this project has no topics configured.`;
+    console.log(skipMessage);
+    await appendOperationLog({
+      action: 'daily_publish_job',
+      status: 'skipped',
+      message: skipMessage,
+      metadata: { date, reason: 'no_topics' },
+    });
+    return { status: 'skipped', date, reason: 'no_topics' };
+  }
   const links = await loadProjectLinks();
   const title = formatPostTitle(topic.date);
   const body = renderDailyThread(topic, links);
