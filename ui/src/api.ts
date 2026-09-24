@@ -891,6 +891,7 @@ export const api = {
   createTopic: (t: Topic) => request<Topic>('/topics', { method: 'POST', body: JSON.stringify(t) }),
   updateTopic: (date: string, t: Partial<Topic>) => request<Topic>(`/topics/${date}`, { method: 'PUT', body: JSON.stringify(t) }),
   deleteTopic: (date: string) => request<{ ok: boolean }>(`/topics/${date}`, { method: 'DELETE' }),
+  deleteAllTopics: () => request<{ ok: boolean; deleted: number }>('/topics', { method: 'DELETE' }),
   getTopicsImportSchema: () => request<TopicImportSchema>('/topics/import-schema'),
   validateTopicsImport: (payload: unknown) =>
     request<TopicImportValidation>('/topics/import/validate', {

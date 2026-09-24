@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { DailyThreadConfig } from '../../src/config';
 import { todayDate } from '../../src/utils';
 import { readDataJSONOrDefault, writeDataJSON } from '../../src/data-store';
-import { requireAdminToken } from '../auth';
+import { AuthenticatedRequest, requireAdminToken } from '../auth';
 import { appendOperationLog } from '../../src/operations-log';
 import {
   mergeTopics,
@@ -140,6 +140,37 @@ router.put('/:date', requireAdminToken, async (req: Request, res: Response) => {
       metadata: { date: req.params.date },
     });
     res.json(topics[idx]);
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.delete('/', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const project = (req as AuthenticatedRequest).platformProject;
+    if (project?.role === 'viewer') {
+      res.status(403).json({ error: 'Your project role does not allow deleting topics.' });
+      return;
+    }
+
+    const topics = await readTopics();
+    if (topics.length === 0) {
+      res.json({ ok: true, deleted: 0 });
+      return;
+    }
+
+    await writeDataJSON(FILE, [], 'delete all project topics');
+    await appendOperationLog({
+      action: 'delete_all_topics',
+      status: 'success',
+      message: `Deleted all ${topics.length} configured daily topics`,
+      metadata: {
+        deleted: topics.length,
+        firstDate: topics.map((topic) => topic.date).sort()[0],
+        lastDate: topics.map((topic) => topic.date).sort().at(-1),
+      },
+    });
+    res.json({ ok: true, deleted: topics.length });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

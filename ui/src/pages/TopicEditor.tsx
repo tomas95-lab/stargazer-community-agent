@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { CheckCircle2, ClipboardList, FileJson, Loader2, Upload, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ClipboardList, FileJson, Loader2, Trash2, Upload, XCircle } from 'lucide-react';
 import { api, type Topic, type TopicImportError, type TopicImportSchema } from '../api';
 import TopicForm from '../components/TopicForm';
 import Preview from '../components/Preview';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { usePlatform } from '@/platform';
 
 function ImportErrors({ errors }: { errors: TopicImportError[] }) {
   if (errors.length === 0) return null;
@@ -195,10 +198,15 @@ function TopicsImportPanel({ onImported }: { onImported: () => void }) {
 }
 
 export default function TopicEditor() {
+  const { currentProject } = usePlatform();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selected, setSelected] = useState<Topic | null>(null);
   const [creating, setCreating] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState('');
   const [previewData, setPreviewData] = useState<{ thread: string; announcement: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -231,6 +239,26 @@ export default function TopicEditor() {
     load();
   };
 
+  const handleDeleteAll = async () => {
+    if (deleteConfirmation !== 'DELETE') return;
+    setDeletingAll(true);
+    setDeleteMessage('');
+    try {
+      const result = await api.deleteAllTopics();
+      setSelected(null);
+      setCreating(false);
+      setPreviewData(null);
+      setShowDeleteAll(false);
+      setDeleteConfirmation('');
+      setDeleteMessage(`${result.deleted} daily ${result.deleted === 1 ? 'thread was' : 'threads were'} removed from this project.`);
+      load();
+    } catch (err) {
+      setDeleteMessage(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   const handlePreview = async (date: string) => {
     const p = await api.getPreview(date);
     setPreviewData(p);
@@ -244,12 +272,27 @@ export default function TopicEditor() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Topics</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage the daily thread calendar shared by this project.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {topics.length > 0 && currentProject?.role !== 'viewer' ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => {
+                setShowDeleteAll(true);
+                setDeleteConfirmation('');
+                setDeleteMessage('');
+              }}
+            >
+              <Trash2 className="size-4" />
+              Delete all
+            </Button>
+          ) : null}
           <Button type="button" variant="outline" onClick={() => setShowImport((value) => !value)}>
             <FileJson className="size-4" />
             Import JSON
@@ -262,6 +305,53 @@ export default function TopicEditor() {
           </button>
         </div>
       </div>
+
+      {showDeleteAll ? (
+        <Alert variant="destructive">
+          <AlertTriangle className="absolute left-4 top-4 size-4" />
+          <div className="pl-6">
+            <AlertTitle>Delete all {topics.length} configured daily threads?</AlertTitle>
+            <AlertDescription>
+              <p>This clears the active project's Topics calendar. It does not delete posts already published in Outlier Community or remove run history.</p>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Input
+                  className="max-w-xs border-destructive/40 bg-background text-foreground"
+                  value={deleteConfirmation}
+                  onChange={(event) => setDeleteConfirmation(event.target.value)}
+                  placeholder="Type DELETE to confirm"
+                  autoComplete="off"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowDeleteAll(false);
+                      setDeleteConfirmation('');
+                    }}
+                    disabled={deletingAll}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={handleDeleteAll}
+                    disabled={deletingAll || deleteConfirmation !== 'DELETE'}
+                  >
+                    {deletingAll ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                    Delete {topics.length} {topics.length === 1 ? 'thread' : 'threads'}
+                  </Button>
+                </div>
+              </div>
+            </AlertDescription>
+          </div>
+        </Alert>
+      ) : null}
+
+      {deleteMessage ? (
+        <p className={`text-sm ${deleteMessage.includes('removed') ? 'text-success' : 'text-destructive'}`}>{deleteMessage}</p>
+      ) : null}
 
       {showImport ? <TopicsImportPanel onImported={load} /> : null}
 
