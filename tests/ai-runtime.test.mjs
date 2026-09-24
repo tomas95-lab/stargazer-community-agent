@@ -18,6 +18,12 @@ function withGeminiEnv(values, run) {
     'GEMINI_API_KEY',
     'GEMINI_MODEL',
     'GEMINI_API_BASE_URL',
+    'GEMINI_FALLBACK_MODELS',
+    'GEMINI_MAX_ATTEMPTS',
+    'GEMINI_RETRY_BASE_MS',
+    'GEMINI_REQUEST_TIMEOUT_MS',
+    'GEMINI_TOTAL_TIMEOUT_MS',
+    'GEMINI_COOLDOWN_MS',
   ]);
   const previous = Object.fromEntries([...keys].map((key) => [key, process.env[key]]));
   const previousFetch = globalThis.fetch;
@@ -121,9 +127,13 @@ test('Gemini runtime sends JSON generation requests and returns usage', async ()
 
 test('Gemini quota errors do not fall back to a paid provider', async () => {
   await withGeminiEnv({}, async () => {
-    globalThis.fetch = async () => new Response(JSON.stringify({
-      error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'Quota exceeded' },
-    }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls += 1;
+      return new Response(JSON.stringify({
+        error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'Quota exceeded' },
+      }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+    };
 
     await assert.rejects(
       () => runWithProjectContext(
@@ -136,6 +146,129 @@ test('Gemini quota errors do not fall back to a paid provider', async () => {
       ),
       /no paid fallback was used/i,
     );
+    assert.equal(calls, 1);
+  });
+});
+
+test('Gemini recovers from a temporary 503 without duplicating the result', async () => {
+  await withGeminiEnv({
+    GEMINI_API_BASE_URL: 'https://gemini.test/v1beta',
+    GEMINI_FALLBACK_MODELS: 'gemini-3.5-flash',
+    GEMINI_RETRY_BASE_MS: '0',
+  }, async () => {
+    const urls = [];
+    globalThis.fetch = async (url) => {
+      urls.push(url);
+      if (urls.length === 1) {
+        return new Response(JSON.stringify({
+          error: { code: 503, status: 'UNAVAILABLE', message: 'High demand' },
+        }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({
+        candidates: [{ content: { parts: [{ text: '{"action":"answer"}' }] } }],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    const result = await runWithProjectContext({
+      projectId: 'test-project',
+      source: 'header',
+      aiConfig: { provider: 'gemini', apiKey: 'free-key', model: 'gemini-test-model' },
+    }, () => generateAiText({ system: 'Policy', prompt: 'Message', maxOutputTokens: 50 }));
+
+    assert.equal(urls.length, 2);
+    assert.notEqual(urls[0], urls[1]);
+    assert.equal(result.model, 'gemini-3.5-flash');
+  });
+});
+
+test('Gemini falls back to another Flash model when the primary remains overloaded', async () => {
+  await withGeminiEnv({
+    GEMINI_API_BASE_URL: 'https://gemini.test/v1beta',
+    GEMINI_FALLBACK_MODELS: 'gemini-backup-lite',
+    GEMINI_RETRY_BASE_MS: '0',
+  }, async () => {
+    const urls = [];
+    globalThis.fetch = async (url) => {
+      urls.push(url);
+      if (url.includes('gemini-test-model')) {
+        return new Response(JSON.stringify({
+          error: { code: 503, status: 'UNAVAILABLE', message: 'High demand' },
+        }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({
+        candidates: [{ content: { parts: [{ text: '{"action":"human"}' }] } }],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    const result = await runWithProjectContext({
+      projectId: 'test-project',
+      source: 'header',
+      aiConfig: { provider: 'gemini', apiKey: 'free-key', model: 'gemini-test-model' },
+    }, () => generateAiText({ system: 'Policy', prompt: 'Message', maxOutputTokens: 50 }));
+
+    assert.equal(urls.length, 2);
+    assert.match(urls[1], /gemini-backup-lite/);
+    assert.equal(result.model, 'gemini-backup-lite');
+  });
+});
+
+test('Gemini stops after bounded attempts when every Flash model is overloaded', async () => {
+  await withGeminiEnv({
+    GEMINI_API_BASE_URL: 'https://gemini.test/v1beta',
+    GEMINI_FALLBACK_MODELS: 'gemini-backup-one,gemini-backup-two,gemini-backup-three',
+    GEMINI_MAX_ATTEMPTS: '4',
+    GEMINI_RETRY_BASE_MS: '0',
+    GEMINI_COOLDOWN_MS: '0',
+  }, async () => {
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls += 1;
+      return new Response(JSON.stringify({
+        error: { code: 503, status: 'UNAVAILABLE', message: 'High demand' },
+      }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(
+      () => runWithProjectContext(
+        {
+          projectId: 'test-project',
+          source: 'header',
+          aiConfig: { provider: 'gemini', apiKey: 'free-key', model: 'gemini-test-model' },
+        },
+        () => generateAiText({ system: 'Policy', prompt: 'Message', maxOutputTokens: 50 }),
+      ),
+      /temporarily unavailable after 4 bounded attempts/i,
+    );
+    assert.equal(calls, 4);
+  });
+});
+
+test('Gemini opens a short circuit after every model is unavailable', async () => {
+  await withGeminiEnv({
+    GEMINI_API_BASE_URL: 'https://gemini.test/v1beta',
+    GEMINI_MAX_ATTEMPTS: '1',
+    GEMINI_RETRY_BASE_MS: '0',
+    GEMINI_COOLDOWN_MS: '60000',
+  }, async () => {
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls += 1;
+      return new Response(JSON.stringify({
+        error: { code: 503, status: 'UNAVAILABLE', message: 'High demand' },
+      }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+    };
+    const run = () => runWithProjectContext(
+      {
+        projectId: 'test-project',
+        source: 'header',
+        aiConfig: { provider: 'gemini', apiKey: 'free-key', model: 'gemini-test-model' },
+      },
+      () => generateAiText({ system: 'Policy', prompt: 'Message', maxOutputTokens: 50 }),
+    );
+
+    await assert.rejects(run, /temporarily unavailable after 1 bounded attempt/i);
+    await assert.rejects(run, /cooling down/i);
+    assert.equal(calls, 1);
   });
 });
 
