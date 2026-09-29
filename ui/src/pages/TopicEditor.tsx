@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { AlertTriangle, CheckCircle2, ClipboardList, FileJson, Loader2, Trash2, Upload, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ClipboardList, Download, FileJson, Loader2, Trash2, Upload, XCircle } from 'lucide-react';
 import { api, type Topic, type TopicImportError, type TopicImportSchema } from '../api';
 import TopicForm from '../components/TopicForm';
 import Preview from '../components/Preview';
@@ -10,6 +10,24 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { usePlatform } from '@/platform';
+
+function downloadTopics(topics: Topic[], projectName: string) {
+  const safeProjectName = projectName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'project';
+  const date = new Date().toISOString().slice(0, 10);
+  const payload = JSON.stringify({ topics }, null, 2);
+  const url = URL.createObjectURL(new Blob([`${payload}\n`], { type: 'application/json;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${safeProjectName}-topics-${date}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 function ImportErrors({ errors }: { errors: TopicImportError[] }) {
   if (errors.length === 0) return null;
@@ -278,6 +296,15 @@ export default function TopicEditor() {
           <p className="mt-1 text-sm text-muted-foreground">Manage the daily thread calendar shared by this project.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => downloadTopics(sorted, currentProject?.projectName || currentProject?.projectKey || 'project')}
+            disabled={loading || topics.length === 0}
+          >
+            <Download className="size-4" />
+            Export JSON
+          </Button>
           {topics.length > 0 && currentProject?.role !== 'viewer' ? (
             <Button
               type="button"
