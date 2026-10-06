@@ -797,6 +797,7 @@ export interface ProjectHealthResult {
 
 export interface GuidelinesExtractionResult {
   text: string;
+  fileType: 'pdf' | 'markdown';
   pages: number;
   characters: number;
   tables: number;
@@ -1084,6 +1085,11 @@ export const api = {
   getGuidelineVersion: (id: string, versionId: string) => request<{ version: GuidelineVersion }>(`/platform/projects/${id}/guidelines/versions/${versionId}`),
   restoreGuidelineVersion: (id: string, versionId: string) => request<{ project: QmProject }>(`/platform/projects/${id}/guidelines/versions/${versionId}/restore`, { method: 'POST' }),
   exportProject: (id: string) => request<{ version: number; exportedAt: string; project: QmProjectInput }>(`/platform/projects/${id}/export`),
+  extractGuidelinesFromFile: (opts: { fileName: string; mimeType: string; base64: string }) =>
+    request<GuidelinesExtractionResult>('/platform/guidelines/extract', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
   extractGuidelinesFromPdf: (opts: { fileName: string; mimeType: string; base64: string }) =>
     request<GuidelinesExtractionResult>('/platform/guidelines/extract', {
       method: 'POST',

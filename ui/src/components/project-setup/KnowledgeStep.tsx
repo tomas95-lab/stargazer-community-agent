@@ -223,21 +223,21 @@ export function KnowledgeStep({
           ? <LoaderCircle className="size-8 animate-spin text-primary" />
           : <FileUp className="size-8 text-primary" />}
         <div>
-          <p className="font-medium">{extractingGuidelines ? "Reading your PDF" : isCsm ? "Or add a supporting PDF" : "Drop the project guidelines here"}</p>
+          <p className="font-medium">{extractingGuidelines ? "Reading your file" : isCsm ? "Or add a supporting file" : "Drop the project guidelines here"}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Processed privately in your browser. Tables and page context are preserved. PDF up to 12 MB.
+            PDF and Markdown files are processed privately in your browser. Formatting and document structure are preserved. Up to 12 MB.
           </p>
         </div>
         <Button type="button" variant="outline" onClick={() => guidelinesInputRef.current?.click()} disabled={extractingGuidelines}>
           <Upload />
-          {guidelinesFile || form.projectGuidelines ? "Replace PDF" : "Choose PDF"}
+          {guidelinesFile || form.projectGuidelines ? "Replace file" : "Choose file"}
         </Button>
         <input
           ref={guidelinesInputRef}
-          id="projectGuidelinesPdf"
+          id="projectGuidelinesFile"
           className="sr-only"
           type="file"
-          accept=".pdf,application/pdf"
+          accept=".pdf,.md,.markdown,application/pdf,text/markdown,text/x-markdown"
           onChange={onReadFile}
           disabled={extractingGuidelines}
         />
@@ -249,7 +249,7 @@ export function KnowledgeStep({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{guidelinesFile.name}</p>
             <p className="text-xs text-muted-foreground">
-              {formatFileSize(guidelinesFile.size)}, {guidelinesFile.pages} pages, {guidelinesFile.tables} tables, {guidelinesFile.chunks} sections
+              {formatFileSize(guidelinesFile.size)}, {guidelinesFile.fileType === "pdf" ? `${guidelinesFile.pages} pages, ` : "Markdown, "}{guidelinesFile.tables} tables, {guidelinesFile.chunks} sections
             </p>
             {guidelinesFile.warnings.length ? (
               <p className="mt-1 text-xs text-warning">{guidelinesFile.warnings[0]}</p>
@@ -287,7 +287,7 @@ export function KnowledgeStep({
             className="min-h-64 font-mono text-sm"
             value={form.projectGuidelines}
             onChange={(event) => update("projectGuidelines", event.target.value)}
-            placeholder="Upload the PDF or paste verified project instructions here."
+            placeholder="Upload a PDF or Markdown file, or paste verified project instructions here."
           />
         </div>
       </details>

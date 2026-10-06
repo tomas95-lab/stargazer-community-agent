@@ -32,7 +32,9 @@ import {
 } from '../platform-store';
 import {
   base64ToBuffer,
+  extractTextFromMarkdownBuffer,
   extractTextFromPdfBuffer,
+  MAX_GUIDELINE_MARKDOWN_BYTES,
   MAX_GUIDELINE_PDF_BYTES,
 } from '../../src/guideline-file-extractor';
 import {
@@ -252,23 +254,29 @@ router.post('/guidelines/extract', requirePlatformUser, async (req: Request, res
     const base64 = typeof raw.base64 === 'string' ? raw.base64 : '';
 
     if (!base64) {
-      res.status(400).json({ error: 'Upload a PDF file first.' });
+      res.status(400).json({ error: 'Upload a PDF or Markdown file first.' });
       return;
     }
-    if (fileName && !fileName.toLowerCase().endsWith('.pdf')) {
-      res.status(400).json({ error: 'Only PDF files are supported by this extractor.' });
+    const lowerFileName = fileName.toLowerCase();
+    const hasPdfExtension = lowerFileName.endsWith('.pdf');
+    const hasMarkdownExtension = lowerFileName.endsWith('.md') || lowerFileName.endsWith('.markdown');
+    const isPdf = hasPdfExtension || (!hasMarkdownExtension && mimeType === 'application/pdf');
+    const isMarkdown = hasMarkdownExtension
+      || (!hasPdfExtension && (mimeType === 'text/markdown' || mimeType === 'text/x-markdown'));
+    if (!isPdf && !isMarkdown) {
+      res.status(400).json({ error: 'Only PDF and Markdown (.md) files are supported.' });
       return;
     }
-    if (mimeType && mimeType !== 'application/pdf' && !fileName.toLowerCase().endsWith('.pdf')) {
-      res.status(400).json({ error: 'Only PDF files are supported by this extractor.' });
-      return;
-    }
-    if (base64.length > Math.ceil(MAX_GUIDELINE_PDF_BYTES * 1.4)) {
-      res.status(413).json({ error: 'The PDF is too large. Upload a PDF up to 12 MB.' });
+    const maxBytes = isPdf ? MAX_GUIDELINE_PDF_BYTES : MAX_GUIDELINE_MARKDOWN_BYTES;
+    if (base64.length > Math.ceil(maxBytes * 1.4)) {
+      res.status(413).json({ error: `The ${isPdf ? 'PDF' : 'Markdown file'} is too large. Upload a file up to 12 MB.` });
       return;
     }
 
-    const result = await extractTextFromPdfBuffer(base64ToBuffer(base64));
+    const buffer = base64ToBuffer(base64);
+    const result = isPdf
+      ? await extractTextFromPdfBuffer(buffer)
+      : extractTextFromMarkdownBuffer(buffer);
     res.json({
       ...result,
       fileName,

@@ -1,9 +1,11 @@
 import { chunkGuidelineText } from './guideline-structure';
 
 export const MAX_GUIDELINE_PDF_BYTES = 12 * 1024 * 1024;
+export const MAX_GUIDELINE_MARKDOWN_BYTES = 12 * 1024 * 1024;
 
 export interface ExtractedGuidelineFile {
   text: string;
+  fileType: 'pdf' | 'markdown';
   pages: number;
   characters: number;
   tables: number;
@@ -27,7 +29,7 @@ export function normalizeExtractedGuidelineText(value: string): string {
 export function base64ToBuffer(value: string): Buffer {
   const cleaned = value
     .trim()
-    .replace(/^data:application\/pdf;base64,/i, '')
+    .replace(/^data:[^;,]+;base64,/i, '')
     .replace(/\s/g, '');
 
   return Buffer.from(cleaned, 'base64');
@@ -41,6 +43,33 @@ export function validatePdfBuffer(buffer: Buffer): void {
   if (buffer.subarray(0, 4).toString('utf8') !== '%PDF') {
     throw new Error('The uploaded file is not a valid PDF.');
   }
+}
+
+export function extractTextFromMarkdownBuffer(buffer: Buffer): ExtractedGuidelineFile {
+  if (!buffer.length) throw new Error('The Markdown file is empty.');
+  if (buffer.length > MAX_GUIDELINE_MARKDOWN_BYTES) {
+    throw new Error('The Markdown file is too large. Upload a file up to 12 MB.');
+  }
+
+  let text: string;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(buffer).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim();
+  } catch {
+    throw new Error('The Markdown file must use UTF-8 encoding.');
+  }
+  if (!text) throw new Error('The Markdown file is empty.');
+  if (text.includes('\0')) throw new Error('The uploaded file is not valid Markdown text.');
+
+  const tables = (text.match(/^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$/gm) || []).length;
+  return {
+    text,
+    fileType: 'markdown',
+    pages: 0,
+    characters: text.length,
+    tables,
+    chunks: chunkGuidelineText(text).length,
+    warnings: [],
+  };
 }
 
 function cleanTableCell(value: string): string {
@@ -114,6 +143,7 @@ export async function extractTextFromPdfBuffer(buffer: Buffer): Promise<Extracte
 
     return {
       text,
+      fileType: 'pdf',
       pages: result.total,
       characters: text.length,
       tables: structured.tables,

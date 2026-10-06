@@ -34,6 +34,7 @@ export type PersistedProjectFormState = Omit<ProjectFormState, "discourseApiKey"
 
 export interface GuidelinesFileStatus {
   name: string
+  fileType: "pdf" | "markdown"
   size: number
   pages: number
   characters: number

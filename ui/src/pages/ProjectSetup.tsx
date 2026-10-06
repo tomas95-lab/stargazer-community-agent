@@ -49,7 +49,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { extractGuidelinesPdf } from "@/lib/pdf-guidelines"
+import { extractGuidelinesMarkdown, extractGuidelinesPdf } from "@/lib/pdf-guidelines"
 
 interface ProjectSetupDraft {
   version: 1
@@ -101,7 +101,7 @@ const SETUP_STEPS: SetupStep[] = [
     label: "Guidelines",
     eyebrow: "Project knowledge",
     title: "Give the agent reliable context",
-    description: "Upload the current PDF and add the support link used by your project.",
+    description: "Upload the current PDF or Markdown file and add the support link used by your project.",
     icon: FileText,
   },
   {
@@ -117,7 +117,7 @@ const SETUP_STEPS: SetupStep[] = [
 const CSM_SETUP_STEPS: SetupStep[] = SETUP_STEPS.map((step) => {
   if (step.id === "identity") return { ...step, label: "Workspace", eyebrow: "CSM workspace", title: "Name your operations workspace", description: "Use one workspace for the Community channels managed by the same CSM team." }
   if (step.id === "community") return { ...step, label: "Channels", eyebrow: "Channel coverage", title: "Add the channels you manage", description: "Connect up to 30 Community channels with one personal Discourse authorization." }
-  if (step.id === "knowledge") return { ...step, label: "Instructions", eyebrow: "Operational knowledge", title: "Import the source of truth", description: "Load instructions from an Outlier Community post or upload a supporting PDF." }
+  if (step.id === "knowledge") return { ...step, label: "Instructions", eyebrow: "Operational knowledge", title: "Import the source of truth", description: "Load instructions from an Outlier Community post or upload a supporting PDF or Markdown file." }
   return step
 })
 
@@ -571,25 +571,31 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     }
   }
 
-  async function processGuidelinesPdf(file: File) {
+  async function processGuidelinesFile(file: File) {
     setError("")
     setMessage("")
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
-    if (!isPdf) {
-      setError("Project guidelines must be uploaded as a PDF.")
+    const lowerFileName = file.name.toLowerCase()
+    const hasPdfExtension = lowerFileName.endsWith(".pdf")
+    const hasMarkdownExtension = lowerFileName.endsWith(".md") || lowerFileName.endsWith(".markdown")
+    const isPdf = hasPdfExtension || (!hasMarkdownExtension && file.type === "application/pdf")
+    const isMarkdown = hasMarkdownExtension
+      || (!hasPdfExtension && (file.type === "text/markdown" || file.type === "text/x-markdown"))
+    if (!isPdf && !isMarkdown) {
+      setError("Project guidelines must be uploaded as a PDF or Markdown (.md) file.")
       return
     }
     if (file.size > 12 * 1024 * 1024) {
-      setError("The PDF is too large. Upload a PDF up to 12 MB.")
+      setError("The file is too large. Upload a PDF or Markdown file up to 12 MB.")
       return
     }
     setExtractingGuidelines(true)
 
     try {
-      const result = await extractGuidelinesPdf(file)
+      const result = isPdf ? await extractGuidelinesPdf(file) : await extractGuidelinesMarkdown(file)
       update("projectGuidelines", result.text)
       setGuidelinesFile({
         name: file.name,
+        fileType: result.fileType,
         size: file.size,
         pages: result.pages,
         characters: result.characters,
@@ -607,7 +613,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
 
   async function readGuidelinesFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
-    if (file) await processGuidelinesPdf(file)
+    if (file) await processGuidelinesFile(file)
     event.currentTarget.value = ""
   }
 
@@ -616,7 +622,7 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
     setDraggingGuidelines(false)
     if (extractingGuidelines) return
     const file = event.dataTransfer.files?.[0]
-    if (file) void processGuidelinesPdf(file)
+    if (file) void processGuidelinesFile(file)
   }
 
   function clearGuidelinesFile() {

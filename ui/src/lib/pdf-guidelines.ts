@@ -2,11 +2,34 @@ import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
 
 export interface BrowserGuidelinesExtraction {
   text: string
+  fileType: "pdf" | "markdown"
   pages: number
   characters: number
   tables: number
   chunks: number
   warnings: string[]
+}
+
+export async function extractGuidelinesMarkdown(file: File): Promise<BrowserGuidelinesExtraction> {
+  const text = (await file.text()).replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").trim()
+  if (!text) throw new Error("The Markdown file is empty.")
+  if (text.includes("\0")) throw new Error("The uploaded file is not valid Markdown text.")
+
+  const chunks = text
+    .split(/\n{2,}(?=#{1,6}\s|\b[A-Z][^\n]{2,80}\n)/)
+    .filter((section) => section.trim().length > 0)
+    .length
+  const tables = (text.match(/^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$/gm) || []).length
+
+  return {
+    text,
+    fileType: "markdown",
+    pages: 0,
+    characters: text.length,
+    tables,
+    chunks: Math.max(1, chunks),
+    warnings: [],
+  }
 }
 
 type PageText = { num: number; text: string }
@@ -82,6 +105,7 @@ export async function extractGuidelinesPdf(file: File): Promise<BrowserGuideline
 
     return {
       text: structured.text,
+      fileType: "pdf",
       pages: result.total,
       characters: structured.text.length,
       tables: structured.tables,

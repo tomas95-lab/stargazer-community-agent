@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   base64ToBuffer,
+  extractTextFromMarkdownBuffer,
   extractTextFromPdfBuffer,
   MAX_GUIDELINE_PDF_BYTES,
   normalizeExtractedGuidelineText,
@@ -58,6 +59,21 @@ test('validatePdfBuffer rejects oversized PDFs', () => {
   assert.throws(() => validatePdfBuffer(buffer), /too large/);
 });
 
+test('extractTextFromMarkdownBuffer preserves Markdown structure', () => {
+  const source = '# Setup\r\n\r\n- Keep this list\r\n\r\n| Rule | Action |\r\n| --- | --- |\r\n| EQ | Ask for help |';
+  const result = extractTextFromMarkdownBuffer(Buffer.from(source));
+
+  assert.equal(result.fileType, 'markdown');
+  assert.equal(result.text, source.replace(/\r\n/g, '\n'));
+  assert.equal(result.pages, 0);
+  assert.equal(result.tables, 1);
+  assert.ok(result.chunks >= 1);
+});
+
+test('extractTextFromMarkdownBuffer rejects empty Markdown', () => {
+  assert.throws(() => extractTextFromMarkdownBuffer(Buffer.from('  \n')), /empty/);
+});
+
 test('tableToMarkdown preserves rows, columns, and pipe characters', () => {
   assert.equal(
     tableToMarkdown([['Status', 'Action'], ['EQ', 'Join | ask for access']]),
@@ -79,6 +95,7 @@ test('extractTextFromPdfBuffer extracts selectable PDF text', async () => {
   const result = await extractTextFromPdfBuffer(minimalPdfWithText('Cursor access guideline'));
 
   assert.equal(result.text, '## Page 1\n\nCursor access guideline');
+  assert.equal(result.fileType, 'pdf');
   assert.equal(result.pages, 1);
   assert.equal(result.characters, result.text.length);
   assert.equal(result.tables, 0);
