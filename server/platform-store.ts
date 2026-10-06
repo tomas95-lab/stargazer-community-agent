@@ -4,6 +4,7 @@ import { BotConfig } from '../src/config';
 import { platformGeminiConfigured } from '../src/ai-runtime';
 import { assertDiscourseUserApiKey } from '../src/discourse-credentials';
 import { normalizeChannelGuidelines } from '../src/channel-guidelines';
+import { normalizeOptionalProjectLink } from '../src/links';
 import { normalizeTimeZone } from '../src/time-zone';
 import { readDataJSON, writeDataJSON } from '../src/data-store';
 import {
@@ -431,7 +432,7 @@ function publicProject(row: QmProjectRow, aiKey?: UserAiKeyRow | null): QmProjec
     aiDailyCallLimit: effectiveAiLimit(row, 'aiDailyCallLimit', aiKey?.ai_daily_call_limit),
     projectGuidelines: row.project_guidelines,
     projectGuidelinesCharacters: row.project_guidelines.length,
-    warRoomLink: row.war_room_link,
+    warRoomLink: normalizeOptionalProjectLink(row.war_room_link),
     agentMode: row.agent_mode,
     autoReplyEnabled: row.auto_reply_enabled,
     minConfidence: row.min_confidence,
@@ -726,7 +727,11 @@ function normalizeProjectInput(
         ? { discourse_api_key_ciphertext: storedDiscourseKeyCiphertext }
         : {}),
     project_guidelines: text(input.projectGuidelines, existing?.project_guidelines || shared?.project_guidelines || ''),
-    war_room_link: text(input.warRoomLink, existing?.war_room_link || shared?.war_room_link || ''),
+    war_room_link: normalizeOptionalProjectLink(
+      input.warRoomLink === undefined
+        ? existing?.war_room_link || shared?.war_room_link || ''
+        : input.warRoomLink,
+    ),
     agent_mode: agentMode(input.agentMode || existing?.agent_mode),
     auto_reply_enabled: input.autoReplyEnabled ?? existing?.auto_reply_enabled ?? false,
     min_confidence: clampConfidence(input.minConfidence ?? existing?.min_confidence),
@@ -972,7 +977,7 @@ export async function getSharedProjectSummary(projectKey: string): Promise<{
     categorySlug: project.community_category_slug,
     channelId: project.community_chat_channel_id,
     projectGuidelines: project.project_guidelines,
-    warRoomLink: project.war_room_link,
+    warRoomLink: normalizeOptionalProjectLink(project.war_room_link),
     agentMode: project.agent_mode,
     autoReplyEnabled: project.auto_reply_enabled,
     minConfidence: Number(project.min_confidence),
@@ -1051,7 +1056,7 @@ export async function createUserProject(user: AuthenticatedUser, input: QmProjec
     categorySlug: shared.community_category_slug,
     channelId: shared.community_chat_channel_id,
     projectGuidelines: shared.project_guidelines,
-    warRoomLink: shared.war_room_link,
+    warRoomLink: normalizeOptionalProjectLink(shared.war_room_link),
     agentMode: shared.agent_mode,
     autoReplyEnabled: shared.auto_reply_enabled,
     minConfidence: Number(shared.min_confidence),
@@ -1335,7 +1340,8 @@ export function projectRuntimeContext(
   discourseKey?: UserDiscourseKeyRow | null,
 ): ProjectContext {
   const projectLinks: ProjectContext['projectLinks'] = {};
-  if (text(row.war_room_link)) projectLinks.warRoom = text(row.war_room_link);
+  const warRoomLink = normalizeOptionalProjectLink(row.war_room_link);
+  if (warRoomLink) projectLinks.warRoom = warRoomLink;
   const demoMode = row.settings?.demoMode === true;
   const gemini = userGeminiStatus(aiKey);
   const channelGuidelines = normalizeChannelGuidelines(row.settings?.channelGuidelines, managedChannelIdsForRow(row));

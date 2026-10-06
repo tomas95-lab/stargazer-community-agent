@@ -270,6 +270,7 @@ export function KnowledgeStep({
           onChange={(event) => update("warRoomLink", event.target.value)}
           placeholder="https://..."
         />
+        <p className="text-xs text-muted-foreground">Leave this blank when the project does not use a War Room or live support room.</p>
       </div>
 
       <details className="rounded-md border" open={!guidelinesFile && !form.projectGuidelines}>

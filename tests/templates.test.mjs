@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { renderAnnouncement, renderDailyThread } from '../dist/templates.js';
+import { normalizeOptionalProjectLink } from '../dist/links.js';
+
+test('optional project links treat no-room labels as an empty value', () => {
+  assert.equal(normalizeOptionalProjectLink('NO WAR ROOM'), '');
+  assert.equal(normalizeOptionalProjectLink('N/A'), '');
+  assert.equal(normalizeOptionalProjectLink('https://example.test/support'), 'https://example.test/support');
+});
 
 const topic = {
   date: '2026-07-03',

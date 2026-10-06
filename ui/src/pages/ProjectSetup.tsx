@@ -480,6 +480,14 @@ export default function ProjectSetup({ forceNew = false }: { forceNew?: boolean 
         ? "Sync at least one channel guideline or add enough global context for the agent."
         : "Upload or paste enough project context for the agent to answer safely."
     }
+    if (stepIndex === 3 && form.warRoomLink.trim()) {
+      try {
+        const url = new URL(form.warRoomLink.trim())
+        if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Unsupported protocol")
+      } catch {
+        return "Enter a valid support link or leave the field blank when this project has no War Room."
+      }
+    }
     if (stepIndex === 4) {
       const confidence = Number(form.minConfidence)
       if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
