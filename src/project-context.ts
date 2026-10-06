@@ -46,6 +46,8 @@ export interface RuntimeAiConfig {
 }
 
 export interface RuntimeAutomationSettings {
+  aiDailyTokenLimit?: number;
+  aiDailyCallLimit?: number;
   timezone?: string;
   weekdays?: number[];
   startTime?: string;

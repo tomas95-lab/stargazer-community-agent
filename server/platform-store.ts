@@ -319,6 +319,14 @@ function positiveIntOrNull(value: unknown, fallback: number | null = null): numb
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
+function effectiveAiLimit(
+  row: Pick<QmProjectRow, 'settings'>,
+  setting: 'aiDailyTokenLimit' | 'aiDailyCallLimit',
+  userLimit: unknown,
+): number | null {
+  return positiveIntOrNull(row.settings?.[setting]) || positiveIntOrNull(userLimit);
+}
+
 function envFallback(key: string, fallback = ''): string {
   return env(key) || fallback;
 }
@@ -419,8 +427,8 @@ function publicProject(row: QmProjectRow, aiKey?: UserAiKeyRow | null): QmProjec
     aiProviderConfigured: platformGeminiConfigured() || gemini.connected,
     aiProvider: 'gemini',
     aiModel: gemini.model,
-    aiDailyTokenLimit: positiveIntOrNull(aiKey?.ai_daily_token_limit),
-    aiDailyCallLimit: positiveIntOrNull(aiKey?.ai_daily_call_limit),
+    aiDailyTokenLimit: effectiveAiLimit(row, 'aiDailyTokenLimit', aiKey?.ai_daily_token_limit),
+    aiDailyCallLimit: effectiveAiLimit(row, 'aiDailyCallLimit', aiKey?.ai_daily_call_limit),
     projectGuidelines: row.project_guidelines,
     projectGuidelinesCharacters: row.project_guidelines.length,
     warRoomLink: row.war_room_link,
@@ -1355,8 +1363,8 @@ export function projectRuntimeContext(
       provider: 'gemini',
       apiKey: decryptUserGeminiApiKey(aiKey),
       model: gemini.model,
-      dailyTokenLimit: positiveIntOrNull(aiKey?.ai_daily_token_limit),
-      dailyCallLimit: positiveIntOrNull(aiKey?.ai_daily_call_limit),
+      dailyTokenLimit: effectiveAiLimit(row, 'aiDailyTokenLimit', aiKey?.ai_daily_token_limit),
+      dailyCallLimit: effectiveAiLimit(row, 'aiDailyCallLimit', aiKey?.ai_daily_call_limit),
       enforceLimits: true,
     },
     ...(text(row.project_guidelines) ? { projectGuidelines: text(row.project_guidelines) } : {}),

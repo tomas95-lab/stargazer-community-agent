@@ -100,8 +100,8 @@ export function platformAiLimits(): PlatformAiLimits {
     globalCallLimit: configuredLimit('PLATFORM_AI_DAILY_CALL_LIMIT', 500),
     projectTokenLimit: configuredLimit('AI_PROJECT_DAILY_TOKEN_LIMIT', 200_000),
     projectCallLimit: configuredLimit('AI_PROJECT_DAILY_CALL_LIMIT', 200),
-    ownerTokenLimit: numericLimit(context.aiConfig?.dailyTokenLimit, 'AI_DAILY_TOKEN_LIMIT') || 50_000,
-    ownerCallLimit: numericLimit(context.aiConfig?.dailyCallLimit, 'AI_DAILY_CALL_LIMIT') || 100,
+    ownerTokenLimit: numericLimit(context.automationSettings?.aiDailyTokenLimit ?? context.aiConfig?.dailyTokenLimit, 'AI_DAILY_TOKEN_LIMIT') || 50_000,
+    ownerCallLimit: numericLimit(context.automationSettings?.aiDailyCallLimit ?? context.aiConfig?.dailyCallLimit, 'AI_DAILY_CALL_LIMIT') || 100,
   };
 }
 
@@ -157,7 +157,7 @@ async function writeState(state: AiUsageState): Promise<void> {
   );
 }
 
-function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
+export function summarizeAiUsageEvents(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
   const date = utcDate(now);
   const context = getProjectContext();
   const scopedEvents = events.filter((event) => {
@@ -166,12 +166,13 @@ function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
     return !event.projectId || event.projectId === context.projectId;
   });
   const todayEvents = scopedEvents.filter((event) => (event.utcDate || event.argentinaDate) === date);
-  const calls = todayEvents.length;
-  const inputTokens = todayEvents.reduce((sum, event) => sum + event.inputTokens, 0);
-  const outputTokens = todayEvents.reduce((sum, event) => sum + event.outputTokens, 0);
+  const countedEvents = todayEvents.filter((event) => event.status !== 'blocked');
+  const calls = countedEvents.length;
+  const inputTokens = countedEvents.reduce((sum, event) => sum + event.inputTokens, 0);
+  const outputTokens = countedEvents.reduce((sum, event) => sum + event.outputTokens, 0);
   const totalTokens = inputTokens + outputTokens;
-  const dailyTokenLimit = numericLimit(context.aiConfig?.dailyTokenLimit, 'AI_DAILY_TOKEN_LIMIT');
-  const dailyCallLimit = numericLimit(context.aiConfig?.dailyCallLimit, 'AI_DAILY_CALL_LIMIT');
+  const dailyTokenLimit = numericLimit(context.automationSettings?.aiDailyTokenLimit ?? context.aiConfig?.dailyTokenLimit, 'AI_DAILY_TOKEN_LIMIT');
+  const dailyCallLimit = numericLimit(context.automationSettings?.aiDailyCallLimit ?? context.aiConfig?.dailyCallLimit, 'AI_DAILY_CALL_LIMIT');
   const enforce = context.aiConfig?.provider === 'gemini'
     || context.aiConfig?.enforceLimits === true
     || process.env.AI_GUARDRAILS_ENFORCE === 'true';
@@ -210,7 +211,7 @@ function summarize(events: AiUsageEvent[], now = new Date()): AiUsageSummary {
 
 export async function getAiUsageSummary(now = new Date()): Promise<AiUsageSummary> {
   const state = await readState();
-  return summarize(state.events, now);
+  return summarizeAiUsageEvents(state.events, now);
 }
 
 function quotaRpcMissing(error: unknown): boolean {
@@ -269,7 +270,7 @@ export async function assertAiUsageAllowed(
   if (reservationId) return reservationId;
 
   const state = await readState();
-  const summary = summarize(state.events);
+  const summary = summarizeAiUsageEvents(state.events);
   const expectedTokens = Math.max(0, estimatedInputTokens + estimatedOutputTokens);
   const projectedTokens = summary.today.totalTokens + expectedTokens;
   const projectedCalls = summary.today.calls + 1;
