@@ -12,7 +12,7 @@ import {
   Settings,
 } from "lucide-react"
 
-import { api, type DailySummaryResult, type PreviewData, type Topic, type Webinar } from "@/api"
+import { api, type DailySummaryResult, type PreviewData, type ProjectGuidelineBrief, type Topic, type Webinar } from "@/api"
 import Preview from "@/components/Preview"
 import PublishButton from "@/components/PublishButton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -88,27 +88,38 @@ export default function Dashboard() {
   const [allTopics, setAllTopics] = useState<Topic[]>([])
   const [webinars, setWebinars] = useState<Webinar[]>([])
   const [summary, setSummary] = useState<DailySummaryResult | null>(null)
+  const [guidelineBrief, setGuidelineBrief] = useState<ProjectGuidelineBrief | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"thread" | "announcement">("thread")
 
   useEffect(() => {
+    let active = true
+    setLoading(true)
     Promise.all([
       api.getToday(),
       api.getWebinars().catch(() => []),
       api.getTopics().catch(() => []),
       api.getDailySummary().catch(() => null),
-    ]).then(([today, wbns, topics, dailySummary]) => {
+      api.getProjectGuidelineBrief().catch(() => null),
+    ]).then(([today, wbns, topics, dailySummary, brief]) => {
+      if (!active) return
       setDate(today.date)
       setTopic(today.topic)
       setWebinars(wbns)
       setAllTopics(topics)
       setSummary(dailySummary)
+      setGuidelineBrief(brief)
       if (today.topic) {
         api.getPreview(today.date).then(setPreview).catch(() => {})
+      } else {
+        setPreview(null)
       }
       setLoading(false)
-    }).catch(() => setLoading(false))
-  }, [])
+    }).catch(() => {
+      if (active) setLoading(false)
+    })
+    return () => { active = false }
+  }, [currentProject?.id])
 
   const nextWebinar = webinars
     .filter((w) => new Date(`${w.date}T${w.timeUtc}:00Z`) > new Date())
@@ -213,6 +224,50 @@ export default function Dashboard() {
           </div>
         </div>
       ) : null}
+
+      <div className="px-4 lg:px-6">
+        <Card className="py-0 shadow-xs">
+          <CardContent className="p-0">
+            <div className="flex flex-col gap-3 border-b px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-background">
+                  <FileText className="size-4 text-primary" />
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-base font-semibold text-foreground">Agent brief draft</h2>
+                    <Badge variant={guidelineBrief?.available ? "secondary" : "outline"}>
+                      {guidelineBrief?.available ? "ready" : "missing"}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    The compact project context used by Gemini and any configured fallback.
+                  </p>
+                </div>
+              </div>
+              {guidelineBrief?.available ? (
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span>{guidelineBrief.estimatedTokens.toLocaleString("en-US")} estimated tokens</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{guidelineBrief.sectionCount} sections indexed</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{guidelineBrief.sourceCharacters.toLocaleString("en-US")} source characters</span>
+                </div>
+              ) : null}
+            </div>
+            {guidelineBrief?.available ? (
+              <pre className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words px-5 py-4 font-sans text-sm leading-6 text-foreground">
+                {guidelineBrief.brief}
+              </pre>
+            ) : (
+              <div className="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">Upload project guidelines to generate this draft automatically.</p>
+                <Button variant="outline" size="sm" onClick={() => navigate("/project")}>Open project setup</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="space-y-4 px-4 lg:px-6">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">

@@ -86,6 +86,15 @@ const cachedGuidelines = new Map<string, string>();
 const cachedChunks = new Map<string, { text: string; chunks: GuidelineChunk[] }>();
 const cachedBriefs = new Map<string, { text: string; brief: string }>();
 
+export interface ProjectGuidelineBriefStatus {
+  available: boolean;
+  brief: string;
+  sourceCharacters: number;
+  briefCharacters: number;
+  estimatedTokens: number;
+  sectionCount: number;
+}
+
 function guidelineChunks(projectId: string, text: string): GuidelineChunk[] {
   const cached = cachedChunks.get(projectId);
   if (cached?.text === text) return cached.chunks;
@@ -152,6 +161,34 @@ export async function projectGuidelineBrief(): Promise<string> {
   cachedBriefs.set(projectId, { text, brief });
   if (cachedBriefs.size > 50) cachedBriefs.delete(cachedBriefs.keys().next().value as string);
   return brief;
+}
+
+export async function projectGuidelineBriefStatus(): Promise<ProjectGuidelineBriefStatus> {
+  const text = await loadProjectGuidelines();
+  if (!text.trim()) {
+    return {
+      available: false,
+      brief: '',
+      sourceCharacters: 0,
+      briefCharacters: 0,
+      estimatedTokens: 0,
+      sectionCount: 0,
+    };
+  }
+  const brief = await projectGuidelineBrief();
+  const sections = new Set(
+    guidelineChunks(getCurrentProjectId(), text)
+      .map((chunk) => chunk.heading.trim())
+      .filter((heading) => heading && !/^Page \d+$/i.test(heading)),
+  );
+  return {
+    available: Boolean(brief),
+    brief,
+    sourceCharacters: text.length,
+    briefCharacters: brief.length,
+    estimatedTokens: brief ? Math.max(1, Math.ceil(brief.length / 4)) : 0,
+    sectionCount: sections.size,
+  };
 }
 
 export async function findGuidelineSnippetsForChannel(query: string, channelId = '', limit = 4): Promise<string[]> {

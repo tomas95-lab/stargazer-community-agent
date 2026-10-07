@@ -56,13 +56,13 @@ function criticalRules(text: string): string[] {
     .filter((sentence) => sentence.length >= 35 && sentence.length <= 320)
     .filter((sentence) => /source of truth|not permitted|must not|\bimportant\b|\bnever\b|\bdo not\b/i.test(sentence));
   const cleanedRestrictions = explicitRestrictions.map((rule) => {
-    const trimmed = rule.trim();
+    const trimmed = rule.trim().replace(/^[-*]\s+/, '');
     const explicitStart = trimmed.search(/(?:ChatGPT|AI tools|The customer|They|If an assertion|The Initial Prompt)/i);
     return explicitStart >= 0 ? trimmed.slice(explicitStart) : trimmed;
   });
   const sourceTruth = sentences.filter((sentence) => /source of truth/i.test(sentence));
   const remaining = sentences.filter((sentence) => !/source of truth/i.test(sentence));
-  return [...new Set([...sourceTruth, ...cleanedRestrictions, ...remaining])].slice(0, 4);
+  return [...new Set([...sourceTruth, ...cleanedRestrictions, ...remaining].map((rule) => rule.replace(/^[-*]\s+/, '')))].slice(0, 4);
 }
 
 export function buildProjectBrief(text: string, maxChars = DEFAULT_MAX_CHARS): string {
@@ -75,7 +75,7 @@ export function buildProjectBrief(text: string, maxChars = DEFAULT_MAX_CHARS): s
   const fallback = chunks.filter((chunk) => !SKIP_HEADING.test(chunk.heading));
   const selected = [...priority, ...fallback.filter((chunk) => !priority.includes(chunk))]
     .map((chunk) => ({ heading: chunk.heading, text: cleanText(chunk.text) }))
-    .filter((item) => item.text.length >= 80)
+    .filter((item) => item.text.length >= 20)
     .slice(0, 3);
 
   const parts = [

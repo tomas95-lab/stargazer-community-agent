@@ -102,12 +102,17 @@ export default function Settings() {
 
   useEffect(() => {
     loadHealth();
-    loadUsage();
   }, []);
 
   useEffect(() => {
     if (!currentProject) return;
     setConnectionTest(null);
+    setUsageLoading(true);
+    setUsageError('');
+    api.getAiUsage()
+      .then(setUsage)
+      .catch((err) => setUsageError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setUsageLoading(false));
     const settings = currentProject.settings || {};
     setSchedule({
       timezone: typeof settings.timezone === 'string' ? settings.timezone : 'America/Los_Angeles',
@@ -464,7 +469,7 @@ export default function Settings() {
         <div className="flex flex-col gap-3 border-b border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-foreground">AI Fair-Use Guardrails</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Usage for the current QM. Platform, project, and QM limits keep shared Gemini capacity available to everyone.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Usage for the current QM and project, separated by provider while sharing the same daily guardrails.</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant={usage?.limits.enforce ? 'secondary' : 'outline'}>
@@ -504,6 +509,39 @@ export default function Settings() {
           </div>
         </div>
 
+        <div className="grid gap-3 border-t border-border p-4 md:grid-cols-2">
+          <div className="rounded-md border border-border bg-background p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Gemini today</p>
+                <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.providers?.gemini.calls)}</p>
+              </div>
+              <Badge variant="secondary">primary</Badge>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">calls</p>
+            <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-3 text-xs">
+              <div><p className="text-muted-foreground">Input</p><p className="mt-1 font-semibold text-foreground">{formatNumber(usage?.providers?.gemini.inputTokens)}</p></div>
+              <div><p className="text-muted-foreground">Output</p><p className="mt-1 font-semibold text-foreground">{formatNumber(usage?.providers?.gemini.outputTokens)}</p></div>
+              <div><p className="text-muted-foreground">Total</p><p className="mt-1 font-semibold text-foreground">{formatNumber(usage?.providers?.gemini.totalTokens)}</p></div>
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-background p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Claude today</p>
+                <p className="mt-2 text-2xl font-semibold text-foreground">{formatNumber(usage?.providers?.claude.calls)}</p>
+              </div>
+              <Badge variant="outline">fallback</Badge>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">calls made after Gemini could not complete a request</p>
+            <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-3 text-xs">
+              <div><p className="text-muted-foreground">Input</p><p className="mt-1 font-semibold text-foreground">{formatNumber(usage?.providers?.claude.inputTokens)}</p></div>
+              <div><p className="text-muted-foreground">Output</p><p className="mt-1 font-semibold text-foreground">{formatNumber(usage?.providers?.claude.outputTokens)}</p></div>
+              <div><p className="text-muted-foreground">Total</p><p className="mt-1 font-semibold text-foreground">{formatNumber(usage?.providers?.claude.totalTokens)}</p></div>
+            </div>
+          </div>
+        </div>
+
         {usage?.warnings.length ? (
           <div className="mx-4 mb-4 space-y-1 rounded-lg border p-3 text-sm sg-status-warning">
             {usage.warnings.map((warning) => <p key={warning}>{warning}</p>)}
@@ -518,6 +556,7 @@ export default function Settings() {
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">Time</th>
                 <th className="px-4 py-3 text-left font-semibold">Feature</th>
+                <th className="px-4 py-3 text-left font-semibold">Provider</th>
                 <th className="px-4 py-3 text-left font-semibold">Model</th>
                 <th className="px-4 py-3 text-left font-semibold">Tokens</th>
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
@@ -526,13 +565,14 @@ export default function Settings() {
             <tbody>
               {usageLoading && !usage ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-sm text-muted-foreground">Loading AI usage...</td>
+                  <td colSpan={6} className="px-4 py-6 text-sm text-muted-foreground">Loading AI usage...</td>
                 </tr>
               ) : usage?.recentEvents.length ? (
                 usage.recentEvents.slice(0, 10).map((event) => (
                   <tr key={event.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3 text-muted-foreground">{formatAppDateTime(event.at)} {APP_TIME_ZONE_LABEL}</td>
                     <td className="px-4 py-3 font-medium text-foreground">{event.feature}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{event.provider || (event.model.startsWith('claude') ? 'claude' : 'gemini')}</td>
                     <td className="px-4 py-3 text-muted-foreground">{event.model}</td>
                     <td className="px-4 py-3 text-foreground">{formatNumber(event.totalTokens)}</td>
                     <td className="px-4 py-3 text-muted-foreground">{event.status}</td>
@@ -540,7 +580,7 @@ export default function Settings() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-sm text-muted-foreground">No AI usage recorded yet.</td>
+                  <td colSpan={6} className="px-4 py-6 text-sm text-muted-foreground">No AI usage recorded yet.</td>
                 </tr>
               )}
             </tbody>

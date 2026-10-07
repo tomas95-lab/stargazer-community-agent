@@ -628,6 +628,7 @@ export interface AiUsageEvent {
   argentinaDate?: string;
   feature: string;
   model: string;
+  provider?: 'gemini' | 'claude' | 'unknown';
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
@@ -653,8 +654,28 @@ export interface AiUsageSummary {
     tokens: number | null;
     calls: number | null;
   };
+  providers: {
+    gemini: AiProviderUsage;
+    claude: AiProviderUsage;
+  };
   warnings: string[];
   recentEvents: AiUsageEvent[];
+}
+
+export interface AiProviderUsage {
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
+export interface ProjectGuidelineBrief {
+  available: boolean;
+  brief: string;
+  sourceCharacters: number;
+  briefCharacters: number;
+  estimatedTokens: number;
+  sectionCount: number;
 }
 
 export type ProjectAgentMode = 'draft' | 'supervised' | 'auto';
@@ -1062,6 +1083,7 @@ export const api = {
       body: JSON.stringify(opts),
     }),
   getProjectMemory: () => request<ProjectMemory>('/memory'),
+  getProjectGuidelineBrief: () => request<ProjectGuidelineBrief>('/memory/guideline-brief'),
   updateProjectMemory: (memory: ProjectMemory) =>
     request<ProjectMemory>('/memory', {
       method: 'PUT',

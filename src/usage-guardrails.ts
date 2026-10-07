@@ -17,6 +17,7 @@ export interface AiUsageEvent {
   ownerId?: string;
   feature: string;
   model: string;
+  provider?: 'gemini' | 'claude' | 'unknown';
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
@@ -42,8 +43,19 @@ export interface AiUsageSummary {
     tokens: number | null;
     calls: number | null;
   };
+  providers: {
+    gemini: AiProviderUsage;
+    claude: AiProviderUsage;
+  };
   warnings: string[];
   recentEvents: AiUsageEvent[];
+}
+
+export interface AiProviderUsage {
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
 }
 
 interface AiUsageState {
@@ -78,6 +90,25 @@ function normalizeTokens(value: unknown): number {
 
 function currentAiModel(): string {
   return getProjectContext().aiConfig?.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+}
+
+function providerForModel(model: string): AiUsageEvent['provider'] {
+  const normalized = model.trim().toLowerCase();
+  if (normalized.startsWith('claude')) return 'claude';
+  if (normalized.startsWith('gemini')) return 'gemini';
+  return 'unknown';
+}
+
+function providerUsage(events: AiUsageEvent[], provider: AiUsageEvent['provider']): AiProviderUsage {
+  const matching = events.filter((event) => (event.provider || providerForModel(event.model)) === provider);
+  const inputTokens = matching.reduce((sum, event) => sum + event.inputTokens, 0);
+  const outputTokens = matching.reduce((sum, event) => sum + event.outputTokens, 0);
+  return {
+    calls: matching.length,
+    inputTokens,
+    outputTokens,
+    totalTokens: inputTokens + outputTokens,
+  };
 }
 
 function configuredLimit(envKey: string, fallback: number): number {
@@ -124,6 +155,7 @@ async function readState(): Promise<AiUsageState> {
           ownerId: row.owner_id || undefined,
           feature: row.feature,
           model: row.model,
+          provider: providerForModel(row.model),
           inputTokens: row.input_tokens,
           outputTokens: row.output_tokens,
           totalTokens: row.input_tokens + row.output_tokens,
@@ -204,8 +236,15 @@ export function summarizeAiUsageEvents(events: AiUsageEvent[], now = new Date())
       tokens: dailyTokenLimit ? Math.max(0, dailyTokenLimit - totalTokens) : null,
       calls: dailyCallLimit ? Math.max(0, dailyCallLimit - calls) : null,
     },
+    providers: {
+      gemini: providerUsage(countedEvents, 'gemini'),
+      claude: providerUsage(countedEvents, 'claude'),
+    },
     warnings,
-    recentEvents: scopedEvents.slice(0, 25),
+    recentEvents: scopedEvents.slice(0, 25).map((event) => ({
+      ...event,
+      provider: event.provider || providerForModel(event.model),
+    })),
   };
 }
 
@@ -322,6 +361,7 @@ export async function recordAiUsage(input: {
     ...(context.ownerId ? { ownerId: context.ownerId } : {}),
     feature: input.feature,
     model: input.model || 'unknown',
+    provider: providerForModel(input.model || 'unknown'),
     inputTokens,
     outputTokens,
     totalTokens: inputTokens + outputTokens,
