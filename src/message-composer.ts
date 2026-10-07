@@ -4,8 +4,8 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import { loadProjectLinks } from './links';
 import { appendOperationLog } from './operations-log';
-import { findProjectGuidelineSnippets } from './project-guidelines';
-import { projectMemoryText } from './project-memory';
+import { findProjectGuidelineSnippets, projectGuidelineBrief } from './project-guidelines';
+import { relevantProjectMemoryText } from './project-memory';
 import { getProjectContext } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
@@ -145,8 +145,12 @@ function normalizeVariant(raw: AiComposerVariant | undefined): ComposerVariant |
 export async function generateComposedMessage(input: MessageComposerInput): Promise<MessageComposerResult> {
   const request = normalizeComposerRequest(input);
   const links = await loadProjectLinks();
-  const snippets = await findProjectGuidelineSnippets(`${request.prompt}\n${request.extraContext}`, 5);
-  const memory = await projectMemoryText(25);
+  const retrievalQuery = `${request.prompt}\n${request.extraContext}`;
+  const [snippets, memory, projectBrief] = await Promise.all([
+    findProjectGuidelineSnippets(retrievalQuery, 4),
+    relevantProjectMemoryText(retrievalQuery, 6),
+    projectGuidelineBrief(),
+  ]);
   const maxTokens = request.variantCount === 1 ? 700 : 1200;
   const projectName = getProjectContext().projectName || 'the active project';
   const systemPrompt = [
@@ -154,7 +158,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
     'Always write user-facing content in English, even when the user request is in Spanish or another language.',
     'Do not write Spanish user-facing copy.',
     'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
-    'Use the provided project memory, project guideline excerpts, and project links as the source of truth.',
+    'Use the project brief for orientation. Use project memory, retrieved original guideline excerpts, and project links as the source of truth for specific claims.',
     'Do not invent deadlines, eligibility rules, project policy, pay details, access rules, or links.',
     'If a requested detail is not supported, keep the message general and add a concise warning in the JSON warnings array.',
     'Keep copy operational, clear, and suitable for repeated community workflows.',
@@ -170,6 +174,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
     request.extraContext ? `Additional context:\n${request.extraContext}` : '',
     `War Room handling:\n${request.includeWarRoomLink ? `Include this War Room link when relevant: ${links.warRoom}` : 'Do not include the War Room link unless the task explicitly requires mentioning it.'}`,
     'Do not add a footer, attribution, or assistant name.',
+    `Project brief:\n${projectBrief || 'No project brief available.'}`,
     `Project memory:\n${memory || 'No project memory available.'}`,
     `Project links:\nGuidelines: ${links.guidelines}\nTemplates: ${links.templatesZip}\nValidation script: ${links.validationScript}\nCommon errors: ${links.commonErrorsDocument}`,
     `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,

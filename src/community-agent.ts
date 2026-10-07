@@ -6,8 +6,8 @@ import { loadBotConfig } from './config';
 import { DiscourseChatMessage, DiscourseClient } from './discourse-client';
 import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
-import { findGuidelineSnippetsForChannel } from './project-guidelines';
-import { projectMemoryText } from './project-memory';
+import { findGuidelineSnippetsForChannel, projectGuidelineBrief } from './project-guidelines';
+import { findApprovedMemoryAnswer, relevantProjectMemoryText } from './project-memory';
 import { loadProjectLinks } from './links';
 import { getProjectContext, projectScheduleAllowsNow } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
@@ -828,6 +828,13 @@ export function humanReviewAcknowledgment(): string {
   return 'Thanks for flagging this. This needs human review before we can provide an accurate answer. A team member will follow up after confirming the relevant project details.';
 }
 
+function acknowledgmentReaction(message: string): string {
+  const normalized = message.trim().toLowerCase();
+  return normalized.length <= 140 && /^(?:thanks|thank you|got it|understood|resolved|it works now|working now|gracias|entendido|resuelto)[!.\s]*$/i.test(normalized)
+    ? DEFAULT_REACTION_EMOJI
+    : '';
+}
+
 export async function evaluateSupportMessage(
   username: string,
   message: string,
@@ -847,8 +854,42 @@ export async function evaluateSupportMessage(
       guidelineSnippets: [],
     };
   }
-  const snippets = await findGuidelineSnippetsForChannel(message, channelId, 4);
-  const memory = await projectMemoryText(25);
+  const reaction = acknowledgmentReaction(message);
+  if (reaction) {
+    return {
+      action: 'react',
+      confidence: 1,
+      reason: 'Simple acknowledgment does not need an AI call.',
+      reply: '',
+      reaction,
+      guidelineSnippets: [],
+    };
+  }
+  const approvedAnswer = await findApprovedMemoryAnswer(message);
+  if (approvedAnswer) {
+    return {
+      action: 'reply',
+      confidence: 1,
+      reason: `Matched approved project answer: ${approvedAnswer.title}`,
+      reply: cleanGeneratedReply(approvedAnswer.body),
+      guidelineSnippets: [],
+    };
+  }
+  const [snippets, memory, projectBrief] = await Promise.all([
+    findGuidelineSnippetsForChannel(message, channelId, 4),
+    relevantProjectMemoryText(message, 6),
+    projectGuidelineBrief(),
+  ]);
+  const hasRecentHumanEvidence = /\/(?:staff|manager)(?:\/|\])/i.test(context);
+  if (snippets.length === 0 && !memory.trim() && !hasRecentHumanEvidence) {
+    return {
+      action: 'human',
+      confidence: 1,
+      reason: 'No relevant guideline excerpt, approved project fact, or recent human answer was found.',
+      reply: humanReviewAcknowledgment(),
+      guidelineSnippets: [],
+    };
+  }
   const projectName = getProjectContext().projectName || 'the active project';
   const warRoomInstruction = canUseWarRoomLink && warRoomLink
     ? `A War Room link is configured for this project: ${warRoomLink}. Include it only when live support is clearly relevant and supported by project memory, project guidelines, or recent context. Do not state live-support hours, weekdays, weekends, or room names unless they are present in project memory, project guidelines, or recent context.`
@@ -858,8 +899,8 @@ export async function evaluateSupportMessage(
     'Always write user-facing replies in English, even if the incoming message is Spanish, Portuguese, or any other language.',
     'Never write the reply in Spanish.',
     'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
-    'Use the provided project memory, project guideline excerpts, and recent chat context as the source of truth.',
-    'You may answer only when the answer is clearly supported by the provided project memory, project guideline excerpts, or by the recent chat context.',
+    'Use the project brief for orientation. Use project memory, retrieved original guideline excerpts, and recent chat context as the source of truth for specific claims.',
+    'You may answer only when the answer is clearly supported by project memory, retrieved original guideline excerpts, or recent chat context. The brief alone is not enough for detailed policy claims.',
     'Use action "react" only when the incoming contributor message is useful, constructive, or confirms a resolution, and no text reply is needed.',
     `For action "react", use reaction "${DEFAULT_REACTION_EMOJI}" unless there is a clearly better positive reaction. Do not put reaction-only acknowledgements in the reply field.`,
     'If the information is missing, sensitive, about pay, account policy, deadlines, eligibility policy, or you are not confident, choose action "human".',
@@ -870,6 +911,7 @@ export async function evaluateSupportMessage(
   ].filter(Boolean).join(' ');
   const userPrompt = [
     `Today/context:\n${context || 'No recent context.'}`,
+    `Project brief:\n${projectBrief || 'No project brief available.'}`,
     `Project memory:\n${memory || 'No project memory available.'}`,
     `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
     `Incoming message from ${username}:\n${message}`,
@@ -915,7 +957,7 @@ export async function evaluateSupportMessage(
   const confidence = typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0;
   const rawReply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
   const nonEnglishReply = action === 'reply' && looksNonEnglish(rawReply);
-  const hasKnowledgeSupport = snippets.length > 0 || memory.trim().length > 0;
+  const hasKnowledgeSupport = snippets.length > 0 || memory.trim().length > 0 || hasRecentHumanEvidence;
   const minimumConfidence = policy?.minConfidence ?? MIN_CONFIDENCE;
   const finalAction =
     action === 'reply' && (!rawReply || confidence < minimumConfidence || !hasKnowledgeSupport || nonEnglishReply)
@@ -1057,11 +1099,17 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
     .sort((a, b) => candidatePriority(a) - candidatePriority(b) || a.createdAt.localeCompare(b.createdAt))
     .slice(0, maxAnswers);
 
-  const contextForChannel = (candidate: CommunityAgentItem) => fetched.items
-    .filter((item) => item.channelId === candidate.channelId)
-    .slice(-12)
-    .map((item) => `[${item.source}/${item.username}]: ${item.message.slice(0, 220)}`)
-    .join('\n');
+  const contextForChannel = (candidate: CommunityAgentItem) => {
+    const threadReference = candidate.threadId || candidate.chatMessageId;
+    const channelItems = fetched.items.filter((item) => item.channelId === candidate.channelId);
+    const threadItems = threadReference
+      ? channelItems.filter((item) => item.id === candidate.id || item.threadId === threadReference || item.chatMessageId === threadReference)
+      : [];
+    return (threadItems.length > 1 ? threadItems : channelItems)
+      .slice(-6)
+      .map((item) => `[${item.source}/${item.isStaff ? 'staff' : 'contributor'}/${item.username}]: ${item.message.slice(0, 220)}`)
+      .join('\n');
+  };
 
   const { warRoom: warRoomLink } = await loadProjectLinks();
   const canUseWarRoomLink = Boolean(warRoomLink);

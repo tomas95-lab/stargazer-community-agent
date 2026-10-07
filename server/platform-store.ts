@@ -1351,6 +1351,7 @@ export function projectRuntimeContext(
     source: 'header',
     projectName: row.project_name,
     ownerId: row.owner_id,
+    ownerEmail: row.owner_email,
     demoMode,
     automationPaused: row.enabled === false,
     automationSettings: {

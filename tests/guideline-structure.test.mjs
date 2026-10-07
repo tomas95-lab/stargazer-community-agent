@@ -26,3 +26,26 @@ test('guideline ranking selects the relevant section from a long document', () =
   const ranked = rankGuidelineChunks(chunkGuidelineText(text, 500), 'Why am I EQ and how do I get Cursor?', 2);
   assert.match(ranked[0].text, /request Cursor access/);
 });
+
+test('PDF text headings become searchable guideline sections', () => {
+  const text = [
+    '## Page 1',
+    'Project Overview',
+    'Evaluate banking support trajectories.',
+    'Step 6: Design Rubric Criteria',
+    '6.2 Rubric Rules',
+    'Every criterion must be atomic and self-contained.',
+  ].join('\n');
+  const chunks = chunkGuidelineText(text, 500);
+
+  assert.ok(chunks.some((chunk) => chunk.heading === 'Project Overview'));
+  assert.ok(chunks.some((chunk) => chunk.heading === '6.2 Rubric Rules'));
+  assert.match(rankGuidelineChunks(chunks, 'atomic rubric criterion', 2)[0].text, /atomic and self-contained/);
+});
+
+test('guideline ranking returns no fallback for unrelated questions or substring collisions', () => {
+  const chunks = chunkGuidelineText('## Page 1\n\n### Rewards\n\nCash rewards are reviewed monthly.', 500);
+
+  assert.deepEqual(rankGuidelineChunks(chunks, 'Where is the War Room Zoom link?', 2), []);
+  assert.deepEqual(rankGuidelineChunks(chunks, 'My PayPal account is under review', 2), []);
+});

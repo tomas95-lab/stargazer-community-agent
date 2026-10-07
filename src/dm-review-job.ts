@@ -655,7 +655,7 @@ async function evaluateDirectMessageThread(
     .map((message) => `${message.username}: ${message.text}`)
     .join('\n\n');
   const window = getUtcDayWindow(now);
-  const context = `Private DM thread from the last ${window.lookbackHours} hours:\n${buildDmContext(orderedMessages) || 'No messages in the review window.'}`;
+  const context = `Private DM thread from the last ${window.lookbackHours} hours:\n${buildDmContext(orderedMessages.slice(-8)) || 'No messages in the review window.'}`;
   const deterministicDecision = await evaluateSupportMessage(
     lastIncoming.username,
     pendingText,

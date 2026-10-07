@@ -1,6 +1,7 @@
 import { getProjectContext } from './project-context';
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+export const DEFAULT_CLAUDE_FALLBACK_MODEL = 'claude-haiku-4-5';
 const GEMINI_MODEL_PREFERENCES = [
   DEFAULT_GEMINI_MODEL,
   'gemini-3.5-flash',
@@ -25,7 +26,7 @@ export interface AiGenerationRequest {
 export interface AiGenerationResult {
   text: string;
   model: string;
-  provider: 'gemini';
+  provider: 'gemini' | 'anthropic';
   inputTokens?: number;
   outputTokens?: number;
 }
@@ -52,6 +53,18 @@ interface GeminiResponse {
     code?: number;
     message?: string;
     status?: string;
+  };
+}
+
+interface AnthropicResponse {
+  content?: Array<{ type?: string; text?: string }>;
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+  };
+  error?: {
+    message?: string;
+    type?: string;
   };
 }
 
@@ -126,6 +139,82 @@ function transientNetworkError(error: unknown): boolean {
     && (error.name === 'AbortError' || error.name === 'TimeoutError' || error instanceof TypeError);
 }
 
+function normalizedEmail(value: string | undefined): string {
+  return (value || '').trim().toLowerCase();
+}
+
+function tomasClaudeFallbackApiKey(): string {
+  return (process.env.TOMAS_CLAUDE_FALLBACK_API_KEY || '').trim();
+}
+
+export function tomasClaudeFallbackConfigured(): boolean {
+  const context = getProjectContext();
+  const targetOwnerId = (process.env.TOMAS_CLAUDE_FALLBACK_OWNER_ID || '').trim();
+  const targetEmail = normalizedEmail(process.env.TOMAS_CLAUDE_FALLBACK_EMAIL);
+  const ownerMatches = Boolean(targetOwnerId && context.ownerId === targetOwnerId)
+    || Boolean(targetEmail && normalizedEmail(context.ownerEmail) === targetEmail);
+  return Boolean(tomasClaudeFallbackApiKey() && ownerMatches);
+}
+
+function claudeFallbackAllowedFor(error: unknown): boolean {
+  if (error instanceof GeminiRequestError) {
+    return [401, 403, 404, 408, 429, 500, 502, 503, 504].includes(error.status || 0);
+  }
+  if (transientNetworkError(error)) return true;
+  return error instanceof Error && /Gemini is not configured for this platform/i.test(error.message);
+}
+
+function claudeEndpoint(): string {
+  const baseUrl = (process.env.ANTHROPIC_API_BASE_URL || 'https://api.anthropic.com/v1')
+    .trim()
+    .replace(/\/+$/, '');
+  return `${baseUrl}/messages`;
+}
+
+async function generateClaudeFallback(request: AiGenerationRequest): Promise<AiGenerationResult> {
+  const model = (process.env.TOMAS_CLAUDE_FALLBACK_MODEL || process.env.ANTHROPIC_MODEL || DEFAULT_CLAUDE_FALLBACK_MODEL).trim();
+  const timeoutMs = boundedInteger(process.env.CLAUDE_FALLBACK_TIMEOUT_MS, 20_000, 1_000, 60_000);
+  const response = await fetch(claudeEndpoint(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+      'x-api-key': tomasClaudeFallbackApiKey(),
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: request.maxOutputTokens,
+      ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
+      system: request.system,
+      messages: [{ role: 'user', content: request.prompt }],
+    }),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+
+  let payload: AnthropicResponse = {};
+  try {
+    payload = await response.json() as AnthropicResponse;
+  } catch {
+    // The status below still provides a useful provider error.
+  }
+  if (!response.ok) {
+    throw new Error(`Claude fallback API error ${response.status}: ${payload.error?.message || payload.error?.type || 'Unknown error'}`);
+  }
+  const text = (payload.content || [])
+    .filter((block) => block.type === 'text')
+    .map((block) => block.text || '')
+    .join('')
+    .trim();
+  if (!text) throw new Error('Claude fallback did not return usable content.');
+  return {
+    text,
+    model,
+    provider: 'anthropic',
+    inputTokens: payload.usage?.input_tokens,
+    outputTokens: payload.usage?.output_tokens,
+  };
+}
+
 function wait(ms: number): Promise<void> {
   return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
 }
@@ -186,9 +275,9 @@ export async function validateGeminiApiKey(
   return { valid: true, model: selected };
 }
 
-export async function generateAiText(request: AiGenerationRequest): Promise<AiGenerationResult> {
+async function generateGeminiText(request: AiGenerationRequest): Promise<AiGenerationResult> {
   if (Date.now() < unavailableUntil) {
-    throw new Error('Gemini is temporarily unavailable and is cooling down. Try again in about a minute.');
+    throw new GeminiRequestError('Gemini is temporarily unavailable and is cooling down. Try again in about a minute.', 503);
   }
 
   const primaryModel = configuredModel();
@@ -297,10 +386,26 @@ export async function generateAiText(request: AiGenerationRequest): Promise<AiGe
 
   if ((lastError instanceof GeminiRequestError && transientStatus(lastError.status)) || transientNetworkError(lastError)) {
     unavailableUntil = Date.now() + cooldownMs;
-    throw new Error(
+    throw new GeminiRequestError(
       `Gemini is temporarily unavailable after ${attempts} bounded attempts across ${attemptedModels.size} Flash models. Try again in a few minutes.`,
+      503,
     );
   }
   if (lastError instanceof Error) throw lastError;
-  throw new Error('Gemini is temporarily unavailable. Try again in a few minutes.');
+  throw new GeminiRequestError('Gemini is temporarily unavailable. Try again in a few minutes.', 503);
+}
+
+export async function generateAiText(request: AiGenerationRequest): Promise<AiGenerationResult> {
+  try {
+    return await generateGeminiText(request);
+  } catch (geminiError) {
+    if (!tomasClaudeFallbackConfigured() || !claudeFallbackAllowedFor(geminiError)) throw geminiError;
+    try {
+      return await generateClaudeFallback(request);
+    } catch (claudeError) {
+      const geminiMessage = geminiError instanceof Error ? geminiError.message : 'Unknown Gemini error';
+      const claudeMessage = claudeError instanceof Error ? claudeError.message : 'Unknown Claude error';
+      throw new Error(`Gemini failed (${geminiMessage}) and Tomas's Claude fallback also failed (${claudeMessage}).`);
+    }
+  }
 }

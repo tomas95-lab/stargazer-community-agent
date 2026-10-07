@@ -34,6 +34,8 @@ export interface RuntimeProjectMemoryFact {
   title: string;
   body: string;
   source?: string;
+  directAnswer?: boolean;
+  matchPhrases?: string[];
 }
 
 export interface RuntimeAiConfig {
@@ -82,6 +84,7 @@ export interface ProjectContext {
   source: ProjectContextSource;
   projectName?: string;
   ownerId?: string;
+  ownerEmail?: string;
   botConfig?: RuntimeBotConfig;
   aiConfig?: RuntimeAiConfig;
   projectGuidelines?: string;

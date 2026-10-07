@@ -1,5 +1,6 @@
 import { readDataJSON, writeDataJSON } from './data-store';
 import { getProjectContext, isLegacyProjectId } from './project-context';
+import { rankGuidelineChunks } from './guideline-structure';
 
 const FILE = 'data/project-memory.json';
 
@@ -8,6 +9,8 @@ export interface ProjectMemoryFact {
   title: string;
   body: string;
   source?: string;
+  directAnswer?: boolean;
+  matchPhrases?: string[];
 }
 
 export interface ProjectMemory {
@@ -103,6 +106,13 @@ export function normalizeProjectMemory(input: unknown): ProjectMemory {
       };
       const source = text(raw.source);
       if (source) fact.source = source.slice(0, 120);
+      const matchPhrases = Array.isArray(raw.matchPhrases)
+        ? raw.matchPhrases.map(text).filter((value) => value.length >= 4).slice(0, 12)
+        : [];
+      if (raw.directAnswer === true && matchPhrases.length > 0) {
+        fact.directAnswer = true;
+        fact.matchPhrases = matchPhrases;
+      }
       return fact;
     })
     .filter((item): item is ProjectMemoryFact => Boolean(item))
@@ -145,6 +155,49 @@ export async function projectMemoryText(limit = 10): Promise<string> {
     .slice(0, Math.max(1, Math.min(50, limit)))
     .map((fact) => `- ${fact.title}: ${fact.body}`)
     .join('\n');
+}
+
+export async function relevantProjectMemoryText(query: string, limit = 6): Promise<string> {
+  const memory = await loadProjectMemory();
+  const chunks = memory.facts.map((fact, index) => ({
+    index,
+    heading: fact.title,
+    text: `${fact.title}\n${fact.body}`,
+  }));
+  const ranked = rankGuidelineChunks(chunks, query, Math.max(1, Math.min(10, limit)));
+  return ranked
+    .map((chunk) => {
+      const fact = memory.facts[chunk.index];
+      return fact ? `- ${fact.title}: ${fact.body}` : '';
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+function normalizedMatchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export async function findApprovedMemoryAnswer(query: string): Promise<ProjectMemoryFact | null> {
+  const normalizedQuery = normalizedMatchText(query);
+  if (!normalizedQuery) return null;
+  const memory = await loadProjectMemory();
+  const matches = memory.facts.flatMap((fact) => {
+    if (!fact.directAnswer || !fact.matchPhrases?.length) return [];
+    const matchingPhrase = fact.matchPhrases
+      .map(normalizedMatchText)
+      .filter((phrase) => phrase.length >= 4 && ` ${normalizedQuery} `.includes(` ${phrase} `))
+      .sort((left, right) => right.length - left.length)[0];
+    return matchingPhrase ? [{ fact, length: matchingPhrase.length }] : [];
+  });
+  matches.sort((left, right) => right.length - left.length);
+  return matches[0]?.fact || null;
 }
 
 export async function projectMemoryStatus(): Promise<{ available: boolean; facts: number; updatedAt: string }> {

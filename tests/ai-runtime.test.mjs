@@ -24,6 +24,12 @@ function withGeminiEnv(values, run) {
     'GEMINI_REQUEST_TIMEOUT_MS',
     'GEMINI_TOTAL_TIMEOUT_MS',
     'GEMINI_COOLDOWN_MS',
+    'TOMAS_CLAUDE_FALLBACK_API_KEY',
+    'TOMAS_CLAUDE_FALLBACK_OWNER_ID',
+    'TOMAS_CLAUDE_FALLBACK_EMAIL',
+    'TOMAS_CLAUDE_FALLBACK_MODEL',
+    'CLAUDE_FALLBACK_TIMEOUT_MS',
+    'ANTHROPIC_API_BASE_URL',
   ]);
   const previous = Object.fromEntries([...keys].map((key) => [key, process.env[key]]));
   const previousFetch = globalThis.fetch;
@@ -147,6 +153,118 @@ test('Gemini quota errors do not fall back to a paid provider', async () => {
       /no paid fallback was used/i,
     );
     assert.equal(calls, 1);
+  });
+});
+
+test('Tomas uses Claude only when Gemini is unavailable', async () => {
+  await withGeminiEnv({
+    GEMINI_API_BASE_URL: 'https://gemini.test/v1beta',
+    TOMAS_CLAUDE_FALLBACK_API_KEY: 'claude-secret',
+    TOMAS_CLAUDE_FALLBACK_OWNER_ID: 'tomas-owner',
+    TOMAS_CLAUDE_FALLBACK_EMAIL: 'tomas@example.test',
+    TOMAS_CLAUDE_FALLBACK_MODEL: 'claude-test-model',
+    ANTHROPIC_API_BASE_URL: 'https://anthropic.test/v1',
+  }, async () => {
+    const urls = [];
+    globalThis.fetch = async (url, init) => {
+      urls.push(url);
+      if (url.startsWith('https://gemini.test/')) {
+        return new Response(JSON.stringify({
+          error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'Quota exceeded' },
+        }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+      }
+      assert.equal(url, 'https://anthropic.test/v1/messages');
+      assert.equal(init.headers['x-api-key'], 'claude-secret');
+      assert.equal(init.headers['anthropic-version'], '2023-06-01');
+      const body = JSON.parse(init.body);
+      assert.equal(body.model, 'claude-test-model');
+      assert.equal(body.system, 'Policy');
+      assert.equal(body.messages[0].content, 'Message');
+      return new Response(JSON.stringify({
+        content: [{ type: 'text', text: '{"action":"human"}' }],
+        usage: { input_tokens: 31, output_tokens: 8 },
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    const result = await runWithProjectContext({
+      projectId: 'shared-project',
+      source: 'header',
+      ownerId: 'tomas-owner',
+      ownerEmail: 'tomas@example.test',
+      aiConfig: { provider: 'gemini', apiKey: 'free-key' },
+    }, () => generateAiText({ system: 'Policy', prompt: 'Message', maxOutputTokens: 50 }));
+
+    assert.deepEqual(urls, [
+      `https://gemini.test/v1beta/models/${DEFAULT_GEMINI_MODEL}:generateContent`,
+      'https://anthropic.test/v1/messages',
+    ]);
+    assert.equal(result.provider, 'anthropic');
+    assert.equal(result.model, 'claude-test-model');
+    assert.equal(result.inputTokens, 31);
+    assert.equal(result.outputTokens, 8);
+  });
+});
+
+test('Claude fallback stays disabled for another QM on the same project', async () => {
+  await withGeminiEnv({
+    GEMINI_API_BASE_URL: 'https://gemini.test/v1beta',
+    TOMAS_CLAUDE_FALLBACK_API_KEY: 'claude-secret',
+    TOMAS_CLAUDE_FALLBACK_OWNER_ID: 'tomas-owner',
+    TOMAS_CLAUDE_FALLBACK_EMAIL: 'tomas@example.test',
+    ANTHROPIC_API_BASE_URL: 'https://anthropic.test/v1',
+  }, async () => {
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls += 1;
+      return new Response(JSON.stringify({
+        error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'Quota exceeded' },
+      }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(
+      () => runWithProjectContext({
+        projectId: 'shared-project',
+        source: 'header',
+        ownerId: 'another-owner',
+        ownerEmail: 'another@example.test',
+        aiConfig: { provider: 'gemini', apiKey: 'free-key' },
+      }, () => generateAiText({ system: 'Policy', prompt: 'Message', maxOutputTokens: 50 })),
+      /no paid fallback was used/i,
+    );
+    assert.equal(calls, 1);
+  });
+});
+
+test('Tomas uses Claude after Gemini exhausts transient network attempts', async () => {
+  await withGeminiEnv({
+    GEMINI_API_BASE_URL: 'https://gemini.test/v1beta',
+    GEMINI_MAX_ATTEMPTS: '1',
+    GEMINI_RETRY_BASE_MS: '0',
+    GEMINI_COOLDOWN_MS: '0',
+    TOMAS_CLAUDE_FALLBACK_API_KEY: 'claude-secret',
+    TOMAS_CLAUDE_FALLBACK_OWNER_ID: 'tomas-owner',
+    ANTHROPIC_API_BASE_URL: 'https://anthropic.test/v1',
+  }, async () => {
+    let calls = 0;
+    globalThis.fetch = async (url) => {
+      calls += 1;
+      if (url.startsWith('https://gemini.test/')) throw new TypeError('Network unavailable');
+      return new Response(JSON.stringify({
+        content: [{ type: 'text', text: 'OK' }],
+        usage: { input_tokens: 4, output_tokens: 1 },
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    const result = await runWithProjectContext({
+      projectId: 'network-fallback-test',
+      source: 'header',
+      ownerId: 'tomas-owner',
+      aiConfig: { provider: 'gemini', apiKey: 'free-key' },
+    }, () => generateAiText({ system: 'Policy', prompt: 'Message', maxOutputTokens: 20 }));
+
+    assert.equal(calls, 2);
+    assert.equal(result.provider, 'anthropic');
+    assert.equal(result.text, 'OK');
   });
 });
 

@@ -612,6 +612,8 @@ export interface ProjectMemoryFact {
   title: string;
   body: string;
   source?: string;
+  directAnswer?: boolean;
+  matchPhrases?: string[];
 }
 
 export interface ProjectMemory {

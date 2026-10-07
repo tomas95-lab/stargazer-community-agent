@@ -9,6 +9,8 @@ function emptyFact(): ProjectMemoryFact {
     title: '',
     body: '',
     source: '',
+    directAnswer: false,
+    matchPhrases: [],
   };
 }
 
@@ -77,6 +79,8 @@ export default function ProjectMemoryPage() {
             title: fact.title.trim(),
             body: fact.body.trim(),
             source: fact.source?.trim(),
+            directAnswer: fact.directAnswer === true,
+            matchPhrases: (fact.matchPhrases || []).map((phrase) => phrase.trim()).filter(Boolean),
           }))
           .filter((fact) => fact.title && fact.body),
       };
@@ -122,7 +126,7 @@ export default function ProjectMemoryPage() {
         ) : memory?.facts.length ? (
           <div className="divide-y divide-border">
             {memory.facts.map((fact, index) => (
-              <div key={`${fact.id}-${index}`} className="grid gap-4 p-5 xl:grid-cols-[240px_1fr_auto]">
+              <div key={`${fact.id}-${index}`} className="grid gap-4 p-5 xl:grid-cols-[260px_1fr_auto]">
                 <div className="space-y-3">
                   <div>
                     <label className="sg-label mb-1 block">Title</label>
@@ -140,6 +144,32 @@ export default function ProjectMemoryPage() {
                       className="sg-input px-3 py-2 text-sm"
                     />
                   </div>
+                  <label className="flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={fact.directAnswer === true}
+                      onChange={(event) => updateFact(index, { directAnswer: event.target.checked })}
+                      className="mt-0.5 size-4 rounded border-input"
+                    />
+                    <span>
+                      <span className="block font-medium">Approved direct answer</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">Matching questions use this answer without Gemini.</span>
+                    </span>
+                  </label>
+                  {fact.directAnswer ? (
+                    <div>
+                      <label className="sg-label mb-1 block">Match phrases</label>
+                      <input
+                        value={(fact.matchPhrases || []).join(', ')}
+                        onChange={(event) => updateFact(index, { matchPhrases: event.target.value.split(',').map((phrase) => phrase.trim()).filter(Boolean) })}
+                        placeholder="where is the guide, guideline link"
+                        className="sg-input px-3 py-2 text-sm"
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Comma-separated phrases. Longer matches take priority. The memory text is sent exactly as written, so keep it in English.
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
                 <div>
                   <label className="sg-label mb-1 block">Memory</label>

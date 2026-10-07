@@ -56,3 +56,17 @@ test('guideline retrieval prioritizes the matching channel and keeps global fall
   assert.equal(status.available, true);
   assert.equal(status.channelGuidelines, 2);
 });
+
+test('guideline retrieval maps common Spanish project terms without an extra AI call', async () => {
+  const context = {
+    projectId: 'spanish-guideline-query-test',
+    projectName: 'Spanish query test',
+    source: 'header',
+    projectGuidelines: '### Rubric rules\n\nEvery rubric criterion must be atomic and self-contained.',
+  };
+  const snippets = await runWithProjectContext(context, () => (
+    findGuidelineSnippetsForChannel('Como escribo un criterio de rubrica atomico?', '', 2)
+  ));
+
+  assert.match(snippets.join('\n'), /atomic and self-contained/);
+});
