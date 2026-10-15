@@ -43,6 +43,16 @@ test('account diagnostics recognize EQ and account access questions in English a
   for (const message of ['Estoy EQ', 'I am throttled', 'No tengo tareas', 'My account is suspended', 'I am not eligible', 'deshabilitado por quality']) assert.equal(isAccountStatusQuestion(message), true, message);
   assert.equal(isAccountStatusQuestion('Thank you for the webinar!'), false);
 });
+
+test('project availability questions activate diagnostics without an individual EQ claim', () => {
+  for (const message of ['el proyecto tiene tareas?', 'El proyecto tiene tareas disponibles?',
+    'Hay tareas en el proyecto?', 'Quedan tareas para el proyecto?', 'El proyecto esta EQ?',
+    'Does the project have tasks?', 'Does the project have any work?', 'Is the project empty?',
+    'Are there tasks available in the project?']) assert.equal(isAccountStatusQuestion(message), true, message);
+  for (const message of ['Where are the project guidelines?', 'Thanks for reviewing my tasks!']) {
+    assert.equal(isAccountStatusQuestion(message), false, message);
+  }
+});
 test('username inference never becomes a confirmed identity without one exact match', () => {
   const email = 'latam.coder499@remotasks.com+outlier';
   assert.equal(inferredContributorEmail('latam.coder499'), email);

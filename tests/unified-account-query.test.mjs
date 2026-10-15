@@ -137,3 +137,34 @@ test('direct onboarding and course evidence replace the unrelated qualification 
   assert.match(result.reason,/Onboarding completo/);
   assert.doesNotMatch(result.reason,/qualified/);
 });
+
+test('query-supported questions can resolve independently of the account diagnosis', async t => {
+  const guidelines=require('../dist/project-guidelines.js');
+  t.mock.method(guidelines,'findProjectGuidelineSnippets',async()=>[]);
+  t.mock.method(guidelines,'projectGuidelineAiBrief',async()=>'');
+  t.mock.method(require('../dist/project-memory.js'),'relevantProjectMemoryText',async()=>'');
+  t.mock.method(require('../dist/usage-guardrails.js'),'assertAiUsageAllowed',async()=>undefined);
+  t.mock.method(require('../dist/usage-guardrails.js'),'recordAiUsage',async()=>undefined);
+  const examples=[
+    {message:'Ya termine mi formacion?',row:{onboarding_completed:true,courses_completed:3},
+      reply:'Your project onboarding is complete and all three recorded courses are completed.',supported:true},
+    {message:'el proyecto tiene tareas?',row:{project_has_tasks:true,disabled_tag:true},
+      reply:'Yes, the project currently has tasks. That does not confirm access for your account.',supported:true},
+    {message:'el proyecto tiene tareas?',row:{project_has_tasks:false},
+      reply:'The project is currently EQ.',supported:true},
+    {message:'How is my performance?',row:{overall_qms:4.25,total_graded:4},
+      reply:'Your overall average score is 4.25 across four graded tasks.',supported:true},
+    {message:'When will work return?',row:{project_has_tasks:false,diagnosis:'project_empty'},
+      reply:'The project is currently EQ, but I cannot confirm when more work will arrive.',supported:false},
+  ];
+  for(const example of examples) {
+    t.mock.method(require('../dist/ai-runtime.js'),'generateAiText',async request=>{
+      assert.equal(JSON.parse(request.prompt).message,example.message);
+      assert.match(request.system,/not just the diagnosis label/);
+      return{model:'gemini-test',text:JSON.stringify({reply:example.reply,qm_reason:'Evidencia revisada.',answer_supported:example.supported})};
+    });
+    const result=await unifiedAccountDraft({diagnosis:'unresolved',...example.row},'Money Heist',example.message);
+    assert.equal(result.reply,example.reply);
+    assert.equal(result.diagnosticResolved,example.supported);
+  }
+});

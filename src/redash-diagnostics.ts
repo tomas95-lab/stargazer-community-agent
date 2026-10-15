@@ -6,7 +6,8 @@ import { REDASH_OWNER_ID, redashId, redashRequest, normalizeRedashResult, Redash
 import { DIAGNOSTIC_COPY, sealDiagnosticDraft } from './diagnostic-disclosure';
 import { CONTRIBUTOR_LOOKUPS, lookupEmails } from './contributor-lookups';
 import { MONEY_HEIST_TAG_RULES, projectTagPolicy } from './project-tag-policy';
-import { unifiedAccountDraft } from './unified-account-draft';
+import { unifiedAccountDraft, isProjectAvailabilityQuestion } from './unified-account-draft';
+import { shouldUseDiagnosticQuery } from './diagnostic-routing';
 
 export interface DiagnosticQuery {
   id: string;
@@ -72,6 +73,7 @@ WHERE u._id = '{{contributor_id}}'
 QUALIFY ROW_NUMBER() OVER (ORDER BY pe.UPDATED_AT DESC NULLS LAST) = 1`;
 
 export function isAccountStatusQuestion(message: string): boolean {
+  if (isProjectAvailabilityQuestion(message)) return true;
   return /\b(?:eq|empty\s+queue|throttl\w*|no\s+(?:tasks?|work)|out\s+of\s+tasks?|sin\s+tareas?|no\s+(?:tengo|hay)\s+tareas?|deshabilitad\w*|disabled|ineligible|not\s+eligible|task\s+limit|account\s+(?:is\s+)?(?:status|blocked|suspended)|cuenta\s+(?:esta\s+)?(?:bloqueada|suspendida)|(?:quality|review)\s+score|my\s+(?:score|qms|pdr)|demot\w*|reallocat\w*|another\s+chance|one\s+more\s+chance|otra\s+oportunidad|reactivat\w*|reactiv\w*|mi\s+(?:qms|pdr|puntaje|calificaci[oó]n))\b/i.test(message);
 }
 
@@ -249,12 +251,14 @@ async function consumeDiagnosticResult(task: DiagnosticTask, result: RedashTable
 
 export async function startAccountDiagnostic(username: string, message: string, preview = false, conversation = ''): Promise<DiagnosticProgress | null> {
   const context = getProjectContext();
-  if (!context.redashDiagnosticsAllowed || context.demoMode || (!preview && !isAccountStatusQuestion(message)) || !runtimeDbConfigured()) return null;
+  if (!context.redashDiagnosticsAllowed || context.demoMode || !runtimeDbConfigured()) return null;
   try {
     const { key, queries } = await diagnosticConnection();
     const unified = queries.find(query => query.diagnosticVersion === 3 && query.diagnosticRole === 'unified'
       && query.diagnosticProjectId === context.projectId && (preview || query.diagnosticEnabled));
     if (unified) {
+      if (!preview && !isAccountStatusQuestion(message)
+        && !await shouldUseDiagnosticQuery(message, conversation)) return null;
       const policy = projectTagPolicy(context.projectId);
       if (!policy || !/^[a-f\d]{24}$/i.test(context.projectId)) throw new Error('Unified lifecycle policy is not configured for this project.');
       const pending = await readPendingTask(username, unified.queryId);
@@ -270,6 +274,7 @@ export async function startAccountDiagnostic(username: string, message: string, 
       await savePendingTask(task);
       return { task };
     }
+    if (!preview && !isAccountStatusQuestion(message)) return null;
     const configured = queries.filter(query => query.diagnosticVersion === 2 && (
       preview ? (!query.diagnosticProjectId || query.diagnosticProjectId === context.projectId)
         : query.diagnosticProjectId === context.projectId && query.diagnosticEnabled));

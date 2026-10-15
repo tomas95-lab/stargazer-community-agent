@@ -48,6 +48,41 @@ test('pending Redash job is encrypted and resumed on retries, without restarting
   assert.equal(starts,2);
 });
 
+test('semantic selection can execute the bound query without any recognized status phrase',async t=>{
+  setup(t);
+  let selections=0;
+  t.mock.method(require('../dist/diagnostic-routing.js'),'shouldUseDiagnosticQuery',async(message,conversation)=>{
+    selections++;
+    assert.equal(message,'Ya termine lo que me asignaron para empezar?');
+    assert.equal(conversation,'Previous: course onboarding.');
+    return true;
+  });
+  t.mock.method(require('../dist/redash.js'),'redashRequest',async(_key,path,body)=>{
+    assert.equal(path,'queries/33/results');
+    assert.equal(body.parameters.project_id,project);
+    assert.equal(body.parameters.email_primary,'latam.coder1669@remotasks.com+outlier');
+    assert.equal(Object.hasOwn(body,'query'),false);
+    return{job:{id:'semantic-job'}};
+  });
+  const result=await runWithProjectContext(context,()=>startAccountDiagnostic('latam.coder1669',
+    'Ya termine lo que me asignaron para empezar?',false,'Previous: course onboarding.'));
+  assert.equal(result.task.jobId,'semantic-job');
+  assert.equal(selections,1);
+});
+
+test('negative selection and unauthorized contexts cannot execute Redash queries',async t=>{
+  setup(t);
+  let selections=0;
+  t.mock.method(require('../dist/diagnostic-routing.js'),'shouldUseDiagnosticQuery',async()=>{selections++;return false;});
+  t.mock.method(require('../dist/redash.js'),'redashRequest',async()=>{throw new Error('Query must not execute');});
+  assert.equal(await runWithProjectContext(context,()=>startAccountDiagnostic('latam.coder1669','Thank you!')),null);
+  assert.equal(selections,1);
+  for(const overrides of [{redashDiagnosticsAllowed:false},{demoMode:true}]) {
+    assert.equal(await runWithProjectContext({...context,...overrides},()=>startAccountDiagnostic('latam.coder1669','Can I continue?')),null);
+  }
+  assert.equal(selections,1);
+});
+
 test('failed jobs are cleared and can start fresh; unauthorized callers cannot access pending state',async t=>{
   const store=setup(t);
   let starts=0;
