@@ -34,7 +34,7 @@ test('confirmed individual non-EQ status produces refresh draft without assuming
   const result = safeDiagnosticDraft(healthy, id, project);
   assert.equal(result.reply, "I don't see any EQ restriction or active throttle on your account. Please refresh the page and try again.");
   assert.equal(result.draftOnly, true);
-  for (const override of [{ individual_eq: null }, { individual_eq: true }, { qualified: null }, { throttled: null }, { throttled: true }, { access_disabled: true }, { tag_access_review: true }, { project_empty: true }]) {
+  for (const override of [{ individual_eq: null }, { individual_eq: true }, { throttled: null }, { throttled: true }, { access_disabled: true }, { tag_access_review: true }, { project_empty: true }]) {
     assert.doesNotMatch(safeDiagnosticDraft({ ...healthy, ...override }, id, project).reply, /Please refresh/);
   }
 });

@@ -15,7 +15,9 @@ const context = { projectId: project, source: 'header', projectName: 'Money Heis
 test('unified SQL scopes identity, project and role; computes both metrics and buckets in one SELECT', () => {
   const params = [...new Set([...UNIFIED_DIAGNOSTIC_SQL.matchAll(/\{\{(\w+)\}\}/g)].map(match => match[1]))].sort();
   assert.deepEqual(params, [...UNIFIED_DIAGNOSTIC_PARAMETERS].sort());
-  assert.doesNotMatch(UNIFIED_DIAGNOSTIC_SQL, /TASKS_REMAINING|\b(?:UPDATE|DELETE|INSERT|DROP)\s/i);
+  assert.doesNotMatch(UNIFIED_DIAGNOSTIC_SQL, /TASKS_REMAINING|IS_USER_QUALIFIED|"qualified"|\b(?:UPDATE|DELETE|INSERT|DROP)\s/i);
+  assert.match(UNIFIED_DIAGNOSTIC_SQL, /PUBLIC\.PROJECTONBOARDINGSTATES/);
+  assert.match(UNIFIED_DIAGNOSTIC_SQL, /PUBLIC\.COURSEPROGRESSV2/);
   for (const field of ['overall_qms', 'recent_qms', 'recent_pdr', 'current_bucket', 'expected_bucket', 'tier_matches_performance', 'task_limit', 'window_hours', 'throttle_expires_at', 'project_has_tasks', 'role_has_tasks']) {
     assert.ok(UNIFIED_DIAGNOSTIC_SQL.includes(`"${field}"`), field);
   }
@@ -107,4 +109,31 @@ test('v3 uses one project-bound query, polls once and never invokes legacy ident
   assert.equal(complete.draft.reply, 'Your average score is 2.25.');
   assert.deepEqual(paths,['queries/33/results','jobs/job-test','query_results/44']);
   assert.equal(await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder779','I am EQ')),null);
+});
+
+test('direct onboarding and course evidence replace the unrelated qualification flag in model input', async t => {
+  const guidelines = require('../dist/project-guidelines.js');
+  t.mock.method(guidelines, 'findProjectGuidelineSnippets', async () => []);
+  t.mock.method(guidelines, 'projectGuidelineAiBrief', async () => '');
+  t.mock.method(require('../dist/project-memory.js'), 'relevantProjectMemoryText', async () => '');
+  const usage = require('../dist/usage-guardrails.js');
+  t.mock.method(usage, 'assertAiUsageAllowed', async () => undefined);
+  t.mock.method(usage, 'recordAiUsage', async () => undefined);
+  t.mock.method(require('../dist/ai-runtime.js'), 'generateAiText', async request => {
+    const evidence=JSON.parse(request.prompt).evidence;
+    assert.equal(Object.hasOwn(evidence,'qualified'),false);
+    assert.equal(evidence.onboarding_completed,true);
+    assert.equal(evidence.courses_completed,3);
+    assert.deepEqual(evidence.course_progress,[{status:'completed',completed:true,assigned:true,skipped:false,updated_at:null}]);
+    assert.doesNotMatch(request.system,/qualification discrepancy/);
+    return {model:'gemini-test',text:JSON.stringify({reply:'I do not see an EQ restriction or active throttle. Please refresh the page.',
+      qm_reason:'Onboarding completo, cursos completados y sin restricciones activas.'})};
+  });
+  const result = await unifiedAccountDraft({diagnosis:'no_restriction_found',qualified:false,
+    onboarding_completed:true,courses_completed:3,course_progress:'[{"status":"completed","completed":true,"assigned":true,"skipped":false}]',individual_eq:false,
+    active_throttle:false,permission_found:true,current_bucket:'reviewer_new',expected_bucket:'reviewer_new'},'Money Heist','I am EQ');
+  assert.equal(result.action,'human');
+  assert.equal(result.diagnosticResolved,true);
+  assert.match(result.reason,/Onboarding completo/);
+  assert.doesNotMatch(result.reason,/qualified/);
 });

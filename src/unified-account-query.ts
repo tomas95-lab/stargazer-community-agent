@@ -57,10 +57,26 @@ export const UNIFIED_DIAGNOSTIC_SQL = `WITH identity_matches AS (
   QUALIFY ROW_NUMBER() OVER (ORDER BY qms_updated_at DESC, _id)
     <= IFF(COALESCE((SELECT review_level FROM permission), -1) >= 0, 2, 3)
 ), queue_snapshot AS (
-  SELECT up.empty_queue_status, up.is_user_qualified, up.last_movement
+  SELECT up.empty_queue_status, up.updated_at
   FROM PUBLIC.USERPROJECTPRIORITIES up JOIN person u ON up.user_id = u._id
   WHERE up.project_id = '{{project_id}}'
-  QUALIFY ROW_NUMBER() OVER (ORDER BY up.last_movement DESC NULLS LAST) = 1
+    AND COALESCE(up.__deleted, FALSE) = FALSE
+    AND TRY_TO_NUMBER(up.review_level) = COALESCE((SELECT review_level FROM permission), -1)
+  QUALIFY ROW_NUMBER() OVER (ORDER BY up.updated_at DESC NULLS LAST, up._id) = 1
+), onboarding AS (
+  SELECT o.has_completed_onboarding, o.current_onboarding_status, o.user_updated_at
+  FROM PUBLIC.PROJECTONBOARDINGSTATES o JOIN person u ON o.user_id = u._id
+  WHERE o.project_id = '{{project_id}}' AND COALESCE(o.__deleted, FALSE) = FALSE
+    AND (o.review_level IS NULL OR TRY_TO_NUMBER(o.review_level) = COALESCE((SELECT review_level FROM permission), -1))
+  QUALIFY ROW_NUMBER() OVER (ORDER BY
+    IFF(TRY_TO_NUMBER(o.review_level) = COALESCE((SELECT review_level FROM permission), -1), 0, 1),
+    o.user_updated_at DESC NULLS LAST, o._id) = 1
+), courses AS (
+  SELECT c.course, c.status, COALESCE(c.completed, c.completed_at IS NOT NULL) AS completed,
+    c.skipped, c.assigned, c.updated_at
+  FROM PUBLIC.COURSEPROGRESSV2 c JOIN person u ON c.worker = u._id
+  WHERE c.project_id = '{{project_id}}' AND COALESCE(c.__deleted, FALSE) = FALSE
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY c.course ORDER BY c.updated_at DESC NULLS LAST, c._id) = 1
 ), throttle AS (
   SELECT t.start_time, t.expiration_time
   FROM VIEW.THROTTLED_WORKERS t JOIN person u ON t.user_id = u._id
@@ -95,8 +111,16 @@ export const UNIFIED_DIAGNOSTIC_SQL = `WITH identity_matches AS (
     tags.intro_failed AS "intro_failed", tags.intro_completed AS "intro_completed",
     tags.qa_passed AS "qa_passed", exclusions.excluded AS "excluded",
     (SELECT empty_queue_status FROM queue_snapshot) AS "individual_eq",
-    (SELECT is_user_qualified FROM queue_snapshot) AS "qualified",
-    (SELECT last_movement FROM queue_snapshot) AS "queue_observed_at",
+    (SELECT updated_at FROM queue_snapshot) AS "queue_observed_at",
+    (SELECT has_completed_onboarding FROM onboarding) AS "onboarding_completed",
+    (SELECT current_onboarding_status FROM onboarding) AS "onboarding_status",
+    (SELECT user_updated_at FROM onboarding) AS "onboarding_updated_at",
+    (SELECT COUNT(*) FROM courses) AS "course_records",
+    (SELECT COUNT_IF(completed = TRUE) FROM courses) AS "courses_completed",
+    (SELECT COUNT_IF(assigned = TRUE AND completed = FALSE AND COALESCE(skipped, FALSE) = FALSE) FROM courses) AS "assigned_courses_incomplete",
+    (SELECT COUNT_IF(LOWER(status) IN ('failed', 'fail')) FROM courses) AS "courses_failed",
+    (SELECT ARRAY_AGG(OBJECT_CONSTRUCT_KEEP_NULL('status', status, 'completed', completed,
+      'assigned', assigned, 'skipped', skipped, 'updated_at', updated_at)) FROM courses) AS "course_progress",
     (SELECT COUNT(*) FROM throttle) > 0 AS "active_throttle",
     (SELECT MIN(start_time) FROM throttle) AS "throttle_started_at",
     (SELECT MAX(expiration_time) FROM throttle) AS "throttle_expires_at",
@@ -167,8 +191,12 @@ SELECT *,
     WHEN "excluded" THEN 'project_excluded'
     WHEN "demoted_tag" THEN 'reviewer_demoted'
     WHEN "active_throttle" THEN 'active_throttle'
+    WHEN "onboarding_completed" = FALSE THEN 'onboarding_incomplete'
+    WHEN "intro_failed" AND NOT "intro_passed" THEN 'course_failed'
+    WHEN "onboarding_completed" IS DISTINCT FROM TRUE AND "courses_failed" > 0 THEN 'course_failed'
+    WHEN "onboarding_completed" IS DISTINCT FROM TRUE AND "assigned_courses_incomplete" > 0 THEN 'courses_incomplete'
     WHEN NOT "project_has_tasks" THEN 'project_empty'
     WHEN NOT "role_has_tasks" THEN 'role_queue_empty'
-    WHEN "individual_eq" = FALSE AND "qualified" = TRUE AND "permission_found" THEN 'no_restriction_found'
+    WHEN "individual_eq" = FALSE AND "permission_found" AND "disabled" = FALSE AND "onboarding_completed" = TRUE THEN 'no_restriction_found'
     ELSE 'unresolved' END AS "diagnosis"
 FROM classified`;

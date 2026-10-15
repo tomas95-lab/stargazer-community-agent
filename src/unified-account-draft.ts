@@ -7,7 +7,9 @@ import { relevantProjectMemoryText } from './project-memory';
 const FIELDS = [
   'observed_at', 'permission_found', 'disabled', 'review_level', 'review_window',
   'disabled_tag', 'demoted_tag', 'intro_passed', 'intro_failed', 'intro_completed', 'qa_passed', 'excluded',
-  'individual_eq', 'qualified', 'queue_observed_at', 'active_throttle', 'throttle_started_at', 'throttle_expires_at',
+  'individual_eq', 'queue_observed_at', 'onboarding_completed', 'onboarding_status', 'onboarding_updated_at',
+  'course_records', 'courses_completed', 'assigned_courses_incomplete', 'courses_failed',
+  'active_throttle', 'throttle_started_at', 'throttle_expires_at',
   'total_attempts', 'last_submission_at', 'submissions_last_24h', 'submissions_last_72h', 'total_graded',
   'overall_qms', 'overall_pdr', 'recent_graded', 'recent_qms', 'recent_defects', 'recent_pdr',
   'recent_has_four_or_five', 'five_score', 'four_score', 'three_score', 'two_score', 'one_score',
@@ -19,6 +21,14 @@ export function unifiedModelEvidence(row: Record<string, unknown>): Record<strin
   const evidence = Object.fromEntries(FIELDS.map(field => [field, row[field] ?? null]));
   const scores = typeof row.recent_scores === 'string' ? JSON.parse(row.recent_scores) : row.recent_scores;
   evidence.recent_scores = Array.isArray(scores) ? scores.filter(score => typeof score === 'number' && score >= 1 && score <= 5).slice(0, 3) : [];
+  const courses = typeof row.course_progress === 'string' ? JSON.parse(row.course_progress) : row.course_progress;
+  evidence.course_progress = Array.isArray(courses) ? courses.slice(0, 30).map(course => ({
+    status: typeof course?.status === 'string' ? course.status : null,
+    completed: typeof course?.completed === 'boolean' ? course.completed : null,
+    assigned: typeof course?.assigned === 'boolean' ? course.assigned : null,
+    skipped: typeof course?.skipped === 'boolean' ? course.skipped : null,
+    updated_at: typeof course?.updated_at === 'string' ? course.updated_at : null,
+  })) : [];
   return evidence;
 }
 
@@ -34,6 +44,8 @@ export const UNIFIED_ACCOUNT_SYSTEM = [
   'Report any difference between actual tags, permissions and expected bucket in the QM explanation. A current disabled tag still has its manager-confirmed meaning even if permission disabled is false.',
   'No project tasks means project EQ. Tasks on a different review layer do not guarantee work for this role. Do not disclose exact project task inventory.',
   'If individual EQ is false and there is no active restriction, say no EQ restriction or active throttle is seen and ask to refresh.',
+  'Use direct project onboarding, latest course progress, course pass/fail tags, permissions and active restrictions. Course completion does not itself prove a passing grade; absent pass tags are not failures. Historical incomplete course records do not override a completed project onboarding unless a current failure is confirmed. Do not invent a missing required course from a raw count.',
+  'For onboarding_incomplete or courses_incomplete, explain which onboarding/course evidence remains incomplete without claiming a quality removal. For course_failed, explain only the confirmed failure; do not invent a retake or reinstatement policy.',
   'Be warm, clear, direct and concise. For follow-ups answer the new request without another greeting or repeating score or diagnosis unless asked.',
   'Acknowledge feedback in the contributor voice correctly: they understood it, not you. Do not promise reinstatement, invent appeals or escalations, or assert permanent removal.',
   'Do not invent missing facts or quote query mechanics to the contributor. No signature or em dash.',
@@ -71,7 +83,8 @@ export async function unifiedAccountDraft(row: Record<string, unknown>, projectN
   const reason = typeof parsed.qm_reason === 'string' ? parsed.qm_reason.trim() : '';
   if (!reply || !reason || reply.length > 4000 || reason.length > 4000) throw new Error('Invalid model diagnostic draft.');
   const confirmedCauses = new Set(['quality_reallocated', 'access_disabled', 'project_excluded',
-    'reviewer_demoted', 'active_throttle', 'project_empty', 'role_queue_empty', 'no_restriction_found']);
+    'reviewer_demoted', 'active_throttle', 'onboarding_incomplete', 'courses_incomplete', 'course_failed',
+    'project_empty', 'role_queue_empty', 'no_restriction_found']);
   return sealDiagnosticDraft({ reply, reason, diagnosticVersion: 3,
     diagnosticResolved: confirmedCauses.has(String(row.diagnosis)) });
 }

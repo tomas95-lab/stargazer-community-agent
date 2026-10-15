@@ -4,7 +4,8 @@ import { REDASH_OWNER_ID, redashRequest, normalizeRedashResult } from '../src/re
 import { UNIFIED_DIAGNOSTIC_SQL } from '../src/unified-account-query';
 
 async function main() {
-  const cases = [
+  const cases: { id: string; window: number; scores: number[]; expected: string | null;
+    overrides?: Record<string, unknown>; diagnosis?: string }[] = [
     { id: 'new', window: 3, scores: [3, 4], expected: 'attempter_new' },
     { id: 'disable', window: 3, scores: [2, 2, 3], expected: 'disabled' },
     { id: 'untrusted', window: 3, scores: [1, 1, 4], expected: 'attempter_untrusted' },
@@ -17,6 +18,14 @@ async function main() {
     { id: 'reviewer_untrusted', window: 2, scores: [3, 4], expected: 'reviewer_untrusted' },
     { id: 'reviewer_trusted', window: 2, scores: [4, 4], expected: 'reviewer_trusted' },
     { id: 'uncovered', window: 3, scores: [2, 2, 5], expected: null },
+    { id: 'onboarding_pending', window: 2, scores: [4, 4], expected: 'reviewer_trusted',
+      overrides: { onboarding_completed: false }, diagnosis: 'onboarding_incomplete' },
+    { id: 'course_failed', window: 2, scores: [4, 4], expected: 'reviewer_trusted',
+      overrides: { onboarding_completed: null, courses_failed: 1 }, diagnosis: 'course_failed' },
+    { id: 'course_pending', window: 2, scores: [4, 4], expected: 'reviewer_trusted',
+      overrides: { onboarding_completed: null, assigned_courses_incomplete: 1 }, diagnosis: 'courses_incomplete' },
+    { id: 'completed_onboarding_historical_course', window: 2, scores: [4, 4], expected: 'reviewer_trusted',
+      overrides: { assigned_courses_incomplete: 1 }, diagnosis: 'no_restriction_found' },
   ];
   const literal = (value: unknown) => value === null ? 'NULL' : typeof value === 'string' ? `'${value}'` : String(value);
   const rows = cases.map(item => {
@@ -28,7 +37,9 @@ async function main() {
       recent_defects: defects, recent_pdr: defects / n, recent_has_four_or_five: item.scores.some(score => score >= 4),
       current_bucket: item.expected, multiple_bucket_tags: false, disabled_tag: false, disabled: false,
       excluded: false, demoted_tag: false, active_throttle: false, project_has_tasks: true,
-      role_has_tasks: true, individual_eq: false, qualified: true,
+      role_has_tasks: true, individual_eq: false, onboarding_completed: true, intro_failed: false,
+      intro_passed: true, courses_failed: 0, assigned_courses_incomplete: 0,
+      ...item.overrides,
     };
     return `SELECT ${Object.entries(fields).map(([key, value]) => `${literal(value)} AS "${key}"`).join(',')}`;
   });
@@ -53,6 +64,7 @@ async function main() {
   for (const item of cases) {
     const row = actual.find(row => row.fixture === item.id);
     if (!row || row.expected_bucket !== item.expected) throw new Error(`Bucket mismatch: ${item.id}`);
+    if (item.diagnosis && row.diagnosis !== item.diagnosis) throw new Error(`Diagnosis mismatch: ${item.id}`);
   }
   console.log(JSON.stringify({ syntheticCasesPassed: cases.length, realContributorQueries: 0, aiCalls: 0, messagesSent: 0 }));
 }

@@ -45,7 +45,6 @@ SELECT
   COALESCE(tags.unknown_tag, FALSE) AS "tag_unknown",
   (pe._id IS NOT NULL) AS "permission_verified",
   up.EMPTY_QUEUE_STATUS AS "individual_eq",
-  up.IS_USER_QUALIFIED AS "qualified",
   (TRY_TO_NUMBER(p.TASKS_REMAINING::STRING) = 0) AS "project_empty",
   (TRY_TO_NUMBER(p.TASKS_REMAINING::STRING) > 0) AS "project_has_tasks",
   COALESCE(pe.DISABLED, FALSE) AS "access_disabled",
@@ -59,7 +58,7 @@ FROM PUBLIC.USERS u
 JOIN PUBLIC.PROJECTS p ON p._id = '{{project_id}}'
 CROSS JOIN tag_signals tags
 LEFT JOIN (
-  SELECT USER_ID, PROJECT_ID, EMPTY_QUEUE_STATUS, IS_USER_QUALIFIED
+  SELECT USER_ID, PROJECT_ID, EMPTY_QUEUE_STATUS
   FROM PUBLIC.USERPROJECTPRIORITIES
   WHERE USER_ID = '{{contributor_id}}' AND PROJECT_ID = '{{project_id}}'
   QUALIFY ROW_NUMBER() OVER (ORDER BY LAST_MOVEMENT DESC NULLS LAST) = 1
@@ -112,7 +111,7 @@ export function safeDiagnosticDraft(row: Record<string, unknown>, contributorId:
   if (row.throttled === true) return draft(
     DIAGNOSTIC_COPY.limited,
     'An unexpired project-specific throttle was found. Limits and internal details are withheld.');
-  if (row.individual_eq === false && row.qualified === true
+  if (row.individual_eq === false
     && row.access_disabled === false && row.quality_disabled === false
     && row.tag_access_review === false && row.throttled === false
     && row.project_empty !== true) {

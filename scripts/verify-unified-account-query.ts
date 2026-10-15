@@ -24,7 +24,7 @@ async function main() {
     if (!value || !/^[a-zA-Z0-9_.@+\-]+$/.test(value)) throw new Error('Invalid query parameter.');
     return value;
   });
-  let response = await redashRequest(key, 'query_results', { query: sql, data_source_id: 30, max_age: 0 });
+  let response = await redashRequest(key, 'query_results', { query: sql, data_source_id: 30, max_age: 60 });
   const jobId = response.job?.id;
   const deadline = Date.now() + 120000;
   while (!response.query_result && jobId && Date.now() < deadline) {
@@ -39,9 +39,11 @@ async function main() {
   const rows = normalizeRedashResult(response.query_result).rows;
   if (rows.length !== 1 || rows[0].identity_matches !== 1 || rows[0].project_id !== projectId) throw new Error('Identity or project not verified.');
   console.log(JSON.stringify({ project: project.project_name, evidence: unifiedModelEvidence(rows[0]), externalAiCalls: 0, messagesSent: 0 }, null, 2));
-  if (!process.argv.includes('--register')) return;
+  const updateOnly = process.argv.includes('--update-sql');
+  if (!process.argv.includes('--register') && !updateOnly) return;
   const queries = [...(data.queries || [])];
   let query = queries.find(q => q.diagnosticRole === 'unified' && q.diagnosticProjectId === projectId);
+  if (updateOnly && !query) throw new Error('No unified query to update. No registry settings changed.');
   const definition = { query: UNIFIED_DIAGNOSTIC_SQL, options: {
     parameters: UNIFIED_DIAGNOSTIC_PARAMETERS.map(name => ({ name, title: name, type: 'text', value: '' })),
   } };
@@ -52,6 +54,12 @@ async function main() {
     query = { id: randomUUID(), name: 'Unified account diagnostic', queryId: created.id,
       diagnosticRole: 'unified', diagnosticProjectId: projectId, diagnosticVersion: 3, diagnosticEnabled: false };
     queries.push(query);
+  }
+  if (updateOnly) {
+    const stored = await redashRequest(key, `queries/${query.queryId}`);
+    if (stored.query.trim() !== UNIFIED_DIAGNOSTIC_SQL.trim()) throw new Error('Updated SQL verification failed.');
+    console.log(JSON.stringify({ updatedQuery: query.queryId, automationSettingsChanged: false }));
+    return;
   }
   for (const q of queries) if (q.diagnosticProjectId === projectId) q.diagnosticEnabled = false;
   const saved = await db.from('private_redash_connections').update({ queries, updated_at: new Date().toISOString() }).eq('owner_id', REDASH_OWNER_ID);
