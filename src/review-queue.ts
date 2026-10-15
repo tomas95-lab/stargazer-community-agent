@@ -205,6 +205,7 @@ function communityItems(entry: OperationLogEntry, detail: unknown): ReviewQueueI
 
   return decisions.flatMap((rawDecision, index) => {
     const decision = asRecord(rawDecision);
+    if (decision.diagnosticPending === true) return [];
     const action = text(decision.action);
     const hasError = Boolean(decision.error);
     const needsHuman = decision.needsHuman === true || action === 'human' || hasError;
@@ -293,6 +294,7 @@ function dmAutoReplyItems(entry: OperationLogEntry, detail: unknown): ReviewQueu
 
   return decisions.flatMap((rawDecision, index) => {
     const decision = asRecord(rawDecision);
+    if (decision.diagnosticPending === true) return [];
     const action = text(decision.action);
     const hasError = Boolean(decision.error);
     if (action !== 'human' && !hasError) return [];

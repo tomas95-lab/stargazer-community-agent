@@ -103,6 +103,7 @@ export interface DmReplyResult {
 }
 
 export interface DmDraftResult {
+  diagnosticPending?: boolean;
   draftOnly?: boolean;
   channelId: number;
   action: 'reply' | 'human' | 'ignore';
@@ -117,6 +118,7 @@ export interface DmDraftResult {
 }
 
 export interface DmAutoReplyDecision {
+  diagnosticPending?: boolean;
   draftOnly?: boolean;
   reply?: string;
   channelId: number;
@@ -691,8 +693,9 @@ async function evaluateDirectMessageThread(
       ? 'The AI suggested a reaction, but DM reactions are not supported by this workflow.'
       : deterministicDecision.reason,
     draftOnly: deterministicDecision.draftOnly,
+    diagnosticPending: deterministicDecision.diagnosticPending,
     reply: action === 'reply' || deterministicDecision.draftOnly ? deterministicDecision.reply : '',
-    needsHuman: action === 'human',
+    needsHuman: action === 'human' && !deterministicDecision.diagnosticPending,
     guidelineSnippets: deterministicDecision.guidelineSnippets,
     lastIncomingMessageId: lastIncoming.messageId,
     pendingIncomingMessages: pendingIncoming.length,
@@ -774,14 +777,15 @@ async function runDmAutoRepliesFromReview(
         posted = true;
         sentMessageId = sent.messageId;
         replied += 1;
-      } else if (decision.action === 'human') {
+      } else if (decision.action === 'human' && !decision.diagnosticPending) {
         needsHuman += 1;
-      } else {
+      } else if (!decision.diagnosticPending) {
         ignored += 1;
       }
 
       decisions.push({
         channelId,
+        diagnosticPending: decision.diagnosticPending,
         draftOnly: decision.draftOnly,
         reply: decision.draftOnly ? decision.reply : undefined,
         action: decision.action,
@@ -793,14 +797,14 @@ async function runDmAutoRepliesFromReview(
         messageId: sentMessageId,
       });
 
-      state.processed[key] = {
+      if (!decision.diagnosticPending) state.processed[key] = {
         at: new Date().toISOString(),
         action: decision.action,
         posted,
         channelId,
         lastIncomingMessageId: lastIncoming.messageId,
       };
-      stateChanged = true;
+      if (!decision.diagnosticPending) stateChanged = true;
     } catch (err) {
       decisions.push({
         channelId,

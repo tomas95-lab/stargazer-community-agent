@@ -74,6 +74,8 @@ test('Gemini receives both averages and history; usage is counted and model text
 });
 
 test('v3 uses one project-bound query, polls once and never invokes legacy identity/status queries', async t => {
+  t.mock.method(require('../dist/data-store.js'), 'readDataJSONOrDefault', async (_path, fallback) => fallback);
+  t.mock.method(require('../dist/data-store.js'), 'writeDataJSON', async () => {});
   const oldKey = process.env.PLATFORM_ENCRYPTION_KEY;
   process.env.PLATFORM_ENCRYPTION_KEY = 'test-unified-only';
   t.after(() => { if(oldKey === undefined) delete process.env.PLATFORM_ENCRYPTION_KEY; else process.env.PLATFORM_ENCRYPTION_KEY = oldKey; });

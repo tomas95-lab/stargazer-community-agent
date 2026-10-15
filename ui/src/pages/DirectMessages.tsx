@@ -100,7 +100,7 @@ function DmThread({
 
       {draftResult && draftResult.action !== 'reply' ? (
         <div className="sg-status-warning rounded-lg border p-3 text-sm">
-          <p className="font-medium">{draftResult.action === 'human' ? 'Needs human review' : 'No pending reply needed'}</p>
+          <p className="font-medium">{draftResult.diagnosticPending ? 'Diagnostic still running' : draftResult.action === 'human' ? 'Needs human review' : 'No pending reply needed'}</p>
           <p className="mt-1 text-xs">{draftResult.reason}</p>
         </div>
       ) : null}

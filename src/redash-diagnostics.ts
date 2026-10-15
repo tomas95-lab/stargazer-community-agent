@@ -1,4 +1,5 @@
-import { createDecipheriv, createHash } from 'crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
+import { readDataJSONOrDefault, writeDataJSON } from './data-store';
 import { runtimeDb, runtimeDbConfigured } from './runtime-db';
 import { getProjectContext } from './project-context';
 import { REDASH_OWNER_ID, redashId, redashRequest, normalizeRedashResult, RedashTableResult } from './redash';
@@ -81,6 +82,7 @@ export function inferredContributorEmail(username: string): string | null {
 }
 
 export interface DiagnosticDraft {
+  diagnosticPending?: boolean;
   diagnosticVersion?: 3;
   diagnosticResolved?: boolean;
   action: 'human';
@@ -166,6 +168,35 @@ export interface DiagnosticTask {
 }
 export interface DiagnosticProgress { task?: DiagnosticTask; draft?: DiagnosticDraft }
 
+function pendingPath(username: string, queryId: number): string {
+  const fingerprint = createHash('sha256').update(`${REDASH_OWNER_ID}:${getProjectContext().projectId}:${queryId}:${username.toLowerCase()}`).digest('hex');
+  return `output/diagnostic-jobs/${fingerprint}.json`;
+}
+
+async function savePendingTask(task: DiagnosticTask): Promise<void> {
+  const secret = process.env.PLATFORM_ENCRYPTION_KEY?.trim();
+  if (!secret) throw new Error('Diagnostic encryption unavailable.');
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', createHash('sha256').update(secret).digest(), iv);
+  const bytes = Buffer.concat([cipher.update(JSON.stringify(task), 'utf8'), cipher.final()]);
+  const ciphertext = `enc:v1:${iv.toString('base64url')}:${cipher.getAuthTag().toString('base64url')}:${bytes.toString('base64url')}`;
+  await writeDataJSON(pendingPath(task.username, task.statusQueryId), { ciphertext }, 'Preserve pending diagnostic job');
+}
+
+async function readPendingTask(username: string, queryId: number): Promise<DiagnosticTask | null> {
+  const saved = await readDataJSONOrDefault<{ ciphertext: string } | null>(pendingPath(username, queryId), null);
+  if (!saved) return null;
+  const task = JSON.parse(decryptKey(saved.ciphertext)) as DiagnosticTask;
+  return task.version === 3 && task.ownerId === REDASH_OWNER_ID && task.projectId === getProjectContext().projectId
+    && task.username.toLowerCase() === username.toLowerCase() && task.statusQueryId === queryId
+    && Number.isFinite(task.expires) && task.expires > Date.now() && task.jobId ? task : null;
+}
+
+export function diagnosticWaitMs(): number {
+  const configured = Number(process.env.REDASH_DIAGNOSTIC_WAIT_MS || 60000);
+  return Number.isFinite(configured) ? Math.min(120000, Math.max(1000, configured)) : 60000;
+}
+
 async function diagnosticConnection() {
   const { data, error } = await runtimeDb().from('private_redash_connections').select('key_ciphertext,queries').eq('owner_id', REDASH_OWNER_ID).maybeSingle();
   if (error || !data) throw new Error('Diagnostic connection unavailable.');
@@ -173,7 +204,7 @@ async function diagnosticConnection() {
 }
 
 export async function authorizeDiagnosticReply(value: DiagnosticDraft) {
-  const safe = sealDiagnosticDraft(value);
+  const safe: DiagnosticDraft = sealDiagnosticDraft(value);
   const context = getProjectContext();
   if (safe.diagnosticVersion !== 3 || !safe.diagnosticResolved || !context.redashDiagnosticsAllowed
     || context.ownerId !== REDASH_OWNER_ID || context.demoMode || context.automationPaused) return safe;
@@ -227,14 +258,17 @@ export async function startAccountDiagnostic(username: string, message: string, 
     if (unified) {
       const policy = projectTagPolicy(context.projectId);
       if (!policy || !/^[a-f\d]{24}$/i.test(context.projectId)) throw new Error('Unified lifecycle policy is not configured for this project.');
+      const pending = await readPendingTask(username, unified.queryId);
+      if (pending) return { task: { ...pending, message: message.slice(0, 3000), conversation: conversation.slice(-10000) } };
       const response = await redashRequest(key, `queries/${redashId(unified.queryId)}/results`, { parameters: {
         ...lookupEmails(username), project_id: context.projectId, project_tag_prefix: policy.prefix,
-      }, max_age: 0 });
+      }, max_age: 60 });
       const task: DiagnosticTask = { version: 3, ownerId: REDASH_OWNER_ID, projectId: context.projectId,
         username, statusQueryId: unified.queryId, phase: 'status', jobId: String(response.job?.id || ''),
         message: message.slice(0, 3000), conversation: conversation.slice(-10000), expires: Date.now() + 5 * 60000 };
       if (response.query_result) return await consumeDiagnosticResult(task, normalizeRedashResult(response.query_result), key);
       if (!task.jobId) throw new Error('Unified diagnostic did not start.');
+      await savePendingTask(task);
       return { task };
     }
     const configured = queries.filter(query => query.diagnosticVersion === 2 && (
@@ -268,20 +302,25 @@ export async function pollAccountDiagnostic(task: DiagnosticTask): Promise<Diagn
   try {
     const { key } = await diagnosticConnection();
     const response = await redashRequest(key, `jobs/${encodeURIComponent(task.jobId)}`);
-    if ([4, 5].includes(response.job?.status)) return { draft: draft(NEEDS_REVIEW, 'Diagnostic query failed.') };
+    if ([4, 5].includes(response.job?.status)) {
+      if (task.version === 3) await writeDataJSON(pendingPath(task.username, task.statusQueryId), null, 'Clear failed diagnostic job');
+      return { draft: draft(NEEDS_REVIEW, 'Diagnostic query failed.') };
+    }
     if (response.job?.status !== 3) return { task };
     const result = await redashRequest(key, `query_results/${redashId(response.job.query_result_id)}`);
-    return await consumeDiagnosticResult(task, normalizeRedashResult(result.query_result), key);
+    const progress = await consumeDiagnosticResult(task, normalizeRedashResult(result.query_result), key);
+    if (task.version === 3 && progress.draft) await writeDataJSON(pendingPath(task.username, task.statusQueryId), null, 'Clear completed diagnostic job');
+    return progress;
   } catch { return { draft: draft(NEEDS_REVIEW, 'Diagnostic lookup unavailable.') }; }
 }
 
 export async function accountDiagnosticDraft(username: string, message: string, conversation = ''): Promise<DiagnosticDraft | null> {
   let progress = await startAccountDiagnostic(username, message, false, conversation);
   if (!progress) return null;
-  const deadline = Date.now() + 20000;
+  const deadline = Date.now() + diagnosticWaitMs();
   while (progress.task && Date.now() < deadline) {
     await new Promise(resolve => setTimeout(resolve, 1200));
     progress = await pollAccountDiagnostic(progress.task);
   }
-  return progress.draft || draft(NEEDS_REVIEW, 'Diagnostic timeout.');
+  return progress.draft || { ...draft(NEEDS_REVIEW, 'Diagnostic query is still running. Retry to continue the same query.'), diagnosticPending: true };
 }

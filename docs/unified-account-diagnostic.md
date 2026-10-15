@@ -34,6 +34,16 @@ bucket tags are flagged; a mismatch is a recommendation, not an applied action.
 
 ## Drafts and migration
 
+Account evaluation waits up to 60 seconds for Redash by default, configurable
+with `REDASH_DIAGNOSTIC_WAIT_MS` (1000-120000 ms). Running v3 jobs are stored
+encrypted in project-scoped operational storage and reused for the same owner,
+project, contributor and query until their five-minute expiry. Retries update
+the incoming message/context without restarting SQL. Redash results may be
+reused for at most 60 seconds. Completion/failure clears the pending handle.
+Jobs still running remain pending, not processed or escalated as knowledge
+gaps. They are retried by a later agent run or manual Draft reply. No message is
+automatically sent while pending.
+
 Gemini receives an explicit projection of diagnostic fields, without raw tags,
 email, contributor ID or project ID. Scores, averages, PDR and confirmed limits
 are allowed. The model receives overall and gate averages separately. Normal

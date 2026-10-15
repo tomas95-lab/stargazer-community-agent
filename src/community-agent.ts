@@ -72,6 +72,7 @@ export interface CommunityAgentReplyEvidence {
 }
 
 export interface CommunityAgentDecision {
+  diagnosticPending?: boolean;
   draftOnly?: boolean;
   itemId: string;
   source: CommunityAgentSource;
@@ -1144,11 +1145,11 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
         message: item.message,
         posted,
         reacted,
-        needsHuman: decision.action === 'human',
+        needsHuman: decision.action === 'human' && !decision.diagnosticPending,
         ...decision,
       });
 
-      if (markProcessed && decision.action !== 'ignore') {
+      if (markProcessed && decision.action !== 'ignore' && !decision.diagnosticPending) {
         state.processed[item.id] = { at: new Date().toISOString(), action: decision.action, posted, reacted };
       }
     } catch (err) {

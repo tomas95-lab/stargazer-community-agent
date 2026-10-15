@@ -11,6 +11,7 @@ export const DIAGNOSTIC_COPY = Object.freeze({
 const ALLOWED_COPY = new Set<string>(Object.values(DIAGNOSTIC_COPY));
 // Reviewed operational explanations for the QM, never contributor reply text.
 const ALLOWED_REASONS = new Set([
+  'Diagnostic query is still running. Retry to continue the same query.',
   'Diagnostic draft validation failed.',
   'Unified query completed, but AI draft generation failed. Retry the draft.',
   'Identity or project permission could not be verified.',
@@ -47,6 +48,7 @@ export function sealDiagnosticDraft(value: unknown) {
       return sealDiagnosticDraft({ reply: DIAGNOSTIC_COPY.review, reason: 'Diagnostic draft validation failed.' });
     }
     return { action: 'human' as const, confidence: 0, draftOnly: true as const,
+      ...(candidate.diagnosticPending === true ? { diagnosticPending: true } : {}),
       diagnosticResolved: candidate.diagnosticResolved === true,
       reason, reply: text.replace(/\u2014/g, ','), guidelineSnippets: [] as string[], diagnosticVersion: 3 as const };
   }
@@ -54,6 +56,7 @@ export function sealDiagnosticDraft(value: unknown) {
   // Reconstruct rather than spread: discard raw rows, identifiers, errors, notes, etc.
   return {
     action: 'human' as const,
+    ...(candidate.diagnosticPending === true ? { diagnosticPending: true } : {}),
     confidence: 0,
     draftOnly: true as const,
     reason: allowed && typeof candidate.reason === 'string' && ALLOWED_REASONS.has(candidate.reason)

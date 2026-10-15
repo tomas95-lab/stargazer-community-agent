@@ -277,6 +277,7 @@ export interface CommunityAgentItem {
 }
 
 export interface CommunityAgentDecision {
+  diagnosticPending?: boolean;
   itemId: string;
   source: CommunityAgentSource;
   channelId?: string;
@@ -393,6 +394,7 @@ export interface DmReviewResult {
 }
 
 export interface DmDraftResult {
+  diagnosticPending?: boolean;
   channelId: number;
   action: 'reply' | 'human' | 'ignore';
   confidence: number;

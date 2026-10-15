@@ -221,7 +221,7 @@ function ThreadListItem({
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{thread.root.username}</span>
         {decision ? (
           <Badge tone={decision.error ? 'red' : decision.action === 'reply' ? 'green' : decision.action === 'human' ? 'yellow' : decision.action === 'react' ? 'blue' : 'gray'}>
-            {decision.error ? 'Error' : decision.action === 'reply' ? 'Draft ready' : decision.action === 'human' ? 'Human review' : decision.action === 'react' ? 'Reaction' : 'Skipped'}
+            {decision.diagnosticPending ? 'Diagnostic pending' : decision.error ? 'Error' : decision.action === 'reply' ? 'Draft ready' : decision.action === 'human' ? 'Human review' : decision.action === 'react' ? 'Reaction' : 'Skipped'}
           </Badge>
         ) : null}
         <span className="shrink-0 text-xs text-muted-foreground">{formatAppTimeWithSeconds(thread.root.createdAt)}</span>
@@ -308,7 +308,7 @@ function DecisionCard({ decision, embedded = false }: { decision: CommunityAgent
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <Badge tone="blue">Community</Badge>
-            <Badge tone={tone}>{decision.error ? 'Error' : decision.action}</Badge>
+            <Badge tone={tone}>{decision.diagnosticPending ? 'Diagnostic pending' : decision.error ? 'Error' : decision.action}</Badge>
             {decision.posted && <Badge tone="green">Posted</Badge>}
             {decision.reacted && <Badge tone="green">Reacted</Badge>}
           </div>
