@@ -3,6 +3,28 @@ import assert from 'node:assert/strict';
 import { buildProjectBrief } from '../dist/guideline-brief.js';
 import { projectGuidelineBriefStatus } from '../dist/project-guidelines.js';
 import { runWithProjectContext } from '../dist/project-context.js';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const dataStore = require('../dist/data-store.js');
+const { saveProjectGuidelineBrief } = require('../dist/project-guidelines.js');
+
+test('QM brief persists without clipping and stays isolated by project', async (t) => {
+  const saved = new Map();
+  const { getCurrentProjectId } = require('../dist/project-context.js');
+  t.mock.method(dataStore, 'readDataJSONOrDefault', async (_path, fallback) => saved.get(getCurrentProjectId()) ?? fallback);
+  t.mock.method(dataStore, 'writeDataJSON', async (_path, value) => { saved.set(getCurrentProjectId(), value); });
+  const context = { projectId: 'editable-brief', source: 'header', projectGuidelines: 'Project Overview\nOriginal project instructions for contributors.' };
+  const brief = 'QM verified policy. '.repeat(200);
+  await runWithProjectContext(context, async () => {
+    const result = await saveProjectGuidelineBrief(brief);
+    assert.equal(result.brief, brief.trim());
+    assert.equal((await projectGuidelineBriefStatus()).brief, brief.trim());
+    await assert.rejects(saveProjectGuidelineBrief(''), /Enter a project brief/);
+    await assert.rejects(saveProjectGuidelineBrief('x'.repeat(20001)), /20,000/);
+  });
+  const other = await runWithProjectContext({ ...context, projectId: 'other-brief' }, projectGuidelineBriefStatus);
+  assert.doesNotMatch(other.brief, /QM verified/);
+});
 
 test('project brief keeps orientation while leaving detailed sections retrievable', () => {
   const guidelines = [
@@ -26,7 +48,8 @@ test('project brief keeps orientation while leaving detailed sections retrievabl
   assert.ok(brief.length <= 1203);
 });
 
-test('guideline brief status is scoped to the active project', async () => {
+test('guideline brief status is scoped to the active project', async (t) => {
+  t.mock.method(dataStore, 'readDataJSONOrDefault', async (_path, fallback) => fallback);
   const moneyHeist = await runWithProjectContext({
     projectId: 'money-heist-brief',
     source: 'header',

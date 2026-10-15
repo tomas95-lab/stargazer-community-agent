@@ -2,6 +2,8 @@ import { getSupabaseAccessToken, refreshSupabaseAccessToken } from "@/lib/supaba
 import { AUTH_SESSION_INVALID_EVENT } from "@/auth-events";
 
 const BASE = '/api';
+export interface RedashQuery { id: string; name: string; queryId: number }
+export interface RedashRun { job?: string; pending?: boolean; result?: { columns: Array<{ name: string }>; rows: Array<Record<string, unknown>>; retrieved_at?: string } }
 const PROJECT_ID_KEY = 'qm_active_project_id';
 
 function getStoredProjectId(): string {
@@ -1084,6 +1086,15 @@ export const api = {
     }),
   getProjectMemory: () => request<ProjectMemory>('/memory'),
   getProjectGuidelineBrief: () => request<ProjectGuidelineBrief>('/memory/guideline-brief'),
+  getRedash: () => request<{ connected: boolean; queries: RedashQuery[] }>('/redash'),
+  connectRedash: (apiKey: string) => request('/redash/connection', { method: 'PUT', body: JSON.stringify({ apiKey }) }),
+  disconnectRedash: () => request('/redash/connection', { method: 'DELETE' }),
+  getRedashDataSources: () => request<{ sources: Array<{ id: number; name: string }> }>('/redash/data-sources'),
+  saveRedashQuery: (input: Record<string, string>) => request('/redash/queries', { method: 'POST', body: JSON.stringify(input) }),
+  deleteRedashQuery: (id: string) => request(`/redash/queries/${id}`, { method: 'DELETE' }),
+  runRedashQuery: (id: string, parameters: Record<string, unknown> = {}) => request<RedashRun>(`/redash/queries/${id}/run`, { method: 'POST', body: JSON.stringify({ parameters }) }),
+  pollRedashJob: (job: string) => request<RedashRun>(`/redash/jobs/${encodeURIComponent(job)}`),
+  saveProjectGuidelineBrief: (brief: string) => request<ProjectGuidelineBrief>('/memory/guideline-brief', { method: 'PUT', body: JSON.stringify({ brief }) }),
   updateProjectMemory: (memory: ProjectMemory) =>
     request<ProjectMemory>('/memory', {
       method: 'PUT',

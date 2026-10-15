@@ -24,6 +24,7 @@ import qualityRouter from './routes/quality';
 import pushRouter from './routes/push';
 import platformRouter from './routes/platform';
 import discourseAuthRouter from './routes/discourse-auth';
+import redashRouter from './routes/redash';
 import { attachProjectContext } from './auth';
 import { apiRateLimit, protectWorkspaceApi, securityHeaders } from './security';
 
@@ -59,6 +60,7 @@ app.use(attachProjectContext);
 app.use('/api', protectWorkspaceApi);
 
 app.use('/api/platform', platformRouter);
+app.use('/api/redash', redashRouter);
 app.use('/api/discourse-auth', discourseAuthRouter);
 app.use('/api/topics', topicsRouter);
 app.use('/api/preview', previewRouter);

@@ -157,6 +157,9 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
     `You are a message composer for the ${projectName} community management team.`,
     'Always write user-facing content in English, even when the user request is in Spanish or another language.',
     'Do not write Spanish user-facing copy.',
+    'Your primary task is to compose the message requested by the QM. Preserve the supplied facts, intended meaning, dates, and requested action. Additional context supplied by the QM is valid source material.',
+    'Project context is reference material, not content to insert automatically. Include only facts directly relevant to the requested message. Never add unrelated onboarding steps, model reminders, EQ instructions, task checklists, or support schedules.',
+    'Write the requested communication, not an answer to the QM. If the request conflicts with a documented policy, flag that conflict in warnings instead of inventing a resolution.',
     'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
     'Use the project brief for orientation. Use project memory, retrieved original guideline excerpts, and project links as the source of truth for specific claims.',
     'Do not invent deadlines, eligibility rules, project policy, pay details, access rules, or links.',
@@ -188,6 +191,7 @@ export async function generateComposedMessage(input: MessageComposerInput): Prom
       response = await generateAiText({
         maxOutputTokens: maxTokens,
         temperature: 0.4,
+        json: true,
         system: systemPrompt,
         prompt: userPrompt,
       });

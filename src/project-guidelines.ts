@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { PATHS } from './config';
-import { readDataText } from './data-store';
+import { readDataText, readDataJSONOrDefault, writeDataJSON } from './data-store';
 import { getCurrentProjectId, getProjectContext } from './project-context';
 import { chunkGuidelineText, GuidelineChunk, rankGuidelineChunks } from './guideline-structure';
 import { buildProjectBrief } from './guideline-brief';
@@ -152,6 +152,8 @@ function withinContextBudget(snippets: string[]): string[] {
 }
 
 export async function projectGuidelineBrief(): Promise<string> {
+  const saved = await readDataJSONOrDefault<{ brief: string } | null>('data/guideline-brief.json', null);
+  if (saved?.brief?.trim()) return saved.brief;
   const text = await loadProjectGuidelines();
   if (!text.trim()) return '';
   const projectId = getCurrentProjectId();
@@ -163,9 +165,17 @@ export async function projectGuidelineBrief(): Promise<string> {
   return brief;
 }
 
+export async function saveProjectGuidelineBrief(brief: unknown): Promise<ProjectGuidelineBriefStatus> {
+  if (typeof brief !== 'string' || !brief.trim()) throw new Error('Enter a project brief.');
+  if (brief.length > 20000) throw new Error('Keep the brief under 20,000 characters.');
+  await writeDataJSON('data/guideline-brief.json', { brief: brief.trim(), updatedAt: new Date().toISOString() }, 'Update project brief');
+  return projectGuidelineBriefStatus();
+}
+
 export async function projectGuidelineBriefStatus(): Promise<ProjectGuidelineBriefStatus> {
   const text = await loadProjectGuidelines();
-  if (!text.trim()) {
+  const brief = await projectGuidelineBrief();
+  if (!text.trim() && !brief) {
     return {
       available: false,
       brief: '',
@@ -175,7 +185,6 @@ export async function projectGuidelineBriefStatus(): Promise<ProjectGuidelineBri
       sectionCount: 0,
     };
   }
-  const brief = await projectGuidelineBrief();
   const sections = new Set(
     guidelineChunks(getCurrentProjectId(), text)
       .map((chunk) => chunk.heading.trim())

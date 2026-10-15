@@ -32,6 +32,7 @@ const QualityDashboard = lazy(() => import("@/pages/QualityDashboard"))
 const ReviewQueue = lazy(() => import("@/pages/ReviewQueue"))
 const RunDetails = lazy(() => import("@/pages/RunDetails"))
 const Settings = lazy(() => import("@/pages/Settings"))
+const RedashDebugger = lazy(() => import("@/pages/RedashDebugger"))
 const TestingSandbox = lazy(() => import("@/pages/TestingSandbox"))
 const TopicEditor = lazy(() => import("@/pages/TopicEditor"))
 const WebinarScheduler = lazy(() => import("@/pages/WebinarScheduler"))
@@ -148,6 +149,7 @@ function WorkspaceRoutes() {
                 <Route path="/projects/new" element={<ProjectSetup forceNew />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/diagnostics" element={<RedashDebugger />} />
                 <Route path="/project" element={<ProjectSetup />} />
                 <Route path="*" element={<Dashboard />} />
               </Routes>

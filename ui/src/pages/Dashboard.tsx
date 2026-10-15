@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { usePlatform } from "@/platform"
 
@@ -89,12 +90,17 @@ export default function Dashboard() {
   const [webinars, setWebinars] = useState<Webinar[]>([])
   const [summary, setSummary] = useState<DailySummaryResult | null>(null)
   const [guidelineBrief, setGuidelineBrief] = useState<ProjectGuidelineBrief | null>(null)
+  const [briefDraft, setBriefDraft] = useState<string | null>(null)
+  const [savingBrief, setSavingBrief] = useState(false)
+  const [briefError, setBriefError] = useState("")
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"thread" | "announcement">("thread")
 
   useEffect(() => {
     let active = true
     setLoading(true)
+    setBriefDraft(null)
+    setBriefError("")
     Promise.all([
       api.getToday(),
       api.getWebinars().catch(() => []),
@@ -241,7 +247,7 @@ export default function Dashboard() {
                     </Badge>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    The compact project context used by Gemini and any configured fallback.
+                    Editable project summary. Full guidelines remain available for detailed questions.
                   </p>
                 </div>
               </div>
@@ -255,10 +261,31 @@ export default function Dashboard() {
                 </div>
               ) : null}
             </div>
-            {guidelineBrief?.available ? (
-              <pre className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words px-5 py-4 font-sans text-sm leading-6 text-foreground">
-                {guidelineBrief.brief}
-              </pre>
+            {briefDraft !== null ? (
+              <div className="space-y-3 p-5">
+                <Textarea aria-label="Project brief" value={briefDraft} onChange={(event) => setBriefDraft(event.target.value)} rows={18} maxLength={20000} disabled={savingBrief} />
+                {briefError ? <p role="alert" className="text-sm text-destructive">{briefError}</p> : null}
+                <div className="flex gap-2">
+                  <Button disabled={savingBrief || !briefDraft.trim()} onClick={async () => {
+                    setSavingBrief(true)
+                    setBriefError("")
+                    try {
+                      setGuidelineBrief(await api.saveProjectGuidelineBrief(briefDraft))
+                      setBriefDraft(null)
+                    } catch (error) {
+                      setBriefError(error instanceof Error ? error.message : "Could not save the brief.")
+                    } finally { setSavingBrief(false) }
+                  }}>{savingBrief ? "Saving..." : "Save brief"}</Button>
+                  <Button variant="outline" disabled={savingBrief} onClick={() => setBriefDraft(null)}>Cancel</Button>
+                </div>
+              </div>
+            ) : guidelineBrief?.available ? (
+              <div className="p-5">
+                <Button variant="outline" size="sm" onClick={() => setBriefDraft(guidelineBrief.brief)}>Edit brief</Button>
+                <pre className="mt-4 whitespace-pre-wrap break-words font-sans text-sm leading-6 text-foreground">
+                  {guidelineBrief.brief}
+                </pre>
+              </div>
             ) : (
               <div className="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">Upload project guidelines to generate this draft automatically.</p>
