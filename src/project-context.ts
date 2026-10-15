@@ -80,6 +80,7 @@ export interface RuntimeChannelGuideline {
 }
 
 export interface ProjectContext {
+  redashDiagnosticsAllowed?: boolean;
   projectId: string;
   source: ProjectContextSource;
   projectName?: string;

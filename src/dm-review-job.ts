@@ -103,6 +103,7 @@ export interface DmReplyResult {
 }
 
 export interface DmDraftResult {
+  draftOnly?: boolean;
   channelId: number;
   action: 'reply' | 'human' | 'ignore';
   confidence: number;
@@ -116,6 +117,8 @@ export interface DmDraftResult {
 }
 
 export interface DmAutoReplyDecision {
+  draftOnly?: boolean;
+  reply?: string;
   channelId: number;
   action: 'reply' | 'human' | 'ignore';
   posted: boolean;
@@ -687,7 +690,8 @@ async function evaluateDirectMessageThread(
     reason: action === 'ignore' && deterministicDecision.action === 'react'
       ? 'The AI suggested a reaction, but DM reactions are not supported by this workflow.'
       : deterministicDecision.reason,
-    reply: action === 'reply' ? deterministicDecision.reply : '',
+    draftOnly: deterministicDecision.draftOnly,
+    reply: action === 'reply' || deterministicDecision.draftOnly ? deterministicDecision.reply : '',
     needsHuman: action === 'human',
     guidelineSnippets: deterministicDecision.guidelineSnippets,
     lastIncomingMessageId: lastIncoming.messageId,
@@ -765,7 +769,7 @@ async function runDmAutoRepliesFromReview(
       let posted = false;
       let sentMessageId: number | undefined;
 
-      if (decision.action === 'reply' && decision.reply.trim()) {
+      if (decision.action === 'reply' && !decision.draftOnly && decision.reply.trim()) {
         const sent = await sendDirectMessageReply(channelId, decision.reply);
         posted = true;
         sentMessageId = sent.messageId;
@@ -778,6 +782,8 @@ async function runDmAutoRepliesFromReview(
 
       decisions.push({
         channelId,
+        draftOnly: decision.draftOnly,
+        reply: decision.draftOnly ? decision.reply : undefined,
         action: decision.action,
         posted,
         confidence: decision.confidence,

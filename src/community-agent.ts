@@ -13,6 +13,7 @@ import { getProjectContext, projectScheduleAllowsNow } from './project-context';
 import { sanitizeGeneratedText } from './text-safety';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
 import { generateAiText } from './ai-runtime';
+import { accountDiagnosticDraft, authorizeDiagnosticReply, isAccountStatusQuestion } from './redash-diagnostics';
 import { APP_TIME_ZONE, APP_TIME_ZONE_LABEL } from './timezone';
 import { appendDemoCommunityReply, demoCommunityMessages } from './demo-mode';
 import { isDemoMode } from './project-context';
@@ -71,6 +72,7 @@ export interface CommunityAgentReplyEvidence {
 }
 
 export interface CommunityAgentDecision {
+  draftOnly?: boolean;
   itemId: string;
   source: CommunityAgentSource;
   channelId?: string;
@@ -843,6 +845,8 @@ export async function evaluateSupportMessage(
   canUseWarRoomLink: boolean,
   channelId = '',
 ): Promise<Omit<CommunityAgentDecision, 'itemId' | 'source' | 'username' | 'message' | 'posted' | 'reacted' | 'needsHuman'>> {
+  const diagnostic = await accountDiagnosticDraft(username, message, context);
+  if (diagnostic) return authorizeDiagnosticReply(diagnostic);
   const policy = getProjectContext().agentPolicy;
   const blockedTopic = (policy?.blockedTopics || []).find((topic) => message.toLowerCase().includes(topic.toLowerCase()));
   if (blockedTopic) {
@@ -1117,16 +1121,16 @@ export async function runCommunityAgent(options: CommunityAgentOptions = {}): Pr
 
   for (const item of candidates) {
     try {
-      const decision = warRoomAvailabilityDecision(item.message, warRoomLink) ||
+      const decision = (!isAccountStatusQuestion(item.message) && warRoomAvailabilityDecision(item.message, warRoomLink)) ||
         await evaluateSupportMessage(item.username, item.message, contextForChannel(item), warRoomLink, canUseWarRoomLink, item.channelId);
       let posted = false;
       let reacted = false;
-      if (post && decision.action === 'reply') {
+      if (post && decision.action === 'reply' && !decision.draftOnly) {
         posted = isDemoMode()
           ? Boolean(await appendDemoCommunityReply(decision.reply, item))
           : await postDecision(client, item.channelId || channelId, decision.reply, item);
       }
-      if (react && decision.action === 'react') {
+      if (react && decision.action === 'react' && !decision.draftOnly) {
         reacted = isDemoMode()
           ? true
           : await reactToDecision(client, item.channelId || channelId, item, decision.reaction || DEFAULT_REACTION_EMOJI);

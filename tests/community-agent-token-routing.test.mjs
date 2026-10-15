@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import { evaluateSupportMessage } from '../dist/community-agent.js';
 import { runWithProjectContext } from '../dist/project-context.js';
 
@@ -40,7 +41,9 @@ test('simple acknowledgments use a reaction without Gemini', async () => {
   assert.match(decision.reason, /does not need an AI call/i);
 });
 
-test('questions without relevant evidence go to human review without Gemini', async () => {
+test('questions without relevant evidence go to human review without Gemini', async (t) => {
+  const require = createRequire(import.meta.url);
+  t.mock.method(require('../dist/data-store.js'), 'readDataJSONOrDefault', async (_file, fallback) => fallback);
   const decision = await evaluate({
     projectId: 'token-routing-human',
     source: 'header',

@@ -2,7 +2,8 @@ import { getSupabaseAccessToken, refreshSupabaseAccessToken } from "@/lib/supaba
 import { AUTH_SESSION_INVALID_EVENT } from "@/auth-events";
 
 const BASE = '/api';
-export interface RedashQuery { id: string; name: string; queryId: number }
+export interface RedashQuery { id: string; name: string; queryId: number; diagnosticRole?: 'identity' | 'status' | 'unified'; diagnosticProjectId?: string; diagnosticEnabled?: boolean; diagnosticAutoReply?: boolean; diagnosticVersion?: number }
+export interface DiagnosticPreview { status: 'pending' | 'complete'; stage?: 'identity' | 'status'; token?: string; draft?: { reply: string; reason: string; draftOnly: true; action: 'human' } }
 export interface RedashRun { job?: string; pending?: boolean; result?: { columns: Array<{ name: string }>; rows: Array<Record<string, unknown>>; retrieved_at?: string } }
 const PROJECT_ID_KEY = 'qm_active_project_id';
 
@@ -1087,6 +1088,10 @@ export const api = {
   getProjectMemory: () => request<ProjectMemory>('/memory'),
   getProjectGuidelineBrief: () => request<ProjectGuidelineBrief>('/memory/guideline-brief'),
   getRedash: () => request<{ connected: boolean; queries: RedashQuery[] }>('/redash'),
+  prepareRedashDiagnostics: () => request('/redash/diagnostics/prepare', { method: 'POST' }),
+  configureRedashDiagnostics: (enabled: boolean, autoReply?: boolean) => request('/redash/diagnostics', { method: 'PUT', body: JSON.stringify({ enabled, autoReply }) }),
+  previewRedashDraft: (username: string, message: string) => request<DiagnosticPreview>('/redash/diagnostics/preview', { method: 'POST', body: JSON.stringify({ username, message }) }),
+  pollRedashDraft: (token: string) => request<DiagnosticPreview>('/redash/diagnostics/preview/poll', { method: 'POST', body: JSON.stringify({ token }) }),
   connectRedash: (apiKey: string) => request('/redash/connection', { method: 'PUT', body: JSON.stringify({ apiKey }) }),
   disconnectRedash: () => request('/redash/connection', { method: 'DELETE' }),
   getRedashDataSources: () => request<{ sources: Array<{ id: number; name: string }> }>('/redash/data-sources'),

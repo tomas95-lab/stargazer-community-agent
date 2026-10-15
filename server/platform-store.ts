@@ -6,6 +6,7 @@ import { assertDiscourseUserApiKey } from '../src/discourse-credentials';
 import { normalizeChannelGuidelines } from '../src/channel-guidelines';
 import { normalizeOptionalProjectLink } from '../src/links';
 import { normalizeTimeZone } from '../src/time-zone';
+import { canUseRedash } from '../src/redash';
 import { readDataJSON, writeDataJSON } from '../src/data-store';
 import {
   canonicalProjectId,
@@ -1350,6 +1351,7 @@ export function projectRuntimeContext(
     projectId: projectKeyFromRow(row),
     source: 'header',
     projectName: row.project_name,
+    redashDiagnosticsAllowed: canUseRedash({ id: row.owner_id, email: row.owner_email, isDemo: demoMode }),
     ownerId: row.owner_id,
     ownerEmail: row.owner_email,
     demoMode,

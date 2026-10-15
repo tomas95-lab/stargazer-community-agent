@@ -3,9 +3,15 @@ import { randomUUID } from 'crypto';
 import { getRequestUser } from '../auth';
 import { decryptSecret, encryptSecret, getSupabaseAdmin } from '../platform-store';
 import { canUseRedash, REDASH_OWNER_ID, redashId, redashRequest, validateRedashConnection, redashParameters, normalizeRedashResult, resolveRedashDataSource } from '../../src/redash';
+import { startAccountDiagnostic, pollAccountDiagnostic, type DiagnosticProgress } from '../../src/redash-diagnostics';
+import { lookupEmails } from '../../src/contributor-lookups';
+import { UNIFIED_DIAGNOSTIC_SQL, UNIFIED_DIAGNOSTIC_PARAMETERS } from '../../src/unified-account-query';
+import { projectTagPolicy } from '../../src/project-tag-policy';
+import { sealDiagnosticDraft } from '../../src/diagnostic-disclosure';
+import { getCurrentProjectId } from '../../src/project-context';
 
 const TABLE = 'private_redash_connections';
-interface Query { id: string; name: string; queryId: number; parameter?: string }
+interface Query { id: string; name: string; queryId: number; parameter?: string; diagnosticRole?: 'identity' | 'status' | 'unified'; diagnosticProjectId?: string; diagnosticEnabled?: boolean; diagnosticAutoReply?: boolean; diagnosticVersion?: number }
 interface Connection { key_ciphertext: string; queries: Query[] }
 
 export function createRedashRouter(resolveUser = getRequestUser) {
@@ -38,6 +44,78 @@ function safeError(res: any, error: unknown): void {
 router.get('/', async (_req, res) => {
   try { const row = await load(); res.json({ connected: Boolean(row?.key_ciphertext), queries: row?.queries || [] }); }
   catch (error) { safeError(res, error); }
+});
+function previewResponse(progress: DiagnosticProgress | null) {
+  if (!progress) throw new Error('Diagnostics are unavailable for this project or user.');
+  if (progress.draft) return { status: 'complete', draft: sealDiagnosticDraft(progress.draft) };
+  if (!progress.task) throw new Error('Diagnostic did not return a result.');
+  return { status: 'pending', stage: progress.task.phase, token: encryptSecret(JSON.stringify(progress.task)) };
+}
+router.post('/diagnostics/preview', async (req, res) => {
+  try {
+    const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+    lookupEmails(username);
+    const message = typeof req.body.message === 'string' ? req.body.message.trim() : '';
+    if (!message || message.length > 3000) throw new Error('Enter an account-status question under 3,000 characters.');
+    res.json(previewResponse(await startAccountDiagnostic(username, message, true)));
+  } catch (error) { safeError(res, error); }
+});
+router.post('/diagnostics/preview/poll', async (req, res) => {
+  try {
+    const token = req.body.token;
+    if (typeof token !== 'string' || !token.startsWith('enc:v1:') || token.length > 10000) throw new Error('Invalid diagnostic session.');
+    let task;
+    try { task = JSON.parse(decryptSecret(token)); } catch { throw new Error('Invalid diagnostic session.'); }
+    res.json(previewResponse(await pollAccountDiagnostic(task)));
+  } catch (error) { safeError(res, error); }
+});
+router.post('/diagnostics/prepare', async (_req, res) => {
+  try {
+    const projectId = getCurrentProjectId();
+    if (!/^[a-f\d]{24}$/i.test(projectId)) throw new Error('Set the real Outlier project ID before preparing diagnostics.');
+    if (!projectTagPolicy(projectId)) throw new Error('Configure a verified lifecycle policy for this project before preparing diagnostics.');
+    const row = await load();
+    const key = credentials(row);
+    const queries = [...(row?.queries || [])];
+    const source = await resolveRedashDataSource(key);
+    if (source !== 30) throw new Error('Experimental SQL was verified against database 30. Your last-used database is different. Register the diagnostic queries after checking their schema.');
+    const existing = queries.find(query => query.diagnosticRole === 'unified' && query.diagnosticProjectId === projectId);
+    const options = { parameters: UNIFIED_DIAGNOSTIC_PARAMETERS.map(name => ({ name, title: name, type: 'text', value: '' })) };
+    if (existing) {
+      await redashRequest(key, `queries/${existing.queryId}`, { query: UNIFIED_DIAGNOSTIC_SQL, options });
+      existing.diagnosticVersion = 3;
+    } else {
+      const created = await redashRequest(key, 'queries', {
+        name: `Experimental unified account diagnostic - ${projectId}`, query: UNIFIED_DIAGNOSTIC_SQL,
+        data_source_id: source, options,
+      });
+      queries.push({ id: randomUUID(), name: 'Unified account diagnostic', queryId: redashId(created.id),
+        diagnosticRole: 'unified', diagnosticProjectId: projectId, diagnosticEnabled: false, diagnosticVersion: 3 });
+    }
+    // Preserve the old SQL and bindings for rollback; never enable new automation implicitly.
+    for (const query of queries) if (query.diagnosticProjectId === projectId) {
+      query.diagnosticEnabled = false;
+      query.diagnosticAutoReply = false;
+    }
+    await save({ queries });
+    res.json({ queries });
+  } catch (error) { safeError(res, error); }
+});
+router.put('/diagnostics', async (req, res) => {
+  try {
+    const projectId = getCurrentProjectId();
+    const row = await load();
+    const configured = (row?.queries || []).filter(query => query.diagnosticProjectId === projectId);
+    if (req.body.enabled === true && !configured.some(query => query.diagnosticRole === 'unified' && query.diagnosticVersion === 3)) throw new Error('Prepare the unified diagnostic query first.');
+    const queries = (row?.queries || []).map(query => query.diagnosticProjectId === projectId
+      ? { ...query,
+        diagnosticEnabled: req.body.enabled === true && query.diagnosticRole === 'unified' && query.diagnosticVersion === 3,
+        diagnosticAutoReply: req.body.enabled === true && query.diagnosticRole === 'unified' && query.diagnosticVersion === 3
+          && (typeof req.body.autoReply === 'boolean' ? req.body.autoReply : query.diagnosticAutoReply === true),
+      } : query);
+    await save({ queries });
+    res.json({ queries });
+  } catch (error) { safeError(res, error); }
 });
 router.put('/connection', async (req, res) => {
   try {

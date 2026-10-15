@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { canUseRedash } from '../src/redash';
 import { defaultProjectId, PROJECT_ID_HEADER, runWithProjectContext } from '../src/project-context';
 import {
   adminTokenMatches,
@@ -104,7 +105,7 @@ export async function attachProjectContext(req: Request, res: Response, next: Ne
           source: 'default' as const,
         };
 
-    runWithProjectContext(context, () => next());
+    runWithProjectContext({ ...context, redashDiagnosticsAllowed: canUseRedash(user) }, () => next());
   } catch (err) {
     res.status(401).json({ error: err instanceof Error ? err.message : String(err) });
   }

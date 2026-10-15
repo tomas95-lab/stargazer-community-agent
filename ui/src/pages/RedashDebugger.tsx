@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Play, Trash2 } from 'lucide-react'
-import { api, type RedashQuery, type RedashRun } from '@/api'
+import { api, type RedashQuery, type RedashRun, type DiagnosticPreview } from '@/api'
 import { useAuth } from '@/auth'
+import { usePlatform } from '@/platform'
+import { Checkbox } from '@/components/ui/checkbox'
 import { canUseRedash } from '@/lib/redash-access'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 
 export default function RedashDebugger() {
   const { user } = useAuth()
+  const { currentProject } = usePlatform()
   const allowed = canUseRedash(user)
   const [connected, setConnected] = useState(false)
   const [queries, setQueries] = useState<RedashQuery[]>([])
@@ -24,6 +27,10 @@ export default function RedashDebugger() {
   const [selected, setSelected] = useState('')
   const [result, setResult] = useState<RedashRun['result']>()
   const [status, setStatus] = useState('')
+  const [testUsername, setTestUsername] = useState('')
+  const [testMessage, setTestMessage] = useState('I am EQ')
+  const [testResult, setTestResult] = useState<DiagnosticPreview['draft']>()
+  const [testStatus, setTestStatus] = useState('')
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
@@ -31,11 +38,31 @@ export default function RedashDebugger() {
     return () => { mounted.current = false }
   }, [allowed])
   if (!allowed) return <Navigate to="/" replace />
+  const diagnosticQueries = queries.filter(query => query.diagnosticProjectId === currentProject?.projectKey)
+  const unifiedQuery = diagnosticQueries.find(query => query.diagnosticRole === 'unified' && query.diagnosticVersion === 3)
+  const diagnosticsReady = Boolean(unifiedQuery)
+  const diagnosticsEnabled = unifiedQuery?.diagnosticEnabled === true
   const refresh = async () => { const data = await api.getRedash(); setConnected(data.connected); setQueries(data.queries) }
   const perform = async (work: () => Promise<void>) => {
     setBusy(true); setError('')
     try { await work() } catch (err) { if (mounted.current) setError(err instanceof Error ? err.message : 'Request failed.') }
     finally { if (mounted.current) setBusy(false) }
+  }
+  const testDraft = async () => {
+    setTestResult(undefined)
+    setTestStatus('Checking contributor identity...')
+    try {
+      let progress = await api.previewRedashDraft(testUsername, testMessage)
+      for (let n = 0; progress.status === 'pending' && progress.token && n < 100 && mounted.current; n++) {
+        setTestStatus(progress.stage === 'identity' ? 'Checking contributor identity...' : 'Checking access, tasks, throttle and performance...')
+        await new Promise(resolve => setTimeout(resolve, 2500))
+        if (!mounted.current) return
+        progress = await api.pollRedashDraft(progress.token)
+      }
+      if (!mounted.current) return
+      if (!progress.draft) throw new Error('The diagnostic did not finish in time. Nothing was sent.')
+      setTestResult(progress.draft)
+    } finally { if (mounted.current) setTestStatus('') }
   }
   const run = async () => {
     setResult(undefined); setStatus('Running diagnostic...')
@@ -62,6 +89,26 @@ export default function RedashDebugger() {
   return <div className="space-y-8 px-4 lg:px-6">
     <header><h1 className="text-2xl font-semibold">Contributor diagnostics</h1><p className="mt-1 text-sm text-muted-foreground">Private Redash workspace for Tomas Ruiz</p></header>
     {error && <p role="alert" className="rounded-md border border-destructive p-3 text-sm text-destructive">{error}</p>}
+    <section className="space-y-3 border-b pb-6">
+      <h2 className="font-semibold">Experimental account diagnostics</h2>
+      <p className="text-sm text-muted-foreground">Account diagnostics for your connection. Queries use warehouse snapshots, which may lag live account state.</p>
+      <Button variant="outline" disabled={busy || !connected} onClick={() => void perform(async () => { await api.prepareRedashDiagnostics(); await refresh() })}>{diagnosticsReady ? 'Update unified query' : 'Prepare unified query'}</Button>
+      <label className="flex items-center gap-3 text-sm"><Checkbox checked={diagnosticsEnabled} disabled={busy || !diagnosticsReady || !connected} onCheckedChange={enabled => void perform(async () => { await api.configureRedashDiagnostics(enabled === true); await refresh() })} />Enable account diagnostics for {currentProject?.projectName}</label>
+      <label className="flex items-center gap-3 text-sm"><Checkbox checked={diagnosticsEnabled && unifiedQuery?.diagnosticAutoReply === true} disabled={busy || !diagnosticsEnabled || !connected} onCheckedChange={enabled => void perform(async () => { await api.configureRedashDiagnostics(true, enabled === true); await refresh() })} />Automatically reply to confirmed cases using my connection</label>
+      <p className="text-xs text-muted-foreground">One query checks access, task availability, throttles and quality. Drafts can include scores and confirmed limits. Older queries are retained for rollback.</p>
+    </section>
+    <section className="space-y-4 border-b pb-6">
+      <h2 className="font-semibold">Test a contributor draft</h2>
+      <p className="text-sm text-muted-foreground">Project: {currentProject?.projectName}. This test does not enable automation or send a message.</p>
+      <form className="grid max-w-3xl gap-3" onSubmit={event => { event.preventDefault(); void perform(testDraft) }}>
+        <label className="text-sm">Community username<Input className="mt-1" placeholder="latam.coder779" value={testUsername} onChange={event => { setTestUsername(event.target.value); setTestResult(undefined) }} required disabled={busy} /></label>
+        <label className="text-sm">Contributor message<Textarea className="mt-1" value={testMessage} onChange={event => { setTestMessage(event.target.value); setTestResult(undefined) }} maxLength={3000} required disabled={busy} /></label>
+        <Button className="justify-self-start" disabled={busy || !connected || !diagnosticsReady}><Play className="size-4" />{testStatus ? 'Generating draft...' : 'Generate test draft'}</Button>
+      </form>
+      {!diagnosticsReady && <p className="text-xs text-muted-foreground">Prepare the diagnostic queries above before testing. You can leave experimental drafts disabled.</p>}
+      {testStatus && <p role="status" className="text-sm text-muted-foreground">{testStatus}</p>}
+      {testResult && <div className="max-w-3xl space-y-2 rounded-md border p-4"><p className="text-xs font-medium text-muted-foreground">DRAFT ONLY · QM REVIEW REQUIRED</p><p className="whitespace-pre-wrap text-sm leading-6">{testResult.reply}</p><div className="border-t pt-3"><p className="text-xs font-medium">Diagnostic reason · QM only</p><p className="mt-1 text-sm text-muted-foreground">{testResult.reason}</p></div></div>}
+    </section>
     <section className="space-y-4 border-b pb-6">
       <h2 className="font-semibold">Redash connection</h2>
       <p className="text-sm text-muted-foreground">redash.scale.com · {connected ? 'Connected' : 'Not connected'}</p>

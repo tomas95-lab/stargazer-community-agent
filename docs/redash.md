@@ -40,3 +40,60 @@ Redash must be reachable from the backend: internal-only/VPN access can prevent
 Vercel from reaching it even when it works in your browser.
 
 API reference: https://redash.io/help/user-guide/integrations-and-api/api/
+
+## Experimental account drafts
+
+Diagnostics offers **Prepare diagnostic queries** and an opt-in checkbox per
+project. The generated SQL is based on the schema inspected on data source 30.
+Existing generic diagnostic templates are reused when available. No additional
+Supabase migration is required: bindings are private metadata on saved queries.
+
+The identity lookup checks the exact inferred email for `latam.coder<number>`:
+`latam.coder<number>@remotasks.com+outlier`. It proceeds only when exactly one
+record matches. It does not derive a user ID from the number or try other users'
+email addresses mentioned in a message. Other username conventions need a
+separate verified mapping before they can be diagnosed.
+
+The status query binds the confirmed contributor ID and current Outlier project
+ID. It joins project permissions and checks an unexpired project-specific user
+throttle. Project emptiness is derived from `PROJECTS.TASKS_REMAINING`; this is a
+warehouse snapshot, not a verified live queue. Confirm that this field matches
+the project's operational meaning before using the draft. A quality-related
+disabled flag uses a narrow reason-code allowlist and never discloses the raw
+reason or quality score. Unknown reason codes remain generic access-review cases.
+
+The two queries were syntax checked with fictitious IDs (status via EXPLAIN),
+not validated against ground-truth EQ cases. Review their business semantics
+against the internal debugger before enabling for a project.
+
+EQ/account questions use the templates before the ordinary support answer path.
+The output is always `action: human` plus `draftOnly: true`. Both Community and
+DM automatic sending reject this flag. Returned drafts contain fixed English
+wording built from an allowlist of boolean states. Raw SQL results, counts,
+identity IDs, disable reasons and scores are never passed into Gemini/Claude.
+Mismatched identities/projects, missing permissions, timeouts and ambiguous
+records require QM review. Non-Tomas requests cannot enable this path; HTTP
+authorization overrides any shared project's owner identity. Scheduled runs
+may use it only for a Tomas-owned connection, and still cannot auto-send drafts.
+
+To test locally: select a real project, prepare the queries, inspect them in
+Redash, enable experimental drafts, then generate drafts in Community or DMs.
+Preparing alone does not enable background lookups.
+
+### Disclosure boundary
+
+Diagnostic output is restricted to exact reviewed English messages:
+generic QM review, access review, temporary limitation, an empty queue, or the
+QM-approved Money Heist quality-reassignment explanation.
+`sealDiagnosticDraft` reconstructs the public draft from scratch and drops all
+extra fields, notes, internal reasons and evidence. Any different wording,
+including appended text, is replaced by the generic review message. An
+additional sensitive-pattern check rejects identifiers, digits, email addresses,
+URLs and credential markers. Missing/non-boolean/contradictory state flags also
+fall back to generic review. The support evaluator seals the result again before
+returning it. Neither the model nor query-returned free text chooses the wording.
+
+This boundary protects diagnostic-generated drafts. It does not certify every
+other application workflow or text manually written by an operator as free of
+sensitive data. Manual raw query results remain restricted to Tomas's private
+Diagnostics page.
