@@ -6,7 +6,36 @@ import { runWithProjectContext } from '../dist/project-context.js';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const dataStore = require('../dist/data-store.js');
-const { saveProjectGuidelineBrief } = require('../dist/project-guidelines.js');
+const { saveProjectGuidelineBrief, projectGuidelineAiBrief, setProjectGuidelineBriefEnabled, findProjectGuidelineSnippets } = require('../dist/project-guidelines.js');
+
+test('brief opt-out preserves saved text and original guidelines, persists edits and stays project-scoped', async t => {
+  const saved = new Map();
+  const { getCurrentProjectId } = require('../dist/project-context.js');
+  t.mock.method(dataStore, 'readDataJSONOrDefault', async (_file, fallback) => saved.get(getCurrentProjectId()) ?? fallback);
+  t.mock.method(dataStore, 'writeDataJSON', async (_file, value) => { saved.set(getCurrentProjectId(),value); });
+  const context = {projectId:'brief-toggle-a',source:'header',projectGuidelines:'## Rubric requirements\nRubric criteria must be atomic and measurable.'};
+  await runWithProjectContext(context,async()=>{
+    await saveProjectGuidelineBrief('Read the project guidelines');
+    assert.equal((await projectGuidelineBriefStatus()).enabled,true);
+    assert.equal(await projectGuidelineAiBrief(),'Read the project guidelines');
+    const disabled=await setProjectGuidelineBriefEnabled(false);
+    assert.equal(disabled.brief,'Read the project guidelines');
+    assert.equal(disabled.enabled,false);
+    assert.equal(await projectGuidelineAiBrief(),'');
+    assert.match((await findProjectGuidelineSnippets('atomic rubric criteria')).join(' '),/atomic and measurable/);
+    const edited=await saveProjectGuidelineBrief('Edited summary kept while disabled.');
+    assert.equal(edited.enabled,false);
+    assert.equal(await projectGuidelineAiBrief(),'');
+    await setProjectGuidelineBriefEnabled(true);
+    assert.equal(await projectGuidelineAiBrief(),'Edited summary kept while disabled.');
+    await assert.rejects(setProjectGuidelineBriefEnabled('false'),/true or false/);
+    await assert.rejects(setProjectGuidelineBriefEnabled(undefined),/true or false/);
+  });
+  await runWithProjectContext({...context,projectId:'brief-toggle-b'},async()=>{
+    assert.equal((await projectGuidelineBriefStatus()).enabled,true);
+    assert.doesNotMatch(await projectGuidelineAiBrief(),/Edited summary/);
+  });
+});
 
 test('QM brief persists without clipping and stays isolated by project', async (t) => {
   const saved = new Map();

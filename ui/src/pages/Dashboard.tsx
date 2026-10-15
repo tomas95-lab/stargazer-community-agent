@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import { usePlatform } from "@/platform"
 
@@ -243,7 +244,7 @@ export default function Dashboard() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-base font-semibold text-foreground">Agent brief draft</h2>
                     <Badge variant={guidelineBrief?.available ? "secondary" : "outline"}>
-                      {guidelineBrief?.available ? "ready" : "missing"}
+                      {guidelineBrief?.available ? (guidelineBrief.enabled ? "enabled" : "disabled") : "missing"}
                     </Badge>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -261,6 +262,18 @@ export default function Dashboard() {
                 </div>
               ) : null}
             </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3">
+              <label htmlFor="brief-ai-context" className="text-sm font-medium">Use brief as AI context</label>
+              <Checkbox id="brief-ai-context" checked={guidelineBrief?.enabled ?? true} disabled={!guidelineBrief || savingBrief || briefDraft !== null}
+                onCheckedChange={async value => {
+                  setSavingBrief(true)
+                  setBriefError("")
+                  try { setGuidelineBrief(await api.setProjectGuidelineBriefEnabled(value === true)) }
+                  catch (error) { setBriefError(error instanceof Error ? error.message : "Could not update brief setting.") }
+                  finally { setSavingBrief(false) }
+                }} />
+            </div>
+            {briefError && briefDraft === null ? <p role="alert" className="px-5 pt-3 text-sm text-destructive">{briefError}</p> : null}
             {briefDraft !== null ? (
               <div className="space-y-3 p-5">
                 <Textarea aria-label="Project brief" value={briefDraft} onChange={(event) => setBriefDraft(event.target.value)} rows={18} maxLength={20000} disabled={savingBrief} />

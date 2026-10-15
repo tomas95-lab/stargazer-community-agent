@@ -47,6 +47,10 @@ test('generated diagnostic retains real wording and scores through route and age
 });
 
 test('Gemini receives both averages and history; usage is counted and model text is preserved', async t => {
+  const guidelines = require('../dist/project-guidelines.js');
+  t.mock.method(guidelines, 'findProjectGuidelineSnippets', async () => ['Original project instructions']);
+  t.mock.method(guidelines, 'projectGuidelineAiBrief', async () => '');
+  t.mock.method(require('../dist/project-memory.js'), 'relevantProjectMemoryText', async () => 'QM project facts');
   const ai = require('../dist/ai-runtime.js');
   const usage = require('../dist/usage-guardrails.js');
   const calls = [];
@@ -57,6 +61,9 @@ test('Gemini receives both averages and history; usage is counted and model text
     assert.equal(payload.evidence.overall_qms, 2.25);
     assert.equal(payload.evidence.recent_qms, 7/3);
     assert.equal(payload.conversation, 'Previous assistant: explanation already given.');
+    assert.deepEqual(payload.guidelineExcerpts, ['Original project instructions']);
+    assert.equal(payload.projectMemory, 'QM project facts');
+    assert.equal(Object.hasOwn(payload,'optionalBrief'),false);
     return { text: JSON.stringify({ reply: 'I appreciate you taking the feedback on board. I cannot restore access myself.', qm_reason: 'Seguimiento sin prometer reactivacion.' }), model: 'gemini-test', inputTokens: 100, outputTokens: 30 };
   });
   const result = await unifiedAccountDraft({ overall_qms: 2.25, recent_qms: 7/3 }, 'Money Heist', 'Can I have another chance?', 'Previous assistant: explanation already given.');

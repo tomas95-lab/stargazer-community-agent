@@ -673,6 +673,7 @@ export interface AiProviderUsage {
 }
 
 export interface ProjectGuidelineBrief {
+  enabled: boolean;
   available: boolean;
   brief: string;
   sourceCharacters: number;
@@ -1087,6 +1088,7 @@ export const api = {
     }),
   getProjectMemory: () => request<ProjectMemory>('/memory'),
   getProjectGuidelineBrief: () => request<ProjectGuidelineBrief>('/memory/guideline-brief'),
+  setProjectGuidelineBriefEnabled: (enabled: boolean) => request<ProjectGuidelineBrief>('/memory/guideline-brief/enabled', { method: 'PUT', body: JSON.stringify({ enabled }) }),
   getRedash: () => request<{ connected: boolean; queries: RedashQuery[] }>('/redash'),
   prepareRedashDiagnostics: () => request('/redash/diagnostics/prepare', { method: 'POST' }),
   configureRedashDiagnostics: (enabled: boolean, autoReply?: boolean) => request('/redash/diagnostics', { method: 'PUT', body: JSON.stringify({ enabled, autoReply }) }),

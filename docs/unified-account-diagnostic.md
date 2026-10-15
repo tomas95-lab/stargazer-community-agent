@@ -40,6 +40,11 @@ are allowed. The model receives overall and gate averages separately. Normal
 usage reservations/accounting and provider fallback remain in effect.
 
 The generated reply is not restricted to the old canned-response catalogue.
+Original guideline excerpts and QM memory supplement query evidence. The
+dashboard's "Use brief as AI context" option controls whether the saved brief
+is also included. This per-project setting applies to Community, DMs, Composer
+and unified diagnostic generation; disabling it keeps the editable brief and
+original guidelines intact. Existing projects default to enabled.
 Preview routes always return `human`, `draftOnly: true`. For real Community/DM
 evaluations, confirmed diagnoses may become `reply` only when the current
 connection belongs to Tomas, authenticated/runtime diagnostics authorization is

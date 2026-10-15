@@ -87,6 +87,7 @@ const cachedChunks = new Map<string, { text: string; chunks: GuidelineChunk[] }>
 const cachedBriefs = new Map<string, { text: string; brief: string }>();
 
 export interface ProjectGuidelineBriefStatus {
+  enabled: boolean;
   available: boolean;
   brief: string;
   sourceCharacters: number;
@@ -165,18 +166,35 @@ export async function projectGuidelineBrief(): Promise<string> {
   return brief;
 }
 
+export async function projectGuidelineAiBrief(): Promise<string> {
+  const saved = await readDataJSONOrDefault<{ enabled?: boolean } | null>('data/guideline-brief.json', null);
+  if (saved?.enabled === false) return '';
+  return projectGuidelineBrief();
+}
+
+export async function setProjectGuidelineBriefEnabled(enabled: unknown): Promise<ProjectGuidelineBriefStatus> {
+  if (typeof enabled !== 'boolean') throw new Error('Brief enabled must be true or false.');
+  const saved = await readDataJSONOrDefault<{ brief?: string; enabled?: boolean } | null>('data/guideline-brief.json', null);
+  await writeDataJSON('data/guideline-brief.json', { ...saved, enabled, updatedAt: new Date().toISOString() }, 'Update brief AI context setting');
+  return projectGuidelineBriefStatus();
+}
+
 export async function saveProjectGuidelineBrief(brief: unknown): Promise<ProjectGuidelineBriefStatus> {
   if (typeof brief !== 'string' || !brief.trim()) throw new Error('Enter a project brief.');
   if (brief.length > 20000) throw new Error('Keep the brief under 20,000 characters.');
-  await writeDataJSON('data/guideline-brief.json', { brief: brief.trim(), updatedAt: new Date().toISOString() }, 'Update project brief');
+  const saved = await readDataJSONOrDefault<{ enabled?: boolean } | null>('data/guideline-brief.json', null);
+  await writeDataJSON('data/guideline-brief.json', { brief: brief.trim(), enabled: saved?.enabled !== false, updatedAt: new Date().toISOString() }, 'Update project brief');
   return projectGuidelineBriefStatus();
 }
 
 export async function projectGuidelineBriefStatus(): Promise<ProjectGuidelineBriefStatus> {
+  const saved = await readDataJSONOrDefault<{ enabled?: boolean } | null>('data/guideline-brief.json', null);
+  const enabled = saved?.enabled !== false;
   const text = await loadProjectGuidelines();
   const brief = await projectGuidelineBrief();
   if (!text.trim() && !brief) {
     return {
+      enabled,
       available: false,
       brief: '',
       sourceCharacters: 0,
@@ -191,6 +209,7 @@ export async function projectGuidelineBriefStatus(): Promise<ProjectGuidelineBri
       .filter((heading) => heading && !/^Page \d+$/i.test(heading)),
   );
   return {
+    enabled,
     available: Boolean(brief),
     brief,
     sourceCharacters: text.length,

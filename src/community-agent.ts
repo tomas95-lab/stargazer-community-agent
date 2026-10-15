@@ -6,7 +6,7 @@ import { loadBotConfig } from './config';
 import { DiscourseChatMessage, DiscourseClient } from './discourse-client';
 import { readDataJSON, writeDataJSON } from './data-store';
 import { appendOperationLog } from './operations-log';
-import { findGuidelineSnippetsForChannel, projectGuidelineBrief } from './project-guidelines';
+import { findGuidelineSnippetsForChannel, projectGuidelineAiBrief } from './project-guidelines';
 import { findApprovedMemoryAnswer, relevantProjectMemoryText } from './project-memory';
 import { loadProjectLinks } from './links';
 import { getProjectContext, projectScheduleAllowsNow } from './project-context';
@@ -882,7 +882,7 @@ export async function evaluateSupportMessage(
   const [snippets, memory, projectBrief] = await Promise.all([
     findGuidelineSnippetsForChannel(message, channelId, 4),
     relevantProjectMemoryText(message, 6),
-    projectGuidelineBrief(),
+    projectGuidelineAiBrief(),
   ]);
   const hasRecentHumanEvidence = /\/(?:staff|manager)(?:\/|\])/i.test(context);
   if (snippets.length === 0 && !memory.trim() && !hasRecentHumanEvidence) {
@@ -903,7 +903,7 @@ export async function evaluateSupportMessage(
     'Always write user-facing replies in English, even if the incoming message is Spanish, Portuguese, or any other language.',
     'Never write the reply in Spanish.',
     'Never use the em dash character U+2014. Use commas, parentheses, or a regular hyphen instead.',
-    'Use the project brief for orientation. Use project memory, retrieved original guideline excerpts, and recent chat context as the source of truth for specific claims.',
+    'If a project brief is included, use it only for orientation. Use project memory, retrieved original guideline excerpts, and recent chat context as the source of truth for specific claims.',
     'You may answer only when the answer is clearly supported by project memory, retrieved original guideline excerpts, or recent chat context. The brief alone is not enough for detailed policy claims.',
     'Use action "react" only when the incoming contributor message is useful, constructive, or confirms a resolution, and no text reply is needed.',
     `For action "react", use reaction "${DEFAULT_REACTION_EMOJI}" unless there is a clearly better positive reaction. Do not put reaction-only acknowledgements in the reply field.`,
@@ -915,7 +915,7 @@ export async function evaluateSupportMessage(
   ].filter(Boolean).join(' ');
   const userPrompt = [
     `Today/context:\n${context || 'No recent context.'}`,
-    `Project brief:\n${projectBrief || 'No project brief available.'}`,
+    ...(projectBrief ? [`Optional project brief:\n${projectBrief}`] : []),
     `Project memory:\n${memory || 'No project memory available.'}`,
     `Project guideline excerpts:\n${snippets.length ? snippets.join('\n\n---\n\n') : 'No guideline text available.'}`,
     `Incoming message from ${username}:\n${message}`,
