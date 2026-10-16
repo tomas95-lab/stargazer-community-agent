@@ -6,14 +6,9 @@ import { appendOperationLog } from './operations-log';
 import { getProjectContext, projectScheduleAllowsNow } from './project-context';
 import { activeProjectDiagnosticConnection } from './redash-diagnostics';
 import { normalizeRedashResult, redashId, redashRequest, REDASH_OWNER_ID } from './redash';
+import { PROJECT_AVAILABILITY_SQL } from './unified-account-query';
 
-export const PROJECT_AVAILABILITY_SQL = `SELECT p._id AS "project_id",
-  CURRENT_TIMESTAMP() AS "observed_at",
-  EXISTS (SELECT 1 FROM PUBLIC.PIPELINEV3HUMANNODES h
-    WHERE h.project = p._id AND h.status = 'pending' AND h.worker IS NULL
-      AND h.review_level IN (-1, 0)) AS "project_has_tasks"
-FROM PUBLIC.PROJECTS p
-WHERE p._id = '{{project_id}}' AND COALESCE(p.__deleted, FALSE) = FALSE`;
+export { PROJECT_AVAILABILITY_SQL } from './unified-account-query';
 
 export const EMPTY_BATCH_MESSAGE = 'Hi everyone! We have completed the current batch of tasks. More tasks are expected to be added soon. In the meantime, please work on your secondary projects. We will share updates as they become available.';
 

@@ -60,11 +60,11 @@ test('pending Redash job is encrypted and resumed on retries, without restarting
 test('semantic selection can execute the bound query without any recognized status phrase',async t=>{
   setup(t);
   let selections=0;
-  t.mock.method(require('../dist/diagnostic-routing.js'),'shouldUseDiagnosticQuery',async(message,conversation)=>{
+  t.mock.method(require('../dist/diagnostic-routing.js'),'selectDiagnosticQuery',async(message,conversation)=>{
     selections++;
     assert.equal(message,'Ya termine lo que me asignaron para empezar?');
     assert.equal(conversation,'Previous: course onboarding.');
-    return true;
+    return 'contributor';
   });
   t.mock.method(require('../dist/redash.js'),'redashRequest',async(_key,path,body)=>{
     assert.equal(path,'queries/33/results');
@@ -82,7 +82,7 @@ test('semantic selection can execute the bound query without any recognized stat
 test('negative selection and unauthorized contexts cannot execute Redash queries',async t=>{
   setup(t);
   let selections=0;
-  t.mock.method(require('../dist/diagnostic-routing.js'),'shouldUseDiagnosticQuery',async()=>{selections++;return false;});
+  t.mock.method(require('../dist/diagnostic-routing.js'),'selectDiagnosticQuery',async()=>{selections++;return null;});
   t.mock.method(require('../dist/redash.js'),'redashRequest',async()=>{throw new Error('Query must not execute');});
   assert.equal(await runWithProjectContext(context,()=>startAccountDiagnostic('latam.coder1669','Thank you!')),null);
   assert.equal(selections,1);
@@ -90,6 +90,56 @@ test('negative selection and unauthorized contexts cannot execute Redash queries
     assert.equal(await runWithProjectContext({...context,...overrides},()=>startAccountDiagnostic('latam.coder1669','Can I continue?')),null);
   }
   assert.equal(selections,1);
+});
+
+test('sandbox project question uses only project availability even if the username cannot resolve',async t=>{
+  setup(t);
+  t.mock.method(require('../dist/diagnostic-routing.js'),'selectDiagnosticQuery',async()=> 'project');
+  t.mock.method(require('../dist/redash.js'),'redashRequest',async(_key,path,body)=>{
+    if(path==='queries/33') return{data_source_id:30};
+    assert.equal(path,'query_results');
+    assert.match(body.query,/review_level IN \(-1, 0\)/);
+    assert.ok(body.query.includes(project));
+    assert.doesNotMatch(body.query,/latam\.coder|PUBLIC\.USERS|USERPROJECTPRIORITIES/);
+    return{query_result:{data:{columns:[],rows:[{project_id:project,project_has_tasks:false}]}}};
+  });
+  t.mock.method(require('../dist/unified-account-draft.js'),'unifiedAccountDraft',async(row,_project,message,_conversation,scope)=>{
+    assert.equal(scope,'project');
+    assert.equal(row.identity_matches,undefined);
+    assert.equal(message,'There are task in the project?');
+    return sealDiagnosticDraft({diagnosticVersion:3,diagnosticResolved:true,
+      reply:'The project is currently EQ.',reason:'No hay tareas disponibles en L-1/L0.'});
+  });
+  for(const username of ['latam.coder93','sandbox.user']) {
+    const result=await runWithProjectContext(context,()=>startAccountDiagnostic(username,'There are task in the project?'));
+    assert.equal(result.draft.reply,'The project is currently EQ.');
+  }
+});
+
+test('project queries reject wrong-project results and never bypass personal identity checks',async t=>{
+  setup(t);
+  t.mock.method(require('../dist/redash.js'),'redashRequest',async(_key,path)=>path==='queries/33'
+    ? {data_source_id:30} : {query_result:{data:{columns:[],rows:[{project_id:'other-project',project_has_tasks:false}]}}});
+  const result=await runWithProjectContext(context,()=>startAccountDiagnostic('sandbox.user','Does the project have tasks?'));
+  assert.equal(result.draft.diagnosticResolved,undefined);
+  assert.match(result.draft.reason,/availability was not returned/);
+  const personal=await runWithProjectContext(context,()=>startAccountDiagnostic('sandbox.user','I am EQ'));
+  assert.match(personal.draft.reason,/lookup unavailable/);
+});
+
+test('project and contributor pending jobs have separate scope-bound storage',async t=>{
+  const store=setup(t);
+  t.mock.method(require('../dist/redash.js'),'redashRequest',async(_key,path)=> {
+    if(path==='queries/33') return{data_source_id:30};
+    return{job:{id:path==='query_results'?'project-job':'person-job'}};
+  });
+  const projectRun=await runWithProjectContext(context,()=>startAccountDiagnostic('latam.coder93','Does the project have tasks?'));
+  const personal=await runWithProjectContext(context,()=>startAccountDiagnostic('latam.coder93','I am EQ'));
+  assert.equal(projectRun.task.scope,'project');
+  assert.equal(personal.task.scope,'contributor');
+  assert.equal(projectRun.task.jobId,'project-job');
+  assert.equal(personal.task.jobId,'person-job');
+  assert.equal(store.size,2);
 });
 
 test('failed jobs are cleared and can start fresh; unauthorized callers cannot access pending state',async t=>{

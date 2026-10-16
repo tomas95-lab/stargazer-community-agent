@@ -4,6 +4,14 @@ export const UNIFIED_DIAGNOSTIC_PARAMETERS = [
   'project_id', 'project_tag_prefix',
 ];
 
+export const PROJECT_AVAILABILITY_SQL = `SELECT p._id AS "project_id",
+  CURRENT_TIMESTAMP() AS "observed_at",
+  EXISTS (SELECT 1 FROM PUBLIC.PIPELINEV3HUMANNODES h
+    WHERE h.project = p._id AND h.status = 'pending' AND h.worker IS NULL
+      AND h.review_level IN (-1, 0)) AS "project_has_tasks"
+FROM PUBLIC.PROJECTS p
+WHERE p._id = '{{project_id}}' AND COALESCE(p.__deleted, FALSE) = FALSE`;
+
 // Every population is scoped before joining. Ratings and permission rows are
 // deduplicated before aggregation, so joins cannot multiply scores or attempts.
 export const UNIFIED_DIAGNOSTIC_SQL = `WITH identity_matches AS (
