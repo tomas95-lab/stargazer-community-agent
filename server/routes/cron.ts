@@ -9,6 +9,7 @@ import { appendOperationLog, OperationStatus } from '../../src/operations-log';
 import { processDueScheduledMessages } from '../../src/scheduled-messages';
 import { canonicalProjectId, defaultProjectId, isLegacyProjectId, ProjectContext, projectScheduleAllowsNow, runWithProjectContext } from '../../src/project-context';
 import { withCronRunLock } from '../../src/cron-locks';
+import { runProjectAvailabilityJob } from '../../src/project-availability-job';
 import {
   isPlatformConfigured,
   listEnabledProjectConnections,
@@ -244,17 +245,21 @@ async function handleCommunityAgentCron(req: Request, res: Response): Promise<vo
           'community-agent',
           context.projectId,
           slot(req),
-          () => runCommunityAgent({
-            post: context.automationSettings?.autoPost ?? process.env.AGENT_AUTO_POST === 'true',
-            react: context.automationSettings?.autoReact ?? process.env.AGENT_AUTO_REACT === 'true',
-            includeCommunity: true,
-            onlyToday: true,
-            respectSchedule: true,
-            skipProcessed: true,
-            markProcessed: true,
-            maxAnswers: context.automationSettings?.communityMaxAnswers ?? Number(process.env.AGENT_MAX_ANSWERS || 4),
-            messageCount: Number(process.env.AGENT_MESSAGE_COUNT || 50),
-          })
+          async () => {
+            const projectAvailability = await runProjectAvailabilityJob();
+            const result = await runCommunityAgent({
+              post: context.automationSettings?.autoPost ?? process.env.AGENT_AUTO_POST === 'true',
+              react: context.automationSettings?.autoReact ?? process.env.AGENT_AUTO_REACT === 'true',
+              includeCommunity: true,
+              onlyToday: true,
+              respectSchedule: true,
+              skipProcessed: true,
+              markProcessed: true,
+              maxAnswers: context.automationSettings?.communityMaxAnswers ?? Number(process.env.AGENT_MAX_ANSWERS || 4),
+              messageCount: Number(process.env.AGENT_MESSAGE_COUNT || 50),
+            });
+            return { ...result, projectAvailability };
+          }
         ));
         runs.push({
           projectId: context.projectId,
@@ -335,7 +340,11 @@ async function handleDailyThreadCron(req: Request, res: Response): Promise<void>
           'daily-thread',
           context.projectId,
           slot(req),
-          () => runDailyPublishJob()
+          async () => {
+            const projectAvailability = await runProjectAvailabilityJob();
+            const result = await runDailyPublishJob();
+            return { ...result, projectAvailability };
+          }
         ));
         runs.push({
           projectId: context.projectId,

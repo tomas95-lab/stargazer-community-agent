@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { createCipheriv,createHash,randomBytes } from 'node:crypto';
-import { startAccountDiagnostic,pollAccountDiagnostic,diagnosticWaitMs,authorizeDiagnosticReply,accountDiagnosticDraft } from '../dist/redash-diagnostics.js';
+import { startAccountDiagnostic,pollAccountDiagnostic,diagnosticWaitMs,authorizeDiagnosticReply,accountDiagnosticDraft,activeProjectDiagnosticConnection } from '../dist/redash-diagnostics.js';
 import { runWithProjectContext } from '../dist/project-context.js';
 import { sealDiagnosticDraft,DIAGNOSTIC_COPY } from '../dist/diagnostic-disclosure.js';
 import { REDASH_OWNER_ID } from '../dist/redash.js';
@@ -27,6 +27,15 @@ function setup(t) {
   t.mock.method(require('../dist/data-store.js'),'writeDataJSON',async(path,value)=>{store.set(path,value);});
   return store;
 }
+
+test('project availability credentials require Tomas and the enabled project-bound automatic query',async t=>{
+  setup(t);
+  assert.deepEqual(await runWithProjectContext(context,activeProjectDiagnosticConnection),{key:'fake-key',queryId:33});
+  for(const overrides of [{ownerId:'another-qm'},{redashDiagnosticsAllowed:false},{demoMode:true},{automationPaused:true}]) {
+    assert.equal(await runWithProjectContext({...context,...overrides},activeProjectDiagnosticConnection),null);
+  }
+  assert.equal(await runWithProjectContext({...context,projectId:'another-project'},activeProjectDiagnosticConnection),null);
+});
 
 test('pending Redash job is encrypted and resumed on retries, without restarting the SQL',async t=>{
   const store=setup(t);

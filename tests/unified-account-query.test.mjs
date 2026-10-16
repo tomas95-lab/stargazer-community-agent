@@ -18,6 +18,9 @@ test('unified SQL scopes identity, project and role; computes both metrics and b
   assert.doesNotMatch(UNIFIED_DIAGNOSTIC_SQL, /TASKS_REMAINING|IS_USER_QUALIFIED|"qualified"|\b(?:UPDATE|DELETE|INSERT|DROP)\s/i);
   assert.match(UNIFIED_DIAGNOSTIC_SQL, /PUBLIC\.PROJECTONBOARDINGSTATES/);
   assert.match(UNIFIED_DIAGNOSTIC_SQL, /PUBLIC\.COURSEPROGRESSV2/);
+  const availabilityChecks = [...UNIFIED_DIAGNOSTIC_SQL.matchAll(/EXISTS \(SELECT 1 FROM PUBLIC\.PIPELINEV3HUMANNODES h([\s\S]*?)\) AS "(project_has_tasks|role_has_tasks)"/g)];
+  assert.equal(availabilityChecks.length, 2);
+  for (const check of availabilityChecks) assert.match(check[1], /h\.review_level IN \(-1, 0\)/);
   for (const field of ['overall_qms', 'recent_qms', 'recent_pdr', 'current_bucket', 'expected_bucket', 'tier_matches_performance', 'task_limit', 'window_hours', 'throttle_expires_at', 'project_has_tasks', 'role_has_tasks']) {
     assert.ok(UNIFIED_DIAGNOSTIC_SQL.includes(`"${field}"`), field);
   }

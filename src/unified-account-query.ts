@@ -145,9 +145,11 @@ export const UNIFIED_DIAGNOSTIC_SQL = `WITH identity_matches AS (
     (SELECT COUNT_IF(score = 2) FROM role_ratings) AS "two_score",
     (SELECT COUNT_IF(score = 1) FROM role_ratings) AS "one_score",
     EXISTS (SELECT 1 FROM PUBLIC.PIPELINEV3HUMANNODES h WHERE h.project = p._id
-      AND h.status = 'pending' AND h.worker IS NULL) AS "project_has_tasks",
+      AND h.status = 'pending' AND h.worker IS NULL
+      AND h.review_level IN (-1, 0)) AS "project_has_tasks",
     EXISTS (SELECT 1 FROM PUBLIC.PIPELINEV3HUMANNODES h WHERE h.project = p._id
       AND h.status = 'pending' AND h.worker IS NULL
+      AND h.review_level IN (-1, 0)
       AND h.review_level = COALESCE((SELECT review_level FROM permission), -1)) AS "role_has_tasks",
     CASE WHEN tags.disabled_tag THEN 'disabled'
       WHEN tags.demoted_tag THEN 'reviewer_demoted'

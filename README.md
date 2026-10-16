@@ -74,6 +74,14 @@ Vercel serves the UI and API. Scheduled routes require `CRON_SECRET`; external s
 
 Do not commit `.env`, browser profiles, generated builds, runtime output, downloaded guidelines, or contributor conversations.
 
+### Project Availability Pilot
+
+For Tomas's explicitly enabled Redash project connection, the daily-thread and Community cron routes share one daily availability check. It uses approved read-only SQL on the configured project, without AI calls or contributor lookups. Availability includes only pending, unassigned work in L-1 and L0; higher review layers never count. An empty batch triggers one English notice in the project's configured Community channel; no task counts are disclosed.
+
+The notice is not repeated on subsequent days while the queue remains empty. A successful daily check that observes available work resets it for the next batch. Paused projects, demo accounts, suggestion mode, and other users cannot publish these notices. Failed or ambiguous queries never trigger a notice. Uncertain message delivery requires manual verification instead of an automatic resend.
+
+The check reuses the existing cron schedules and Supabase runtime storage; no additional scheduler or environment variable is required. Preparing diagnostic queries disables their automation until it is explicitly enabled again.
+
 ## Verification
 
 ```bash

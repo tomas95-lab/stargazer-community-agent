@@ -46,8 +46,10 @@ SELECT
   COALESCE(tags.unknown_tag, FALSE) AS "tag_unknown",
   (pe._id IS NOT NULL) AS "permission_verified",
   up.EMPTY_QUEUE_STATUS AS "individual_eq",
-  (TRY_TO_NUMBER(p.TASKS_REMAINING::STRING) = 0) AS "project_empty",
-  (TRY_TO_NUMBER(p.TASKS_REMAINING::STRING) > 0) AS "project_has_tasks",
+  NOT EXISTS (SELECT 1 FROM PUBLIC.PIPELINEV3HUMANNODES h WHERE h.project=p._id
+    AND h.status='pending' AND h.worker IS NULL AND h.review_level IN (-1, 0)) AS "project_empty",
+  EXISTS (SELECT 1 FROM PUBLIC.PIPELINEV3HUMANNODES h WHERE h.project=p._id
+    AND h.status='pending' AND h.worker IS NULL AND h.review_level IN (-1, 0)) AS "project_has_tasks",
   COALESCE(pe.DISABLED, FALSE) AS "access_disabled",
   (COALESCE(pe.DISABLED, FALSE) AND UPPER(TRIM(pe.DISABLE_REASON::STRING))
     IN ('QUALITY', 'LOW_QUALITY', 'QUALITY_ISSUES')) AS "quality_disabled",
@@ -202,6 +204,17 @@ async function diagnosticConnection() {
   const { data, error } = await runtimeDb().from('private_redash_connections').select('key_ciphertext,queries').eq('owner_id', REDASH_OWNER_ID).maybeSingle();
   if (error || !data) throw new Error('Diagnostic connection unavailable.');
   return { key: decryptKey(data.key_ciphertext), queries: (data.queries || []) as DiagnosticQuery[] };
+}
+
+export async function activeProjectDiagnosticConnection(): Promise<{ key: string; queryId: number } | null> {
+  const context = getProjectContext();
+  if (!context.redashDiagnosticsAllowed || context.ownerId !== REDASH_OWNER_ID
+    || context.demoMode || context.automationPaused || !runtimeDbConfigured()) return null;
+  const { key, queries } = await diagnosticConnection();
+  const query = queries.find(item => item.diagnosticVersion === 3 && item.diagnosticRole === 'unified'
+    && item.diagnosticProjectId === context.projectId && item.diagnosticEnabled === true
+    && item.diagnosticAutoReply === true);
+  return query ? { key, queryId: redashId(query.queryId) } : null;
 }
 
 export async function authorizeDiagnosticReply(value: DiagnosticDraft) {
