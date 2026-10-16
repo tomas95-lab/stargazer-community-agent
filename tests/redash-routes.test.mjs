@@ -9,7 +9,7 @@ test('every Redash route denies other users and admin-token callers before stora
   const router = require('../server/routes/redash.ts').createRedashRouter(async () => user);
   for (const identity of [null, { id: 'different-user', email: 'tomas.ruiz@contractors.scale.com' }]) {
     user = identity;
-    for (const [method, path] of [['GET', ''], ['GET', '/data-sources'], ['PUT', '/connection'], ['DELETE', '/connection'], ['POST', '/queries'], ['DELETE', '/queries/test'], ['POST', '/queries/test/run'], ['GET', '/jobs/test'], ['POST', '/diagnostics/prepare'], ['PUT', '/diagnostics'], ['POST', '/diagnostics/preview'], ['POST', '/diagnostics/preview/poll']]) {
+    for (const [method, path] of [['GET', ''], ['GET', '/data-sources'], ['PUT', '/connection'], ['DELETE', '/connection'], ['POST', '/queries'], ['DELETE', '/queries/test'], ['POST', '/queries/test/run'], ['GET', '/jobs/test'], ['POST', '/diagnostics/prepare'], ['PUT', '/diagnostics'], ['POST', '/diagnostics/preview'], ['POST', '/diagnostics/preview/poll'], ['POST', '/availability/check']]) {
       const response = await new Promise((resolve, reject) => {
         const res = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { resolve({ code: this.statusCode, body }); } };
         router.handle({ method, url: path || '/', headers: { 'x-admin-token': 'anything' } }, res, () => reject(new Error('Access guard was bypassed')));

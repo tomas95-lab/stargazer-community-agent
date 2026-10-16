@@ -69,11 +69,11 @@ async function checkAvailability(key: string, queryId: number, state: Availabili
   return rows[0].project_has_tasks;
 }
 
-export async function runProjectAvailabilityJob(): Promise<ProjectAvailabilityRun> {
+export async function runProjectAvailabilityJob(options: { manual?: boolean } = {}): Promise<ProjectAvailabilityRun> {
   const context = getProjectContext();
   if (context.ownerId !== REDASH_OWNER_ID || !context.redashDiagnosticsAllowed || context.demoMode
-    || context.automationPaused || !projectScheduleAllowsNow()
-    || !(context.automationSettings?.autoPost ?? process.env.AGENT_AUTO_POST === 'true')) {
+    || context.automationPaused || (!options.manual && (!projectScheduleAllowsNow()
+      || !(context.automationSettings?.autoPost ?? process.env.AGENT_AUTO_POST === 'true')))) {
     return { status: 'skipped', reason: 'not_authorized_or_not_active' };
   }
   try {
@@ -115,11 +115,11 @@ export async function runProjectAvailabilityJob(): Promise<ProjectAvailabilityRu
         throw new Error('Batch announcement delivery needs verification before retrying.');
       }
       return { status: 'notified' as const, channelId: state.channelId, messageId: state.messageId };
-    });
+    }, new Date(), { repeatCompleted: true });
     const result = locked.result || { status: 'skipped' as const, reason: locked.reason };
     if (!locked.skipped) await appendOperationLog({ action: 'project_task_availability',
-      status: 'success', message: result.status === 'notified' ? 'Empty-batch announcement sent' : 'Daily project availability checked',
-      metadata: { result: result.status, ...('channelId' in result ? { channelId: result.channelId } : {}),
+      status: 'success', message: result.status === 'notified' ? 'Empty-batch announcement sent' : 'Project availability checked',
+      metadata: { result: result.status, source: options.manual ? 'manual' : 'cron', ...('channelId' in result ? { channelId: result.channelId } : {}),
         ...('messageId' in result ? { messageId: result.messageId } : {}) } });
     return result;
   } catch (error) {

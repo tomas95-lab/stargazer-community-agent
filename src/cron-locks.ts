@@ -60,18 +60,20 @@ export async function withCronRunLock<T>(
   slot: string,
   runner: () => Promise<T>,
   now = new Date(),
+  options: { repeatCompleted?: boolean } = {},
 ): Promise<CronRunLockedResult<T>> {
   const utcDate = todayDate(now);
   if (runtimeDbConfigured()) {
     try {
-      return await withDatabaseLock(job, projectId, slot, utcDate, runner, now);
+      return await withDatabaseLock(job, projectId, slot, utcDate, runner, now, options.repeatCompleted === true);
     } catch (err) {
       if (!runtimeTableMissing(err)) throw err;
+      if (options.repeatCompleted) throw new Error('Atomic lock storage is required for repeated availability checks.');
     }
   }
   const current = await readLock(job, projectId, slot, utcDate);
 
-  if (current?.status === 'completed') {
+  if (current?.status === 'completed' && !options.repeatCompleted) {
     return { skipped: true, reason: 'already_completed', lock: current };
   }
 
@@ -121,6 +123,7 @@ async function withDatabaseLock<T>(
   utcDate: string,
   runner: () => Promise<T>,
   now: Date,
+  repeatCompleted: boolean,
 ): Promise<CronRunLockedResult<T>> {
   const db = runtimeDb();
   const base: CronRunLock = { job, projectId, slot, utcDate, argentinaDate: utcDate, status: 'running', startedAt: now.toISOString() };
@@ -141,13 +144,13 @@ async function withDatabaseLock<T>(
       completedAt: row.completed_at || undefined,
       error: row.error || undefined,
     };
-    if (current.status === 'completed') return { skipped: true, reason: 'already_completed', lock: current };
+    if (current.status === 'completed' && !repeatCompleted) return { skipped: true, reason: 'already_completed', lock: current };
     if (current.status === 'running' && now.getTime() - new Date(current.startedAt).getTime() < RUNNING_TTL_MS) {
       return { skipped: true, reason: 'already_running', lock: current };
     }
     const takeover = await db.from('automation_run_locks').update({ status: 'running', started_at: base.startedAt, completed_at: null, error: null })
       .eq('job', job).eq('project_key', projectId).eq('slot', slot).eq('run_date', utcDate)
-      .eq('started_at', row.started_at).select('job');
+      .eq('started_at', row.started_at).eq('status', row.status).select('job');
     if (takeover.error) throw new Error(takeover.error.message);
     if (!takeover.data?.length) return { skipped: true, reason: 'already_running', lock: current };
   }

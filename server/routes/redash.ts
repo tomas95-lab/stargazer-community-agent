@@ -9,6 +9,7 @@ import { UNIFIED_DIAGNOSTIC_SQL, UNIFIED_DIAGNOSTIC_PARAMETERS } from '../../src
 import { projectTagPolicy } from '../../src/project-tag-policy';
 import { sealDiagnosticDraft } from '../../src/diagnostic-disclosure';
 import { getCurrentProjectId } from '../../src/project-context';
+import { runProjectAvailabilityJob } from '../../src/project-availability-job';
 
 const TABLE = 'private_redash_connections';
 interface Query { id: string; name: string; queryId: number; parameter?: string; diagnosticRole?: 'identity' | 'status' | 'unified'; diagnosticProjectId?: string; diagnosticEnabled?: boolean; diagnosticAutoReply?: boolean; diagnosticVersion?: number }
@@ -43,6 +44,10 @@ function safeError(res: any, error: unknown): void {
 
 router.get('/', async (_req, res) => {
   try { const row = await load(); res.json({ connected: Boolean(row?.key_ciphertext), queries: row?.queries || [] }); }
+  catch (error) { safeError(res, error); }
+});
+router.post('/availability/check', async (_req, res) => {
+  try { res.json(await runProjectAvailabilityJob({ manual: true })); }
   catch (error) { safeError(res, error); }
 });
 function previewResponse(progress: DiagnosticProgress | null) {

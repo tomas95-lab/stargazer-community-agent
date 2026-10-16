@@ -5,6 +5,10 @@ const BASE = '/api';
 export interface RedashQuery { id: string; name: string; queryId: number; diagnosticRole?: 'identity' | 'status' | 'unified'; diagnosticProjectId?: string; diagnosticEnabled?: boolean; diagnosticAutoReply?: boolean; diagnosticVersion?: number }
 export interface DiagnosticPreview { status: 'pending' | 'complete'; stage?: 'identity' | 'status'; token?: string; draft?: { reply: string; reason: string; draftOnly: true; action: 'human' } }
 export interface RedashRun { job?: string; pending?: boolean; result?: { columns: Array<{ name: string }>; rows: Array<Record<string, unknown>>; retrieved_at?: string } }
+export interface TaskAvailabilityResult {
+  status: 'skipped' | 'available' | 'notified' | 'already_notified' | 'pending' | 'error';
+  reason?: string;
+}
 const PROJECT_ID_KEY = 'qm_active_project_id';
 
 function getStoredProjectId(): string {
@@ -1092,6 +1096,9 @@ export const api = {
   getProjectGuidelineBrief: () => request<ProjectGuidelineBrief>('/memory/guideline-brief'),
   setProjectGuidelineBriefEnabled: (enabled: boolean) => request<ProjectGuidelineBrief>('/memory/guideline-brief/enabled', { method: 'PUT', body: JSON.stringify({ enabled }) }),
   getRedash: () => request<{ connected: boolean; queries: RedashQuery[] }>('/redash'),
+  checkTaskAvailability: (projectId: string) => request<TaskAvailabilityResult>('/redash/availability/check', {
+    method: 'POST', headers: { 'X-Project-Id': projectId },
+  }, false),
   prepareRedashDiagnostics: () => request('/redash/diagnostics/prepare', { method: 'POST' }),
   configureRedashDiagnostics: (enabled: boolean, autoReply?: boolean) => request('/redash/diagnostics', { method: 'PUT', body: JSON.stringify({ enabled, autoReply }) }),
   previewRedashDraft: (username: string, message: string) => request<DiagnosticPreview>('/redash/diagnostics/preview', { method: 'POST', body: JSON.stringify({ username, message }) }),

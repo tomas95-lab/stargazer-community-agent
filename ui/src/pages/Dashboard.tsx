@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   ArrowRight,
@@ -9,6 +9,8 @@ import {
   CircleAlert,
   FileText,
   MessagesSquare,
+  ListChecks,
+  LoaderCircle,
   Settings,
 } from "lucide-react"
 
@@ -25,6 +27,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import { usePlatform } from "@/platform"
+import { useAuth } from "@/auth"
+import { canUseRedash } from "@/lib/redash-access"
 
 function NextWebinarCard({ webinar }: { webinar: Webinar }) {
   const dt = new Date(`${webinar.date}T${webinar.timeUtc}:00Z`)
@@ -84,6 +88,11 @@ function OperationMetric({
 export default function Dashboard() {
   const navigate = useNavigate()
   const { currentProject } = usePlatform()
+  const { user } = useAuth()
+  const [checkingAvailability, setCheckingAvailability] = useState(false)
+  const [availabilityMessage, setAvailabilityMessage] = useState("")
+  const [availabilityError, setAvailabilityError] = useState(false)
+  const availabilityRequest = useRef(0)
   const [date, setDate] = useState("")
   const [topic, setTopic] = useState<Topic | null>(null)
   const [preview, setPreview] = useState<PreviewData | null>(null)
@@ -96,6 +105,44 @@ export default function Dashboard() {
   const [briefError, setBriefError] = useState("")
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"thread" | "announcement">("thread")
+
+  useEffect(() => {
+    availabilityRequest.current += 1
+    setCheckingAvailability(false)
+    setAvailabilityMessage("")
+    setAvailabilityError(false)
+  }, [currentProject?.id])
+
+  const checkAvailability = async () => {
+    if (!currentProject || checkingAvailability) return
+    const requestId = ++availabilityRequest.current
+    setCheckingAvailability(true)
+    setAvailabilityMessage("")
+    setAvailabilityError(false)
+    try {
+      const result = await api.checkTaskAvailability(currentProject.id)
+      if (requestId !== availabilityRequest.current) return
+      const messages = {
+        available: "Tasks are available in L-1/L0. No announcement sent.",
+        notified: "No tasks available in L-1/L0. Batch announcement sent.",
+        already_notified: result.reason === "delivery_requires_verification"
+          ? "No tasks available in L-1/L0. Previous announcement delivery needs verification."
+          : "No tasks available in L-1/L0. This batch was already announced.",
+        pending: "Availability query is still running. No announcement sent.",
+        error: result.reason || "Could not verify availability. No announcement sent.",
+        skipped: result.reason === "already_running" ? "Another availability check is running."
+          : "Availability checks are not enabled for this project.",
+      }
+      setAvailabilityError(result.status === "error" || result.reason === "delivery_requires_verification")
+      setAvailabilityMessage(messages[result.status])
+    } catch (error) {
+      if (requestId !== availabilityRequest.current) return
+      setAvailabilityError(true)
+      setAvailabilityMessage(error instanceof Error ? error.message : "Availability check failed.")
+    } finally {
+      if (requestId === availabilityRequest.current) setCheckingAvailability(false)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -169,11 +216,26 @@ export default function Dashboard() {
             {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
-        <Button type="button" onClick={() => navigate("/agent")}>
-          <Bot className="size-4" />
-          Open inbox
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {canUseRedash(user) && currentProject ? (
+            <Button type="button" variant="outline" onClick={() => void checkAvailability()}
+              disabled={checkingAvailability || !currentProject.enabled}
+              title="Check L-1/L0 and announce an empty batch in Community">
+              {checkingAvailability ? <LoaderCircle className="size-4 animate-spin" /> : <ListChecks className="size-4" />}
+              {checkingAvailability ? "Checking availability..." : "Check task availability"}
+            </Button>
+          ) : null}
+          <Button type="button" onClick={() => navigate("/agent")}>
+            <Bot className="size-4" />
+            Open inbox
+          </Button>
+        </div>
       </div>
+
+      {availabilityMessage ? <p role={availabilityError ? "alert" : "status"}
+        className={cn("px-4 text-sm lg:px-6", availabilityError ? "text-destructive" : "text-muted-foreground")}>
+        {availabilityMessage}
+      </p> : null}
 
       <div className="px-4 lg:px-6">
         <section className="grid overflow-hidden rounded-lg border bg-card shadow-xs sm:grid-cols-2 lg:grid-cols-4 sm:[&>*:nth-child(even)]:border-l lg:[&>*]:border-l lg:[&>*:first-child]:border-l-0 [&>*:nth-child(n+3)]:border-t lg:[&>*]:border-t-0">

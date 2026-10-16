@@ -76,9 +76,9 @@ Do not commit `.env`, browser profiles, generated builds, runtime output, downlo
 
 ### Project Availability Pilot
 
-For Tomas's explicitly enabled Redash project connection, the daily-thread and Community cron routes share one daily availability check. It uses approved read-only SQL on the configured project, without AI calls or contributor lookups. Availability includes only pending, unassigned work in L-1 and L0; higher review layers never count. An empty batch triggers one English notice in the project's configured Community channel; no task counts are disclosed.
+For Tomas's explicitly enabled Redash project connection, every daily-thread and Community cron execution checks availability. The dashboard's **Check task availability** button runs the same check on demand and sends the notice if needed. Both paths share an atomic concurrency lock, not a once-per-day limit. It uses approved read-only SQL on the configured project, without AI calls or contributor lookups. Availability includes only pending, unassigned work in L-1 and L0; higher review layers never count. An empty batch triggers one English notice in the project's configured Community channel; no task counts are disclosed.
 
-The notice is not repeated on subsequent days while the queue remains empty. A successful daily check that observes available work resets it for the next batch. Paused projects, demo accounts, suggestion mode, and other users cannot publish these notices. Failed or ambiguous queries never trigger a notice. Uncertain message delivery requires manual verification instead of an automatic resend.
+The notice is not repeated while the queue remains empty. A successful check that observes available work resets it for the next batch. Paused projects, demo accounts, and other users cannot publish these notices. Cron checks respect suggestion mode and project schedules; explicitly requested manual checks can run outside those hours. Failed or ambiguous queries never trigger a notice. Uncertain message delivery requires manual verification instead of an automatic resend.
 
 The check reuses the existing cron schedules and Supabase runtime storage; no additional scheduler or environment variable is required. Preparing diagnostic queries disables their automation until it is explicitly enabled again.
 

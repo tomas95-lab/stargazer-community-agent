@@ -14,17 +14,16 @@ const context = { projectId: project, source: 'header', ownerId: REDASH_OWNER_ID
 function setup(t) {
   const state = { saved: {}, sends: [], starts: 0, hasTasks: false, logs: [] };
   t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-16T18:00:00Z').getTime() });
-  const days = new Set();
   const running = new Set();
-  t.mock.method(require('../dist/cron-locks.js'), 'withCronRunLock', async (job, key, slot, run) => {
+  t.mock.method(require('../dist/cron-locks.js'), 'withCronRunLock', async (job, key, slot, run, _now, options) => {
     assert.equal(job, 'project-task-availability');
     assert.equal(key, project);
     assert.equal(slot, 'daily');
-    const day = new Date().toISOString().slice(0, 10);
-    if (days.has(day) || running.has(day)) return { skipped: true, reason: 'already_completed' };
-    running.add(day);
-    try { const result = await run(); days.add(day); return { skipped: false, result }; }
-    finally { running.delete(day); }
+    assert.equal(options.repeatCompleted, true);
+    if (running.has(key)) return { skipped: true, reason: 'already_running' };
+    running.add(key);
+    try { return { skipped: false, result: await run() }; }
+    finally { running.delete(key); }
   });
   t.mock.method(require('../dist/data-store.js'), 'readDataJSONOrDefault', async () => structuredClone(state.saved));
   t.mock.method(require('../dist/data-store.js'), 'writeDataJSON', async (_path, value) => { state.saved = structuredClone(value); });
@@ -66,32 +65,42 @@ test('only Tomas active automatic projects can check or publish availability', a
   }
 });
 
-test('empty batch is announced once, checked daily and rearmed only after observed work returns', async t => {
+test('every run checks availability in the same day without repeating the same empty batch announcement', async t => {
   const state = setup(t);
   assert.equal((await run()).status, 'notified');
-  assert.equal((await run()).status, 'skipped');
-  assert.equal(state.starts, 1);
-  assert.deepEqual(state.sends, [{ channel: '1234', message: EMPTY_BATCH_MESSAGE }]);
-  t.mock.timers.tick(86400000);
   assert.equal((await run()).status, 'already_notified');
   assert.equal(state.starts, 2);
+  assert.deepEqual(state.sends, [{ channel: '1234', message: EMPTY_BATCH_MESSAGE }]);
+  t.mock.timers.tick(90 * 60000);
+  assert.equal((await run()).status, 'already_notified');
+  assert.equal(state.starts, 3);
   assert.equal(state.sends.length, 1);
   state.hasTasks = true;
-  t.mock.timers.tick(86400000);
+  t.mock.timers.tick(90 * 60000);
   assert.equal((await run()).status, 'available');
   assert.equal(state.saved.notice, undefined);
   state.hasTasks = false;
-  t.mock.timers.tick(86400000);
+  t.mock.timers.tick(90 * 60000);
   assert.equal((await run()).status, 'notified');
   assert.equal(state.sends.length, 2);
 });
 
-test('concurrent cron paths share the daily lock and cannot duplicate the announcement', async t => {
+test('manual and cron checks share the same concurrent lock and cannot duplicate the announcement', async t => {
   const state = setup(t);
-  const results = await Promise.all([run(), run()]);
+  const results = await Promise.all([run(), runWithProjectContext(context, () => runProjectAvailabilityJob({ manual: true }))]);
   assert.equal(results.filter(result => result.status === 'notified').length, 1);
   assert.equal(state.starts, 1);
   assert.equal(state.sends.length, 1);
+});
+
+test('manual checks can run outside automation hours but cannot bypass pause or user restrictions',async t=>{
+  const state=setup(t);
+  const manual=overrides=>runWithProjectContext({...context,...overrides},()=>runProjectAvailabilityJob({manual:true}));
+  assert.equal((await manual({automationSettings:{autoPost:false,startTime:'00:00',endTime:'00:01',timezone:'UTC'}})).status,'notified');
+  assert.equal(state.logs[0].metadata.source,'manual');
+  assert.equal((await manual({automationPaused:true})).status,'skipped');
+  assert.equal((await manual({ownerId:'other-qm'})).status,'skipped');
+  assert.equal(state.sends.length,1);
 });
 
 test('missing or invalid project evidence never becomes an empty-batch announcement', async t => {
