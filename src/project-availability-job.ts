@@ -16,6 +16,7 @@ const STATE_PATH = 'output/project-availability-state.json';
 interface AvailabilityState {
   hasTasks?: boolean;
   observedAt?: string;
+  noticeSentAt?: string;
   notice?: 'sending' | 'sent' | 'uncertain';
   messageId?: number;
   channelId?: string;
@@ -26,6 +27,8 @@ export interface ProjectAvailabilityRun {
   reason?: string;
   channelId?: string;
   messageId?: number;
+  observedAt?: string;
+  noticeSentAt?: string;
 }
 
 class PendingAvailability extends Error {}
@@ -83,16 +86,20 @@ export async function runProjectAvailabilityJob(options: { manual?: boolean } = 
       const state = await readDataJSONOrDefault<AvailabilityState>(STATE_PATH, {});
       const hasTasks = await checkAvailability(connection.key, connection.queryId, state);
       state.hasTasks = hasTasks;
+      const evidence = { observedAt: state.observedAt };
       if (hasTasks) {
         delete state.notice;
         delete state.messageId;
         delete state.channelId;
+        delete state.noticeSentAt;
         await writeDataJSON(STATE_PATH, state, 'Project has tasks; reset batch notification');
-        return { status: 'available' as const };
+        return { status: 'available' as const, ...evidence };
       }
       if (state.notice) {
         await writeDataJSON(STATE_PATH, state, 'Project still empty; preserve existing batch notification');
-        return { status: 'already_notified' as const, reason: state.notice === 'sent' ? 'same_empty_batch' : 'delivery_requires_verification' };
+        return { status: 'already_notified' as const, ...evidence,
+          reason: state.notice === 'sent' ? 'same_empty_batch' : 'delivery_requires_verification',
+          ...(state.notice === 'sent' ? { channelId: state.channelId, messageId: state.messageId, noticeSentAt: state.noticeSentAt } : {}) };
       }
       // Require this project's runtime credential; never fall back to a legacy account.
       if (!context.botConfig?.discourseApiKey || !context.botConfig.communityChatChannelId) {
@@ -108,13 +115,14 @@ export async function runProjectAvailabilityJob(options: { manual?: boolean } = 
         const response = await client.sendChatMessage(state.channelId, EMPTY_BATCH_MESSAGE);
         state.notice = 'sent';
         state.messageId = response.message_id || response.id;
+        state.noticeSentAt = new Date().toISOString();
         await writeDataJSON(STATE_PATH, state, 'Record empty-batch announcement');
       } catch {
         state.notice = 'uncertain';
         await writeDataJSON(STATE_PATH, state, 'Avoid duplicate announcement after uncertain delivery');
         throw new Error('Batch announcement delivery needs verification before retrying.');
       }
-      return { status: 'notified' as const, channelId: state.channelId, messageId: state.messageId };
+      return { status: 'notified' as const, ...evidence, channelId: state.channelId, messageId: state.messageId, noticeSentAt: state.noticeSentAt };
     }, new Date(), { repeatCompleted: true });
     const result = locked.result || { status: 'skipped' as const, reason: locked.reason };
     if (!locked.skipped) await appendOperationLog({ action: 'project_task_availability',

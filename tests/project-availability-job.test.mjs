@@ -85,6 +85,39 @@ test('every run checks availability in the same day without repeating the same e
   assert.equal(state.sends.length, 2);
 });
 
+test('manual checks return verified time and the existing announcement without sending duplicates', async t => {
+  const state = setup(t);
+  const first = await runWithProjectContext(context, () => runProjectAvailabilityJob({ manual: true }));
+  assert.equal(first.status, 'notified');
+  assert.equal(first.channelId, '1234');
+  assert.equal(first.messageId, 101);
+  assert.equal(first.observedAt, new Date().toISOString());
+  assert.equal(first.noticeSentAt, first.observedAt);
+  t.mock.timers.tick(10000);
+  const second = await runWithProjectContext(context, () => runProjectAvailabilityJob({ manual: true }));
+  assert.equal(second.status, 'already_notified');
+  assert.equal(second.messageId, first.messageId);
+  assert.equal(second.noticeSentAt, first.noticeSentAt);
+  assert.notEqual(second.observedAt, first.observedAt);
+  assert.equal(state.sends.length, 1);
+  state.hasTasks = true;
+  const available = await run();
+  assert.equal(available.status, 'available');
+  assert.ok(available.observedAt);
+  assert.equal(available.messageId, undefined);
+  assert.equal(state.saved.noticeSentAt, undefined);
+});
+
+test('legacy sent announcements remain linkable without inventing their delivery time', async t => {
+  const state = setup(t);
+  state.saved = { hasTasks: false, notice: 'sent', channelId: '1234', messageId: 55 };
+  const result = await run();
+  assert.equal(result.status, 'already_notified');
+  assert.equal(result.messageId, 55);
+  assert.equal(result.noticeSentAt, undefined);
+  assert.equal(state.sends.length, 0);
+});
+
 test('manual and cron checks share the same concurrent lock and cannot duplicate the announcement', async t => {
   const state = setup(t);
   const results = await Promise.all([run(), runWithProjectContext(context, () => runProjectAvailabilityJob({ manual: true }))]);

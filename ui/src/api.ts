@@ -8,6 +8,10 @@ export interface RedashRun { job?: string; pending?: boolean; result?: { columns
 export interface TaskAvailabilityResult {
   status: 'skipped' | 'available' | 'notified' | 'already_notified' | 'pending' | 'error';
   reason?: string;
+  observedAt?: string;
+  noticeSentAt?: string;
+  channelId?: string;
+  messageId?: number;
 }
 const PROJECT_ID_KEY = 'qm_active_project_id';
 
@@ -1096,7 +1100,8 @@ export const api = {
   getProjectGuidelineBrief: () => request<ProjectGuidelineBrief>('/memory/guideline-brief'),
   setProjectGuidelineBriefEnabled: (enabled: boolean) => request<ProjectGuidelineBrief>('/memory/guideline-brief/enabled', { method: 'PUT', body: JSON.stringify({ enabled }) }),
   getRedash: () => request<{ connected: boolean; queries: RedashQuery[] }>('/redash'),
-  checkTaskAvailability: (projectId: string) => request<TaskAvailabilityResult>('/redash/availability/check', {
+  checkTaskAvailability: (projectId: string, signal?: AbortSignal) => request<TaskAvailabilityResult>('/redash/availability/check', {
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(60000)]) : AbortSignal.timeout(60000),
     method: 'POST', headers: { 'X-Project-Id': projectId },
   }, false),
   prepareRedashDiagnostics: () => request('/redash/diagnostics/prepare', { method: 'POST' }),

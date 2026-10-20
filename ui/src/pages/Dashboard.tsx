@@ -8,13 +8,14 @@ import {
   CheckCircle2,
   CircleAlert,
   FileText,
+  ExternalLink,
   MessagesSquare,
   ListChecks,
   LoaderCircle,
   Settings,
 } from "lucide-react"
 
-import { api, type DailySummaryResult, type PreviewData, type ProjectGuidelineBrief, type Topic, type Webinar } from "@/api"
+import { api, type DailySummaryResult, type PreviewData, type ProjectGuidelineBrief, type TaskAvailabilityResult, type Topic, type Webinar } from "@/api"
 import Preview from "@/components/Preview"
 import PublishButton from "@/components/PublishButton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -29,6 +30,8 @@ import { cn } from "@/lib/utils"
 import { usePlatform } from "@/platform"
 import { useAuth } from "@/auth"
 import { canUseRedash } from "@/lib/redash-access"
+import { availabilityAnnouncementUrl, availabilityFeedback, checkAvailabilityUntilComplete } from "@/lib/task-availability"
+import { formatAppDateTime, withAppTimeZone } from "@/lib/timezone"
 
 function NextWebinarCard({ webinar }: { webinar: Webinar }) {
   const dt = new Date(`${webinar.date}T${webinar.timeUtc}:00Z`)
@@ -90,9 +93,10 @@ export default function Dashboard() {
   const { currentProject } = usePlatform()
   const { user } = useAuth()
   const [checkingAvailability, setCheckingAvailability] = useState(false)
-  const [availabilityMessage, setAvailabilityMessage] = useState("")
-  const [availabilityError, setAvailabilityError] = useState(false)
+  const [availabilityResult, setAvailabilityResult] = useState<TaskAvailabilityResult | null>(null)
+  const [availabilityProgress, setAvailabilityProgress] = useState("")
   const availabilityRequest = useRef(0)
+  const availabilityAbort = useRef<AbortController | null>(null)
   const [date, setDate] = useState("")
   const [topic, setTopic] = useState<Topic | null>(null)
   const [preview, setPreview] = useState<PreviewData | null>(null)
@@ -109,38 +113,36 @@ export default function Dashboard() {
   useEffect(() => {
     availabilityRequest.current += 1
     setCheckingAvailability(false)
-    setAvailabilityMessage("")
-    setAvailabilityError(false)
+    setAvailabilityResult(null)
+    setAvailabilityProgress("")
+    return () => { availabilityAbort.current?.abort() }
   }, [currentProject?.id])
 
   const checkAvailability = async () => {
-    if (!currentProject || checkingAvailability) return
+    if (!currentProject || (availabilityAbort.current && !availabilityAbort.current.signal.aborted)) return
+    const controller = new AbortController()
+    availabilityAbort.current = controller
     const requestId = ++availabilityRequest.current
     setCheckingAvailability(true)
-    setAvailabilityMessage("")
-    setAvailabilityError(false)
+    setAvailabilityResult(null)
+    setAvailabilityProgress("Checking tasks in L-1/L0...")
     try {
-      const result = await api.checkTaskAvailability(currentProject.id)
+      const result = await checkAvailabilityUntilComplete(
+        () => api.checkTaskAvailability(currentProject.id, controller.signal),
+        controller.signal,
+        () => setAvailabilityProgress("Redash is still running. Waiting for the result..."),
+      )
       if (requestId !== availabilityRequest.current) return
-      const messages = {
-        available: "Tasks are available in L-1/L0. No announcement sent.",
-        notified: "No tasks available in L-1/L0. Batch announcement sent.",
-        already_notified: result.reason === "delivery_requires_verification"
-          ? "No tasks available in L-1/L0. Previous announcement delivery needs verification."
-          : "No tasks available in L-1/L0. This batch was already announced.",
-        pending: "Availability query is still running. No announcement sent.",
-        error: result.reason || "Could not verify availability. No announcement sent.",
-        skipped: result.reason === "already_running" ? "Another availability check is running."
-          : "Availability checks are not enabled for this project.",
-      }
-      setAvailabilityError(result.status === "error" || result.reason === "delivery_requires_verification")
-      setAvailabilityMessage(messages[result.status])
+      setAvailabilityResult(result)
     } catch (error) {
-      if (requestId !== availabilityRequest.current) return
-      setAvailabilityError(true)
-      setAvailabilityMessage(error instanceof Error ? error.message : "Availability check failed.")
+      if (controller.signal.aborted || requestId !== availabilityRequest.current) return
+      setAvailabilityResult({ status: "error", reason: error instanceof Error && error.name !== "TimeoutError"
+        ? error.message : "The request timed out. Check again to resume; duplicate announcements are prevented." })
     } finally {
-      if (requestId === availabilityRequest.current) setCheckingAvailability(false)
+      if (requestId === availabilityRequest.current) {
+        setCheckingAvailability(false)
+        availabilityAbort.current = null
+      }
     }
   }
 
@@ -189,6 +191,9 @@ export default function Dashboard() {
     { label: "Guidelines", ready: Boolean(currentProject?.projectGuidelinesCharacters) },
   ]
   const readyCount = readiness.filter((item) => item.ready).length
+  const availability = availabilityResult ? availabilityFeedback(availabilityResult) : null
+  const announcementUrl = availabilityResult && currentProject
+    ? availabilityAnnouncementUrl(currentProject.communityBaseUrl, availabilityResult) : undefined
 
   if (loading) {
     return (
@@ -232,10 +237,25 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {availabilityMessage ? <p role={availabilityError ? "alert" : "status"}
-        className={cn("px-4 text-sm lg:px-6", availabilityError ? "text-destructive" : "text-muted-foreground")}>
-        {availabilityMessage}
-      </p> : null}
+      {checkingAvailability || availability ? <div className="px-4 lg:px-6">
+        <Alert variant={availability?.error ? "destructive" : "default"}
+          role={availability?.error ? "alert" : "status"} aria-live="polite" aria-atomic="true">
+          {checkingAvailability ? <LoaderCircle className="size-4 animate-spin" />
+            : availability?.error ? <CircleAlert className="size-4" /> : <ListChecks className="size-4" />}
+          <AlertTitle>{checkingAvailability ? "Checking task availability" : availability?.title}</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>{checkingAvailability ? availabilityProgress : availability?.message}</p>
+            {!checkingAvailability && availabilityResult?.observedAt ? <p className="text-xs text-muted-foreground">
+              Verified {withAppTimeZone(formatAppDateTime(availabilityResult.observedAt))}
+              {availabilityResult.channelId ? ` · Channel ${availabilityResult.channelId}` : ""}
+            </p> : null}
+            {!checkingAvailability && announcementUrl ? <a href={announcementUrl} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4">
+              View announcement in Community <ExternalLink className="size-3.5" />
+            </a> : null}
+          </AlertDescription>
+        </Alert>
+      </div> : null}
 
       <div className="px-4 lg:px-6">
         <section className="grid overflow-hidden rounded-lg border bg-card shadow-xs sm:grid-cols-2 lg:grid-cols-4 sm:[&>*:nth-child(even)]:border-l lg:[&>*]:border-l lg:[&>*:first-child]:border-l-0 [&>*:nth-child(n+3)]:border-t lg:[&>*]:border-t-0">
