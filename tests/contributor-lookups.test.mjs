@@ -6,7 +6,12 @@ test('lookup identity candidates preserve the exact username and reject SQL inpu
   const emails = Object.values(lookupEmails('latam.coder779'));
   assert.equal(emails.length, 4);
   assert.ok(emails.every(email => email.startsWith('latam.coder779@')));
-  for (const username of ["latam.coder779' OR 1=1", 'latam.coder779%', 'another-user']) assert.throws(() => lookupEmails(username));
+  const pilots=Object.values(lookupEmails('pilots-coder668'));
+  assert.equal(pilots.length,4);
+  assert.ok(pilots.every(email=>email.startsWith('pilots-coder668@')));
+  assert.ok(Object.values(lookupEmails('PILOTS-CODER668')).every(email=>email.startsWith('pilots-coder668@')));
+  for (const username of ["latam.coder779' OR 1=1", 'latam.coder779%', 'another-user',
+    "pilots-coder668' OR 1=1",'pilots-coder668%','pilots-coder668Candidate']) assert.throws(() => lookupEmails(username));
 });
 test('investigation summaries discard private fields and unrecognized result text', () => {
   const rows = [{ project_id: 'private-id', contributor_id: 'private-person', email: 'private@example.com', final_score: 0.125,

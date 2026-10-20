@@ -15,7 +15,7 @@ export async function selectDiagnosticQuery(message: string, conversation = ''):
   const redact = (text: string) => text
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
     .replace(/\b[a-f\d]{24}\b/gi, '[identifier]')
-    .replace(/\blatam\.coder\d+\b/gi, '[contributor]');
+    .replace(/\b(?:latam\.coder|pilots-coder)\d+\b/gi, '[contributor]');
   const prompt = JSON.stringify({ message: redact(message.slice(0, 3000)), conversation: redact(conversation.slice(-4000)) });
   const inputTokens = estimateTokens(`${SYSTEM}\n${prompt}`);
   const feature = 'diagnostic_routing';

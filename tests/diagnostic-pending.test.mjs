@@ -79,6 +79,52 @@ test('semantic selection can execute the bound query without any recognized stat
   assert.equal(selections,1);
 });
 
+test('pilots usernames reach the unified query without inventing another contributor identity',async t=>{
+  setup(t);
+  t.mock.method(require('../dist/redash.js'),'redashRequest',async(_key,path,body)=>{
+    assert.equal(path,'queries/33/results');
+    assert.ok(Object.values(body.parameters).filter(value=>String(value).includes('@'))
+      .every(email=>email.startsWith('pilots-coder668@')));
+    return{job:{id:'pilots-job'}};
+  });
+  const result=await runWithProjectContext(context,()=>startAccountDiagnostic('pilots-coder668',
+    "Hey Tomas, are the tasks back? I'm on EQ over here."));
+  assert.equal(result.task.jobId,'pilots-job');
+});
+
+test('transient lookup failures remain retryable after sealing and never become resolved replies',async t=>{
+  setup(t);
+  t.mock.method(require('../dist/redash.js'),'redashRequest',async()=>{throw new Error('Temporarily unreachable');});
+  const result=await runWithProjectContext(context,()=>startAccountDiagnostic('pilots-coder668','I am EQ'));
+  const safe=sealDiagnosticDraft(result.draft);
+  assert.equal(safe.diagnosticPending,true);
+  assert.match(safe.reason,/lookup unavailable/);
+  assert.equal((await runWithProjectContext(context,()=>authorizeDiagnosticReply(safe))).action,'human');
+});
+
+test('Community retries technical diagnostic failures instead of marking the question processed',async t=>{
+  setup(t);
+  const data=require('../dist/data-store.js');
+  let saved;
+  t.mock.method(data,'readDataJSON',async()=>({processed:{}}));
+  t.mock.method(data,'writeDataJSON',async(path,value)=>{if(path.endsWith('community-agent-state.json'))saved=structuredClone(value);});
+  t.mock.method(require('../dist/links.js'),'loadProjectLinks',async()=>({warRoom:''}));
+  t.mock.method(require('../dist/operations-log.js'),'appendOperationLog',async()=>undefined);
+  t.mock.method(require('../dist/discourse-client.js').DiscourseClient.prototype,'readChatMessages',async()=>[{
+    id:668,message:"Hey Tomas, are the tasks back? I'm on EQ over here.",created_at:new Date().toISOString(),user:{username:'pilots-coder668'},
+  }]);
+  t.mock.method(require('../dist/redash-diagnostics.js'),'accountDiagnosticDraft',async()=>sealDiagnosticDraft({
+    reply:DIAGNOSTIC_COPY.review,reason:'Diagnostic lookup unavailable.',diagnosticPending:true,
+  }));
+  const config={communityBaseUrl:'https://community.example',communityChatChannelId:'123',discourseApiKey:'fake-key',
+    discourseApiClientId:'test',discourseUsername:'manager'};
+  const run=()=>runWithProjectContext({...context,botConfig:config},()=>require('../dist/community-agent.js')
+    .runCommunityAgent({post:false,react:false,onlyToday:false,markProcessed:true}));
+  assert.equal((await run()).decisions[0].diagnosticPending,true);
+  assert.deepEqual(saved.processed,{});
+  assert.equal((await run()).candidates,1);
+});
+
 test('negative selection and unauthorized contexts cannot execute Redash queries',async t=>{
   setup(t);
   let selections=0;
@@ -124,7 +170,7 @@ test('project queries reject wrong-project results and never bypass personal ide
   assert.equal(result.draft.diagnosticResolved,undefined);
   assert.match(result.draft.reason,/availability was not returned/);
   const personal=await runWithProjectContext(context,()=>startAccountDiagnostic('sandbox.user','I am EQ'));
-  assert.match(personal.draft.reason,/lookup unavailable/);
+  assert.match(personal.draft.reason,/username is not supported/);
 });
 
 test('project and contributor pending jobs have separate scope-bound storage',async t=>{

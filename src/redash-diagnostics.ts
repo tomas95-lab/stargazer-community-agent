@@ -81,8 +81,8 @@ export function isAccountStatusQuestion(message: string): boolean {
 }
 
 export function inferredContributorEmail(username: string): string | null {
-  const match = username.trim().match(/^latam\.coder(\d{1,8})$/i);
-  return match ? `latam.coder${match[1]}@remotasks.com+outlier` : null;
+  try { return lookupEmails(username.trim()).email_primary; }
+  catch { return null; }
 }
 
 export interface DiagnosticDraft {
@@ -101,6 +101,10 @@ function draft(reply: string, reason: string): DiagnosticDraft {
   return sealDiagnosticDraft({ reply, reason });
 }
 const NEEDS_REVIEW = DIAGNOSTIC_COPY.review;
+
+function pendingDiagnosticDraft(reason: string): DiagnosticDraft {
+  return { ...draft(NEEDS_REVIEW, reason), diagnosticPending: true };
+}
 
 export function safeDiagnosticDraft(row: Record<string, unknown>, contributorId: string, projectId: string): DiagnosticDraft {
   if (row.contributor_id !== contributorId || row.project_id !== projectId || row.permission_verified !== true) {
@@ -249,7 +253,7 @@ async function consumeDiagnosticResult(task: DiagnosticTask, result: RedashTable
     try {
       return { draft: await unifiedAccountDraft(row, getProjectContext().projectName || 'this project', task.message || '', task.conversation || '', task.scope) };
     } catch {
-      return { draft: draft(NEEDS_REVIEW, 'Unified query completed, but AI draft generation failed. Retry the draft.') };
+      return { draft: pendingDiagnosticDraft('Unified query completed, but AI draft generation failed. Retry the draft.') };
     }
   }
   if (task.phase === 'identity') {
@@ -293,6 +297,8 @@ export async function startAccountDiagnostic(username: string, message: string, 
           query: PROJECT_AVAILABILITY_SQL.replace('{{project_id}}', context.projectId), data_source_id: 30, max_age: 60,
         });
       } else {
+        try { lookupEmails(username); }
+        catch { return { draft: draft(NEEDS_REVIEW, 'Contributor username is not supported for account lookup.') }; }
         response = await redashRequest(key, `queries/${redashId(unified.queryId)}/results`, { parameters: {
           ...lookupEmails(username), project_id: context.projectId, project_tag_prefix: policy.prefix,
         }, max_age: 60 });
@@ -325,7 +331,7 @@ export async function startAccountDiagnostic(username: string, message: string, 
     if (!task.jobId) throw new Error('Diagnostic query did not start.');
     return { task };
   } catch {
-    return { draft: draft(NEEDS_REVIEW, 'Diagnostic lookup unavailable.') };
+    return { draft: pendingDiagnosticDraft('Diagnostic lookup unavailable.') };
   }
 }
 
@@ -339,14 +345,14 @@ export async function pollAccountDiagnostic(task: DiagnosticTask): Promise<Diagn
     const response = await redashRequest(key, `jobs/${encodeURIComponent(task.jobId)}`);
     if ([4, 5].includes(response.job?.status)) {
       if (task.version === 3) await writeDataJSON(pendingPath(task.username, task.statusQueryId, task.scope), null, 'Clear failed diagnostic job');
-      return { draft: draft(NEEDS_REVIEW, 'Diagnostic query failed.') };
+      return { draft: pendingDiagnosticDraft('Diagnostic query failed.') };
     }
     if (response.job?.status !== 3) return { task };
     const result = await redashRequest(key, `query_results/${redashId(response.job.query_result_id)}`);
     const progress = await consumeDiagnosticResult(task, normalizeRedashResult(result.query_result), key);
     if (task.version === 3 && progress.draft) await writeDataJSON(pendingPath(task.username, task.statusQueryId, task.scope), null, 'Clear completed diagnostic job');
     return progress;
-  } catch { return { draft: draft(NEEDS_REVIEW, 'Diagnostic lookup unavailable.') }; }
+  } catch { return { draft: pendingDiagnosticDraft('Diagnostic lookup unavailable.') }; }
 }
 
 export async function accountDiagnosticDraft(username: string, message: string, conversation = ''): Promise<DiagnosticDraft | null> {

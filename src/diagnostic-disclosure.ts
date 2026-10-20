@@ -32,6 +32,7 @@ const ALLOWED_REASONS = new Set([
   'Status missing or ambiguous.',
   'Diagnostic queries need updating.',
   'Diagnostic lookup unavailable.',
+  'Contributor username is not supported for account lookup.',
   'Diagnostic query failed.',
   'Diagnostic timeout.',
 ]);

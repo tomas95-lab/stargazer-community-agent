@@ -116,7 +116,7 @@ ORDER BY l.REVIEW_LEVEL` },
 ];
 
 export function lookupEmails(username: string): Record<string, string> {
-  if (!/^latam\.coder\d{1,8}$/i.test(username)) throw new Error('Unsupported contributor username.');
+  if (!/^(?:latam\.coder|pilots-coder)\d{1,8}$/i.test(username)) throw new Error('Unsupported contributor username.');
   const name = username.toLowerCase();
   return { email_primary: `${name}@remotasks.com+outlier`, email_alternate: `${name}@outlier.ai`,
     email_legacy: `${name}@remotasks.com`, email_legacy_alternate: `${name}@outlier.ai+outlier` };

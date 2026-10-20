@@ -64,7 +64,7 @@ export async function unifiedAccountDraft(row: Record<string, unknown>, projectN
   const redactIdentity = (value: string) => value
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
     .replace(/\b[a-f\d]{24}\b/gi, '[identifier]')
-    .replace(/\blatam\.coder\d+\b/gi, '[contributor]');
+    .replace(/\b(?:latam\.coder|pilots-coder)\d+\b/gi, '[contributor]');
   const [snippets, memory, brief] = await Promise.all([
     findProjectGuidelineSnippets(message, 4), relevantProjectMemoryText(message, 6), projectGuidelineAiBrief(),
   ]);
