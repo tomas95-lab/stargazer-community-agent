@@ -171,3 +171,31 @@ test('query-supported questions can resolve independently of the account diagnos
     assert.equal(result.diagnosticResolved,example.supported);
   }
 });
+
+test('only confirmed project EQ gets the approved upcoming-tasks and secondary-project update', async t => {
+  const { DIAGNOSTIC_COPY } = require('../dist/diagnostic-disclosure.js');
+  const guidelines = require('../dist/project-guidelines.js');
+  t.mock.method(guidelines, 'findProjectGuidelineSnippets', async () => []);
+  t.mock.method(guidelines, 'projectGuidelineAiBrief', async () => '');
+  t.mock.method(require('../dist/project-memory.js'), 'relevantProjectMemoryText', async () => '');
+  t.mock.method(require('../dist/usage-guardrails.js'), 'assertAiUsageAllowed', async () => undefined);
+  t.mock.method(require('../dist/usage-guardrails.js'), 'recordAiUsage', async () => undefined);
+  for (const example of [
+    { row: { project_has_tasks: false }, message: 'Are the tasks back?', approved: true },
+    { row: { project_has_tasks: false, diagnosis: 'project_empty' }, message: 'I am EQ', approved: true },
+    { row: { project_has_tasks: true, diagnosis: 'active_throttle' }, message: 'I am EQ', approved: false },
+    { row: {}, message: 'Are the tasks back?', approved: false },
+    { row: { project_has_tasks: false, diagnosis: 'quality_reallocated' }, message: 'Why was my access removed?', approved: false },
+  ]) {
+    t.mock.method(require('../dist/ai-runtime.js'), 'generateAiText', async request => {
+      const prompt = JSON.parse(request.prompt);
+      assert.equal(prompt.approvedAvailabilityUpdate, example.approved ? DIAGNOSTIC_COPY.empty : undefined);
+      assert.match(request.system, /Do not claim.*tasks.*review/);
+      return { model: 'gemini-test', text: JSON.stringify({
+        reply: example.approved ? DIAGNOSTIC_COPY.empty : 'Test answer.', qm_reason: 'Test evidence.', answer_supported: example.approved,
+      }) };
+    });
+    const result = await unifiedAccountDraft(example.row, 'Money Heist', example.message);
+    if (example.approved) assert.equal(result.reply, DIAGNOSTIC_COPY.empty);
+  }
+});

@@ -53,6 +53,10 @@ test('availability query returns only a scoped boolean, never inventory quantiti
   assert.match(PROJECT_AVAILABILITY_SQL, /h\.review_level IN \(-1, 0\)/);
   assert.doesNotMatch(PROJECT_AVAILABILITY_SQL, /COUNT\(|USER|qualified|TASKS_REMAINING|\b(?:UPDATE|DELETE|INSERT)\s/i);
   assert.doesNotMatch(EMPTY_BATCH_MESSAGE, /\d|\u2014|Support Assistant/);
+  assert.match(EMPTY_BATCH_MESSAGE, /currently EQ/);
+  assert.match(EMPTY_BATCH_MESSAGE, /expect to add more tasks soon/);
+  assert.match(EMPTY_BATCH_MESSAGE, /work on your secondary projects/);
+  assert.doesNotMatch(EMPTY_BATCH_MESSAGE, /review|completed the current batch/i);
 });
 
 test('only Tomas active automatic projects can check or publish availability', async t => {

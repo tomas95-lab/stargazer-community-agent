@@ -5,7 +5,7 @@ export const DIAGNOSTIC_COPY = Object.freeze({
   access: 'Your task access for this project requires a QM review. Please contact the project support team so they can check the appropriate next steps.',
   moneyHeistQualityReassigned: 'You were reassigned from Money Heist due to quality requirements and can no longer task on this project. Please check your dashboard for your current project assignment.',
   limited: 'Your task access is temporarily limited. Please check your dashboard for updates; a QM can review the next steps if the limit persists.',
-  empty: 'The project is currently reporting an empty queue. Please check your dashboard for updates as more work becomes available.',
+  empty: 'The project is currently EQ. We expect to add more tasks soon. In the meantime, please work on your secondary projects.',
 });
 
 const ALLOWED_COPY = new Set<string>(Object.values(DIAGNOSTIC_COPY));

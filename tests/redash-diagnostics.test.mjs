@@ -75,8 +75,8 @@ test('safe drafts withhold task counts and private evidence while allowing appro
     assert.doesNotMatch(result.reply, /8347|12345|0\.1234|private internal|score/i);
     assert.doesNotMatch(result.reply, /\d/);
   }
-  assert.match(safeDiagnosticDraft({ ...base, project_empty: true, project_has_tasks: false }, id, project).reply, /empty queue/);
-  assert.doesNotMatch(safeDiagnosticDraft({ ...base, project_empty: true, project_has_tasks: true }, id, project).reply, /empty queue/);
+  assert.match(safeDiagnosticDraft({ ...base, project_empty: true, project_has_tasks: false }, id, project).reply, /currently EQ/);
+  assert.doesNotMatch(safeDiagnosticDraft({ ...base, project_empty: true, project_has_tasks: true }, id, project).reply, /currently EQ/);
 });
 test('wrong identity, unknown booleans and unrelated project never produce specific account conclusions', () => {
   for (const row of [{ ...base, contributor_id: 'other', throttled: true }, { ...base, project_id: 'other', project_empty: true }, { ...base, permission_verified: false, throttled: true }, { ...base, throttled: 'true' }]) {

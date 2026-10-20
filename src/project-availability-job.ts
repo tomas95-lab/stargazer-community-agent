@@ -7,10 +7,11 @@ import { getProjectContext, projectScheduleAllowsNow } from './project-context';
 import { activeProjectDiagnosticConnection } from './redash-diagnostics';
 import { normalizeRedashResult, redashId, redashRequest, REDASH_OWNER_ID } from './redash';
 import { PROJECT_AVAILABILITY_SQL } from './unified-account-query';
+import { DIAGNOSTIC_COPY } from './diagnostic-disclosure';
 
 export { PROJECT_AVAILABILITY_SQL } from './unified-account-query';
 
-export const EMPTY_BATCH_MESSAGE = 'Hi everyone! We have completed the current batch of tasks. More tasks are expected to be added soon. In the meantime, please work on your secondary projects. We will share updates as they become available.';
+export const EMPTY_BATCH_MESSAGE = `Hi everyone! ${DIAGNOSTIC_COPY.empty}`;
 
 const STATE_PATH = 'output/project-availability-state.json';
 interface AvailabilityState {

@@ -1,6 +1,6 @@
 import { generateAiText } from './ai-runtime';
 import { assertAiUsageAllowed, estimateTokens, recordAiUsage } from './usage-guardrails';
-import { sealDiagnosticDraft } from './diagnostic-disclosure';
+import { DIAGNOSTIC_COPY, sealDiagnosticDraft } from './diagnostic-disclosure';
 import { findProjectGuidelineSnippets, projectGuidelineAiBrief } from './project-guidelines';
 import { relevantProjectMemoryText } from './project-memory';
 
@@ -51,6 +51,7 @@ export const UNIFIED_ACCOUNT_SYSTEM = [
   'Report any difference between actual tags, permissions and expected bucket in the QM explanation. A current disabled tag still has its manager-confirmed meaning even if permission disabled is false.',
   'Project availability considers only pending, unassigned tasks in L-1 and L0. Higher layers (including L8, L10 and L12) are internal review and do not count as available work. No tasks in L-1 or L0 means project EQ for this support flow. Tasks on a different review layer do not guarantee work for this role. Do not disclose exact project task inventory.',
   'For a project availability question, answer project_has_tasks directly: true means the project currently has tasks; false means the project is currently EQ. Personal restrictions, courses, onboarding or a different review layer do not change that project-wide answer. Do not promise this contributor can access those tasks. If availability is missing, say it could not be verified, never guess or promise a human follow-up.',
+  'When explaining confirmed project EQ, use approvedAvailabilityUpdate if provided: the QM expects more tasks soon and contributors can work on secondary projects in the meantime. This is an expectation, not a guaranteed delivery date. Do not claim tasks are being reviewed, checked, validated, or held for review, or that the batch was completed. Do not invent a specific ETA or use this update to explain an individual throttle or quality restriction. Do not add it to unrelated questions.',
   'When answering an account-access/EQ question, if individual EQ is false and there is no active restriction, say no EQ restriction or active throttle is seen and ask to refresh. Do not add this advice to unrelated questions about performance, courses or project-wide availability.',
   'Use direct project onboarding, latest course progress, course pass/fail tags, permissions and active restrictions. Course completion does not itself prove a passing grade; absent pass tags are not failures. Historical incomplete course records do not override a completed project onboarding unless a current failure is confirmed. Do not invent a missing required course from a raw count.',
   'For onboarding_incomplete or courses_incomplete, explain which onboarding/course evidence remains incomplete without claiming a quality removal. For course_failed, explain only the confirmed failure; do not invent a retake or reinstatement policy.',
@@ -70,7 +71,10 @@ export async function unifiedAccountDraft(row: Record<string, unknown>, projectN
     findProjectGuidelineSnippets(message, 4), relevantProjectMemoryText(message, 6), projectGuidelineAiBrief(),
   ]);
   const projectAvailabilityQuestion = scope === 'project' || isProjectAvailabilityQuestion(message);
+  const approvedAvailabilityUpdate = row.project_has_tasks === false && (projectAvailabilityQuestion || row.diagnosis === 'project_empty')
+    ? DIAGNOSTIC_COPY.empty : undefined;
   const prompt = JSON.stringify({ project: projectName, questionScope: projectAvailabilityQuestion ? 'project_availability' : 'query_supported_question', evidence: unifiedModelEvidence(row),
+    ...(approvedAvailabilityUpdate ? { approvedAvailabilityUpdate } : {}),
     guidelineExcerpts: snippets.map(redactIdentity), projectMemory: redactIdentity(memory),
     ...(brief ? { optionalBrief: redactIdentity(brief) } : {}),
     message: redactIdentity(message), conversation: redactIdentity(conversation.slice(-10000)) });
