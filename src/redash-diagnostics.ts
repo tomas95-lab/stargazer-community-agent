@@ -174,8 +174,17 @@ export interface DiagnosticTask {
   jobId: string;
   contributorId?: string;
   expires: number;
+  createdAt?: number;
+  resumeUntil?: number;
+  resultId?: number;
+  preview?: boolean;
+  refreshes?: number;
 }
 export interface DiagnosticProgress { task?: DiagnosticTask; draft?: DiagnosticDraft }
+
+const SESSION_TTL_MS = 5 * 60000;
+const JOB_RETENTION_MS = 3 * 60 * 60000;
+const EVIDENCE_MAX_AGE_MS = 5 * 60000;
 
 function pendingPath(username: string, queryId: number, scope = 'contributor'): string {
   const fingerprint = createHash('sha256').update(`${REDASH_OWNER_ID}:${getProjectContext().projectId}:${queryId}:${username.toLowerCase()}${scope === 'project' ? ':project' : ''}`).digest('hex');
@@ -196,15 +205,20 @@ async function readPendingTask(username: string, queryId: number, scope: 'projec
   const saved = await readDataJSONOrDefault<{ ciphertext: string } | null>(pendingPath(username, queryId, scope), null);
   if (!saved) return null;
   const task = JSON.parse(decryptKey(saved.ciphertext)) as DiagnosticTask;
+  // Renew only server-loaded continuations; expired browser tokens remain invalid.
+  const createdAt = task.createdAt ?? task.expires - SESSION_TTL_MS;
+  const resumeUntil = Math.min(task.resumeUntil ?? createdAt + JOB_RETENTION_MS, createdAt + JOB_RETENTION_MS);
   return task.version === 3 && task.ownerId === REDASH_OWNER_ID && task.projectId === getProjectContext().projectId
     && task.username.toLowerCase() === username.toLowerCase() && task.statusQueryId === queryId
     && (task.scope || 'contributor') === scope
-    && Number.isFinite(task.expires) && task.expires > Date.now() && task.jobId ? task : null;
+    && Number.isFinite(createdAt) && createdAt <= Date.now() && resumeUntil > Date.now()
+    && (task.jobId || task.resultId)
+    ? { ...task, createdAt, resumeUntil, refreshes: 0, expires: Date.now() + SESSION_TTL_MS } : null;
 }
 
 export function diagnosticWaitMs(): number {
-  const configured = Number(process.env.REDASH_DIAGNOSTIC_WAIT_MS || 60000);
-  return Number.isFinite(configured) ? Math.min(120000, Math.max(1000, configured)) : 60000;
+  const configured = Number(process.env.REDASH_DIAGNOSTIC_WAIT_MS || 90000);
+  return Number.isFinite(configured) ? Math.min(120000, Math.max(1000, configured)) : 90000;
 }
 
 async function diagnosticConnection() {
@@ -227,7 +241,7 @@ export async function activeProjectDiagnosticConnection(): Promise<{ key: string
 export async function authorizeDiagnosticReply(value: DiagnosticDraft) {
   const safe: DiagnosticDraft = sealDiagnosticDraft(value);
   const context = getProjectContext();
-  if (safe.diagnosticVersion !== 3 || !safe.diagnosticResolved || !context.redashDiagnosticsAllowed
+  if (safe.diagnosticVersion !== 3 || !safe.diagnosticResolved || safe.diagnosticPending || !context.redashDiagnosticsAllowed
     || context.ownerId !== REDASH_OWNER_ID || context.demoMode || context.automationPaused) return safe;
   try {
     const { queries } = await diagnosticConnection();
@@ -273,6 +287,52 @@ async function consumeDiagnosticResult(task: DiagnosticTask, result: RedashTable
     : draft(NEEDS_REVIEW, 'Status missing or ambiguous.') };
 }
 
+function evidenceIsFresh(task: DiagnosticTask, result: RedashTableResult): boolean {
+  const observed = result.rows[0]?.observed_at ?? result.retrieved_at;
+  const at = typeof observed === 'string' ? Date.parse(observed) : task.createdAt ?? task.expires - SESSION_TTL_MS;
+  return Number.isFinite(at) && at <= Date.now() + 60000 && Date.now() - at <= EVIDENCE_MAX_AGE_MS;
+}
+
+async function completeUnifiedDiagnostic(task: DiagnosticTask, result: RedashTableResult, key: string): Promise<DiagnosticProgress> {
+  if (!evidenceIsFresh(task, result)) {
+    await writeDataJSON(pendingPath(task.username, task.statusQueryId, task.scope), null, 'Discard stale diagnostic evidence');
+    if ((task.refreshes || 0) >= 1) return { draft: pendingDiagnosticDraft('Diagnostic result is stale. Retry for current evidence.') };
+    return submitUnifiedDiagnostic({ ...task, jobId: '', resultId: undefined, refreshes: 1,
+      createdAt: Date.now(), resumeUntil: Date.now() + JOB_RETENTION_MS, expires: Date.now() + SESSION_TTL_MS }, key, true);
+  }
+  if (task.jobId || task.resultId) await savePendingTask(task);
+  const progress = await consumeDiagnosticResult(task, result, key);
+  if (progress.draft && !progress.draft.diagnosticPending) {
+    await writeDataJSON(pendingPath(task.username, task.statusQueryId, task.scope), null, 'Clear completed diagnostic job');
+  }
+  return progress;
+}
+
+async function submitUnifiedDiagnostic(task: DiagnosticTask, key: string, fresh = false): Promise<DiagnosticProgress> {
+  let response;
+  if (task.scope === 'project') {
+    const definition = await redashRequest(key, `queries/${redashId(task.statusQueryId)}`);
+    if (redashId(definition.data_source_id) !== 30) throw new Error('Project availability requires the verified Redash database.');
+    response = await redashRequest(key, 'query_results', {
+      query: PROJECT_AVAILABILITY_SQL.replace('{{project_id}}', task.projectId), data_source_id: 30, max_age: fresh ? 0 : 60,
+    });
+  } else {
+    const policy = projectTagPolicy(task.projectId);
+    if (!policy) throw new Error('Project lifecycle policy is unavailable.');
+    response = await redashRequest(key, `queries/${redashId(task.statusQueryId)}/results`, { parameters: {
+      ...lookupEmails(task.username), project_id: task.projectId, project_tag_prefix: policy.prefix,
+    }, max_age: fresh ? 0 : 60 });
+  }
+  const next = { ...task, jobId: String(response.job?.id || '') };
+  if (response.query_result) {
+    if (response.query_result.id) next.resultId = redashId(response.query_result.id);
+    return completeUnifiedDiagnostic(next, normalizeRedashResult(response.query_result), key);
+  }
+  if (!next.jobId) throw new Error('Unified diagnostic did not start.');
+  await savePendingTask(next);
+  return { task: next };
+}
+
 export async function startAccountDiagnostic(username: string, message: string, preview = false, conversation = ''): Promise<DiagnosticProgress | null> {
   const context = getProjectContext();
   if (!context.redashDiagnosticsAllowed || context.demoMode || !runtimeDbConfigured()) return null;
@@ -288,28 +348,20 @@ export async function startAccountDiagnostic(username: string, message: string, 
       const policy = projectTagPolicy(context.projectId);
       if (!policy || !/^[a-f\d]{24}$/i.test(context.projectId)) throw new Error('Unified lifecycle policy is not configured for this project.');
       const pending = await readPendingTask(username, unified.queryId, queryScope);
-      if (pending) return { task: { ...pending, message: message.slice(0, 3000), conversation: conversation.slice(-10000) } };
-      let response;
-      if (queryScope === 'project') {
-        const definition = await redashRequest(key, `queries/${redashId(unified.queryId)}`);
-        if (redashId(definition.data_source_id) !== 30) throw new Error('Project availability requires the verified Redash database.');
-        response = await redashRequest(key, 'query_results', {
-          query: PROJECT_AVAILABILITY_SQL.replace('{{project_id}}', context.projectId), data_source_id: 30, max_age: 60,
-        });
-      } else {
+      if (pending) {
+        const task = { ...pending, preview, message: message.slice(0, 3000), conversation: conversation.slice(-10000) };
+        await savePendingTask(task);
+        return { task };
+      }
+      if (queryScope === 'contributor') {
         try { lookupEmails(username); }
         catch { return { draft: draft(NEEDS_REVIEW, 'Contributor username is not supported for account lookup.') }; }
-        response = await redashRequest(key, `queries/${redashId(unified.queryId)}/results`, { parameters: {
-          ...lookupEmails(username), project_id: context.projectId, project_tag_prefix: policy.prefix,
-        }, max_age: 60 });
       }
       const task: DiagnosticTask = { version: 3, ownerId: REDASH_OWNER_ID, projectId: context.projectId,
-        username, scope: queryScope, statusQueryId: unified.queryId, phase: 'status', jobId: String(response.job?.id || ''),
-        message: message.slice(0, 3000), conversation: conversation.slice(-10000), expires: Date.now() + 5 * 60000 };
-      if (response.query_result) return await consumeDiagnosticResult(task, normalizeRedashResult(response.query_result), key);
-      if (!task.jobId) throw new Error('Unified diagnostic did not start.');
-      await savePendingTask(task);
-      return { task };
+        username, scope: queryScope, statusQueryId: unified.queryId, phase: 'status', jobId: '', preview,
+        createdAt: Date.now(), resumeUntil: Date.now() + JOB_RETENTION_MS,
+        message: message.slice(0, 3000), conversation: conversation.slice(-10000), expires: Date.now() + SESSION_TTL_MS };
+      return await submitUnifiedDiagnostic(task, key);
     }
     if (!preview && !isAccountStatusQuestion(message)) return null;
     const configured = queries.filter(query => query.diagnosticVersion === 2 && (
@@ -339,19 +391,24 @@ export async function pollAccountDiagnostic(task: DiagnosticTask): Promise<Diagn
   const context = getProjectContext();
   if (!task || typeof task !== 'object' || !context.redashDiagnosticsAllowed || context.demoMode || task.ownerId !== REDASH_OWNER_ID
     || task.projectId !== context.projectId || !Number.isFinite(task.expires) || task.expires < Date.now()
-    || !['identity', 'status'].includes(task.phase) || !task.jobId) throw new Error('Diagnostic session expired or is not authorized for this project.');
+    || !['identity', 'status'].includes(task.phase) || !(task.jobId || task.version === 3 && task.resultId)) throw new Error('Diagnostic session expired or is not authorized for this project.');
   try {
-    const { key } = await diagnosticConnection();
-    const response = await redashRequest(key, `jobs/${encodeURIComponent(task.jobId)}`);
+    const { key, queries } = await diagnosticConnection();
+    if (task.version === 3 && !queries.some(query => query.queryId === task.statusQueryId && query.diagnosticVersion === 3
+      && query.diagnosticRole === 'unified' && query.diagnosticProjectId === task.projectId && (query.diagnosticEnabled || task.preview))) {
+      return { draft: draft(NEEDS_REVIEW, 'Diagnostic query is no longer enabled for this project.') };
+    }
+    const response = task.version === 3 && task.resultId
+      ? { job: { status: 3, query_result_id: task.resultId } }
+      : await redashRequest(key, `jobs/${encodeURIComponent(task.jobId)}`);
     if ([4, 5].includes(response.job?.status)) {
       if (task.version === 3) await writeDataJSON(pendingPath(task.username, task.statusQueryId, task.scope), null, 'Clear failed diagnostic job');
       return { draft: pendingDiagnosticDraft('Diagnostic query failed.') };
     }
     if (response.job?.status !== 3) return { task };
     const result = await redashRequest(key, `query_results/${redashId(response.job.query_result_id)}`);
-    const progress = await consumeDiagnosticResult(task, normalizeRedashResult(result.query_result), key);
-    if (task.version === 3 && progress.draft) await writeDataJSON(pendingPath(task.username, task.statusQueryId, task.scope), null, 'Clear completed diagnostic job');
-    return progress;
+    if (task.version === 3) return await completeUnifiedDiagnostic({ ...task, resultId: redashId(response.job.query_result_id) }, normalizeRedashResult(result.query_result), key);
+    return await consumeDiagnosticResult(task, normalizeRedashResult(result.query_result), key);
   } catch { return { draft: pendingDiagnosticDraft('Diagnostic lookup unavailable.') }; }
 }
 
@@ -359,9 +416,13 @@ export async function accountDiagnosticDraft(username: string, message: string, 
   let progress = await startAccountDiagnostic(username, message, false, conversation);
   if (!progress) return null;
   const deadline = Date.now() + diagnosticWaitMs();
+  let delay = 2000;
   while (progress.task && Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, 1200));
     progress = await pollAccountDiagnostic(progress.task);
+    if (progress.task && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, Math.min(delay, deadline - Date.now())));
+      delay = Math.min(delay * 2, 8000);
+    }
   }
   return progress.draft || { ...draft(NEEDS_REVIEW, 'Diagnostic query is still running. Retry to continue the same query.'), diagnosticPending: true };
 }

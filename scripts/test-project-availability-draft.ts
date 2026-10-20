@@ -11,9 +11,11 @@ async function main() {
   const context = await projectRuntimeContextForRow(project);
   // Exercise real Redash and AI evaluation, but prohibit outgoing chat writes.
   DiscourseClient.prototype.sendChatMessage = async () => { throw new Error('Test forbids message posting.'); };
-  const message = 'There are task in the project?';
+  const pilotsCase = process.argv.includes('--pilots-case');
+  const message = pilotsCase ? "Hey Tomas, are the tasks back? I'm on EQ over here." : 'There are task in the project?';
+  const username = pilotsCase ? 'pilots-coder668' : 'latam.coder93';
   const decision = await runWithProjectContext(context, () => evaluateSupportMessage(
-    'latam.coder93', message, 'Sandbox evaluation only. Do not post.', '', false));
+    username, message, 'Sandbox evaluation only. Do not post.', '', false));
   console.log(JSON.stringify({ project: project.project_name, message,
     reply: decision.reply, reason: decision.reason, action: decision.action, messagesSent: 0 }, null, 2));
   if (!('diagnosticResolved' in decision) || decision.diagnosticResolved !== true) {

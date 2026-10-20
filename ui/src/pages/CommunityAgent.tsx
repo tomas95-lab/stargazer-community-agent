@@ -281,7 +281,7 @@ function ThreadDetail({
           <div className="mt-5 border-t pt-5">
             <div className="mb-3 flex items-center gap-2">
               <Bot className="size-4 text-primary" aria-hidden="true" />
-              <p className="text-sm font-semibold text-foreground">Gemini recommendation</p>
+              <p className="text-sm font-semibold text-foreground">{decision.diagnosticPending ? 'Account diagnostic' : 'Agent recommendation'}</p>
             </div>
             <DecisionCard decision={decision} embedded />
           </div>
@@ -292,7 +292,7 @@ function ThreadDetail({
 }
 
 function DecisionCard({ decision, embedded = false }: { decision: CommunityAgentDecision; embedded?: boolean }) {
-  const tone = decision.error
+  const tone = decision.diagnosticPending ? 'blue' : decision.error
     ? 'red'
     : decision.action === 'reply'
       ? 'green'
@@ -314,12 +314,12 @@ function DecisionCard({ decision, embedded = false }: { decision: CommunityAgent
           </div>
           <p className="mt-2 font-semibold text-foreground">{decision.username}</p>
         </div>
-        <span className="text-xs text-muted-foreground">{Math.round(decision.confidence * 100)}%</span>
+        {!decision.diagnosticPending ? <span className="text-xs text-muted-foreground">{Math.round(decision.confidence * 100)}%</span> : null}
       </div>
 
       <p className="text-sm text-muted-foreground">{decision.message}</p>
 
-      {decision.reply && (
+      {decision.reply && !decision.diagnosticPending && (
         <div className="sg-panel-muted p-3">
           <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
             {decision.action === 'human' ? 'Suggested acknowledgment' : 'Draft reply'}

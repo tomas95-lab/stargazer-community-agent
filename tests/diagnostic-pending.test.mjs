@@ -57,6 +57,126 @@ test('pending Redash job is encrypted and resumed on retries, without restarting
   assert.equal(starts,2);
 });
 
+test('a saved job survives the ninety-minute cron interval without extending expired preview tokens', async t => {
+  setup(t);
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
+  let starts = 0;
+  t.mock.method(require('../dist/redash.js'), 'redashRequest', async () => { starts++; return { job: { id: 'original-job' } }; });
+  const first = await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  t.mock.timers.tick(90 * 60000);
+  await assert.rejects(runWithProjectContext(context, () => pollAccountDiagnostic(first.task)), /expired/);
+  const resumed = await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  assert.equal(resumed.task.jobId, 'original-job');
+  assert.equal(starts, 1);
+  assert.ok(resumed.task.expires > Date.now());
+  t.mock.timers.tick(3 * 60 * 60000);
+  await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  assert.equal(starts, 2, 'Job retention must remain bounded');
+});
+
+test('legacy five-minute persisted jobs can be recovered by the server without accepting the expired client token', async t => {
+  const store = setup(t);
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
+  let starts = 0;
+  t.mock.method(require('../dist/redash.js'), 'redashRequest', async () => { starts++; return { job: { id: 'legacy-job' } }; });
+  const first = await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  const legacy = { ...first.task };
+  delete legacy.createdAt;
+  delete legacy.resumeUntil;
+  delete legacy.preview;
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', createHash('sha256').update(process.env.PLATFORM_ENCRYPTION_KEY).digest(), iv);
+  const bytes = Buffer.concat([cipher.update(JSON.stringify(legacy)), cipher.final()]);
+  store.set([...store.keys()][0], { ciphertext: `enc:v1:${iv.toString('base64url')}:${cipher.getAuthTag().toString('base64url')}:${bytes.toString('base64url')}` });
+  t.mock.timers.tick(90 * 60000);
+  await assert.rejects(runWithProjectContext(context, () => pollAccountDiagnostic(legacy)), /expired/);
+  const resumed = await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  assert.equal(resumed.task.jobId, 'legacy-job');
+  assert.equal(starts, 1);
+});
+
+test('revoking the bound query prevents a pending job from reaching Redash or the model', async t => {
+  setup(t);
+  t.mock.method(require('../dist/redash.js'), 'redashRequest', async () => ({ job: { id: 'pending-job' } }));
+  const first = await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  const db = require('../dist/runtime-db.js');
+  const { data } = await db.runtimeDb().from().select().eq().maybeSingle();
+  data.queries[0].diagnosticEnabled = false;
+  t.mock.method(db, 'runtimeDb', () => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data }) }) }) }) }));
+  t.mock.method(require('../dist/redash.js'), 'redashRequest', async () => assert.fail('Revoked query reached Redash'));
+  const result = await runWithProjectContext(context, () => pollAccountDiagnostic(first.task));
+  assert.match(result.draft.reason, /no longer enabled/);
+  assert.equal(result.draft.diagnosticPending, undefined);
+  assert.equal(result.draft.diagnosticResolved, undefined);
+});
+
+test('an AI outage preserves the completed job so retrying does not rerun SQL', async t => {
+  const store = setup(t);
+  let starts = 0;
+  let generations = 0;
+  t.mock.method(require('../dist/redash.js'), 'redashRequest', async (_key, path) => {
+    if (path === 'queries/33/results') { starts++; return { job: { id: 'done-job' } }; }
+    if (path === 'jobs/done-job') return { job: { status: 3, query_result_id: 44 } };
+    assert.equal(path, 'query_results/44');
+    return { query_result: { retrieved_at: new Date().toISOString(), data: { columns: [], rows: [{
+      project_id: project, contributor_id: 'a'.repeat(24), identity_matches: 1, project_has_tasks: false,
+    }] } } };
+  });
+  t.mock.method(require('../dist/unified-account-draft.js'), 'unifiedAccountDraft', async () => {
+    if (++generations === 1) throw new Error('Gemini temporarily unavailable');
+    return sealDiagnosticDraft({ diagnosticVersion: 3, diagnosticResolved: true, reply: DIAGNOSTIC_COPY.empty, reason: 'Verified project availability.' });
+  });
+  const first = await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  const pending = await runWithProjectContext(context, () => pollAccountDiagnostic(first.task));
+  assert.equal(pending.draft.diagnosticPending, true);
+  assert.ok([...store.values()][0]?.ciphertext);
+  const retry = await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  const result = await runWithProjectContext(context, () => pollAccountDiagnostic(retry.task));
+  assert.equal(result.draft.diagnosticResolved, true);
+  assert.equal(starts, 1);
+  assert.equal(generations, 2);
+  assert.equal([...store.values()][0], null);
+});
+
+test('a completed but stale job is refreshed once, never sent to the model as current evidence', async t => {
+  setup(t);
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
+  const old = new Date().toISOString();
+  let starts = 0;
+  t.mock.method(require('../dist/redash.js'), 'redashRequest', async (_key, path, body) => {
+    if (path === 'queries/33/results') {
+      starts++;
+      if (starts === 2) assert.equal(body.max_age, 0);
+      return { job: { id: starts === 1 ? 'old-job' : 'fresh-job' } };
+    }
+    if (path === 'jobs/old-job') return { job: { status: 3, query_result_id: 44 } };
+    assert.equal(path, 'query_results/44');
+    return { query_result: { retrieved_at: old, data: { columns: [], rows: [{
+      project_id: project, contributor_id: 'a'.repeat(24), identity_matches: 1, project_has_tasks: false,
+    }] } } };
+  });
+  t.mock.method(require('../dist/unified-account-draft.js'), 'unifiedAccountDraft', async () => assert.fail('Stale evidence reached the model'));
+  await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  t.mock.timers.tick(90 * 60000);
+  const resumed = await runWithProjectContext(context, () => startAccountDiagnostic('latam.coder1669', 'I am EQ'));
+  const refreshed = await runWithProjectContext(context, () => pollAccountDiagnostic(resumed.task));
+  assert.equal(refreshed.task.jobId, 'fresh-job');
+  assert.equal(starts, 2);
+});
+
+test('the exact tasks-back question uses project SQL, not contributor performance SQL', async t => {
+  setup(t);
+  t.mock.method(require('../dist/redash.js'), 'redashRequest', async (_key, path, body) => {
+    if (path === 'queries/33') return { data_source_id: 30 };
+    assert.equal(path, 'query_results');
+    assert.doesNotMatch(body.query, /TASKATTEMPTS|PUBLIC\.USERS|USERTHROTTLES/);
+    assert.match(body.query, /review_level IN \(-1, 0\)/);
+    return { job: { id: 'project-only' } };
+  });
+  const result = await runWithProjectContext(context, () => startAccountDiagnostic('pilots-coder668', "Hey Tomas, are the tasks back? I'm on EQ over here."));
+  assert.equal(result.task.scope, 'project');
+});
+
 test('semantic selection can execute the bound query without any recognized status phrase',async t=>{
   setup(t);
   let selections=0;
@@ -88,7 +208,7 @@ test('pilots usernames reach the unified query without inventing another contrib
     return{job:{id:'pilots-job'}};
   });
   const result=await runWithProjectContext(context,()=>startAccountDiagnostic('pilots-coder668',
-    "Hey Tomas, are the tasks back? I'm on EQ over here."));
+    'I am EQ. Is my account throttled?'));
   assert.equal(result.task.jobId,'pilots-job');
 });
 
@@ -210,6 +330,9 @@ test('pending status survives sealing and can never be sent automatically',async
   const decision=await runWithProjectContext(context,()=>authorizeDiagnosticReply(pending));
   assert.equal(decision.draftOnly,true);
   assert.equal(decision.action,'human');
+  const contradictory = sealDiagnosticDraft({ diagnosticVersion: 3, diagnosticPending: true, diagnosticResolved: true,
+    reply: DIAGNOSTIC_COPY.empty, reason: 'Still pending.' });
+  assert.equal((await runWithProjectContext(context, () => authorizeDiagnosticReply(contradictory))).action, 'human');
 });
 
 test('pending diagnostics are not treated as human escalation or knowledge gaps',async t=>{
@@ -227,15 +350,49 @@ test('pending diagnostics are not treated as human escalation or knowledge gaps'
   assert.equal(result.items.length,0);
 });
 
-test('wait budget defaults to sixty seconds and is configurable within bounds',t=>{
+test('wait budget defaults to ninety seconds and is configurable within bounds',t=>{
   const old=process.env.REDASH_DIAGNOSTIC_WAIT_MS;
   t.after(()=>{if(old===undefined)delete process.env.REDASH_DIAGNOSTIC_WAIT_MS;else process.env.REDASH_DIAGNOSTIC_WAIT_MS=old;});
   delete process.env.REDASH_DIAGNOSTIC_WAIT_MS;
-  assert.equal(diagnosticWaitMs(),60000);
-  for(const[value,expected]of[['90000',90000],['1',1000],['999999',120000],['invalid',60000]]){
+  assert.equal(diagnosticWaitMs(),90000);
+  for(const[value,expected]of[['60000',60000],['1',1000],['999999',120000],['invalid',90000]]){
     process.env.REDASH_DIAGNOSTIC_WAIT_MS=value;
     assert.equal(diagnosticWaitMs(),expected);
   }
+});
+
+test('a query taking seventy-seven seconds resolves in the same evaluation with bounded backoff polling', async t => {
+  setup(t);
+  const old = process.env.REDASH_DIAGNOSTIC_WAIT_MS;
+  delete process.env.REDASH_DIAGNOSTIC_WAIT_MS;
+  t.after(() => { if (old !== undefined) process.env.REDASH_DIAGNOSTIC_WAIT_MS = old; });
+  const started = Date.now();
+  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: started });
+  let starts = 0;
+  let polls = 0;
+  t.mock.method(require('../dist/redash.js'), 'redashRequest', async (_key, path) => {
+    if (path === 'queries/33/results') { starts++; return { job: { id: 'slow-but-valid' } }; }
+    if (path === 'jobs/slow-but-valid') {
+      polls++;
+      return { job: Date.now() - started >= 76700 ? { status: 3, query_result_id: 44 } : { status: 2 } };
+    }
+    assert.equal(path, 'query_results/44');
+    return { query_result: { retrieved_at: new Date().toISOString(), data: { columns: [], rows: [{
+      project_id: project, contributor_id: 'a'.repeat(24), identity_matches: 1, project_has_tasks: false,
+    }] } } };
+  });
+  t.mock.method(require('../dist/unified-account-draft.js'), 'unifiedAccountDraft', async () => sealDiagnosticDraft({
+    diagnosticVersion: 3, diagnosticResolved: true, reply: DIAGNOSTIC_COPY.empty, reason: 'Verified current project availability.',
+  }));
+  const promise = runWithProjectContext(context, () => accountDiagnosticDraft('latam.coder1669', 'I am EQ'));
+  for (let i = 0; i < 10; i++) {
+    await new Promise(setImmediate);
+    t.mock.timers.tick(8000);
+  }
+  const result = await promise;
+  assert.equal(result.diagnosticResolved, true);
+  assert.equal(starts, 1);
+  assert.ok(polls <= 15, `Expected bounded backoff polling, got ${polls}`);
 });
 
 test('exhausting the wait budget keeps the job resumable rather than reporting terminal timeout',async t=>{

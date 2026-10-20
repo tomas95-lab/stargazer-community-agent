@@ -34,6 +34,7 @@ export function unifiedModelEvidence(row: Record<string, unknown>): Record<strin
 
 export function isProjectAvailabilityQuestion(message: string): boolean {
   const text = message.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (/\bare\s+(?:the\s+)?tasks\s+back\b|\b(?:volvieron|regresaron)\s+(?:las\s+)?tareas\b/i.test(text)) return true;
   return /\b(?:proyecto\s+(?:(?:tiene|hay)\s+(?:\w+\s+){0,3}tareas|(?:esta|sigue)\s+(?:eq|sin\s+tareas))|(?:hay|quedan)\s+tareas\s+(?:\w+\s+){0,3}proyecto|project\s+(?:(?:have|has)\s+(?:any\s+)?(?:tasks|work)|(?:is\s+)?(?:eq|empty))|(?:is|does)\s+(?:the\s+)?project\s+(?:have\s+(?:any\s+)?(?:tasks|work)|(?:eq|empty))|(?:tasks|work)\s+(?:available\s+)?(?:in|on|for)\s+(?:the\s+)?project)\b/i.test(text);
 }
 

@@ -34,6 +34,8 @@ const ALLOWED_REASONS = new Set([
   'Diagnostic lookup unavailable.',
   'Contributor username is not supported for account lookup.',
   'Diagnostic query failed.',
+  'Diagnostic result is stale. Retry for current evidence.',
+  'Diagnostic query is no longer enabled for this project.',
   'Diagnostic timeout.',
 ]);
 const SENSITIVE_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|\b[a-f\d]{24,}\b|\b(?:sk-|sb_secret_|api[_ -]?key|password|bearer\s|quality\s+score|disable_reason)|\d|https?:\/\//i;
