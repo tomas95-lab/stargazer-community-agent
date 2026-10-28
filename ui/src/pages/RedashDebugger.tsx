@@ -9,6 +9,7 @@ import { canUseRedash } from '@/lib/redash-access'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import RedashSqlSource from '@/components/RedashSqlSource'
 
 export default function RedashDebugger() {
   const { user } = useAuth()
@@ -132,7 +133,7 @@ export default function RedashDebugger() {
         </>}
         <Button className="justify-self-start" disabled={busy || !connected}>Save query</Button>
       </form>
-      <ul className="divide-y">{queries.map(query => <li key={query.id} className="flex items-center justify-between gap-3 py-3"><div><span className="text-sm font-medium">{query.name}</span><a className="ml-3 text-xs text-muted-foreground underline" href={`https://redash.scale.com/queries/${query.queryId}`} target="_blank" rel="noreferrer">Query {query.queryId}</a></div><Button variant="ghost" size="icon" title="Remove query from workspace" disabled={busy} onClick={() => void perform(async () => { await api.deleteRedashQuery(query.id); if (selected === query.id) setSelected(''); await refresh() })}><Trash2 className="size-4" /></Button></li>)}</ul>
+      <ul className="min-w-0 divide-y">{queries.map(query => <li key={query.id} className="min-w-0 py-3"><div className="flex items-center justify-between gap-3"><div className="min-w-0 break-words"><span className="text-sm font-medium">{query.name}</span><a className="ml-3 text-xs text-muted-foreground underline" href={`https://redash.scale.com/queries/${query.queryId}`} target="_blank" rel="noreferrer">Query {query.queryId}</a></div><Button className="shrink-0" variant="ghost" size="icon" title="Remove query from workspace" disabled={busy} onClick={() => void perform(async () => { await api.deleteRedashQuery(query.id); if (selected === query.id) setSelected(''); await refresh() })}><Trash2 className="size-4" /></Button></div><RedashSqlSource query={query} /></li>)}</ul>
     </section>
     <section className="space-y-4">
       <h2 className="font-semibold">Run query</h2>

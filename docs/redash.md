@@ -30,6 +30,20 @@ No real diagnostic SQL is bundled: table names and eligibility rules must come
 from the approved query/debugger. Evidence is not automatically interpreted as
 an EQ reason. No contributor assignments or Community messages are changed.
 
+### View saved SQL
+
+In **Diagnostics > Diagnostic queries**, choose **View SQL** beneath a saved
+query. The read-only panel loads the current SQL from Redash and supports
+copying and reloading it without running or modifying the query. Closing the
+panel clears its content from component state; SQL is not saved in localStorage.
+
+`GET /api/redash/queries/:id/sql` uses the saved workspace ID, not an arbitrary
+Redash query ID. It requires Tomas's exact authenticated ID and email, rejects
+demo and admin-token access, and responds with `Cache-Control: no-store`.
+Only SQL, local query metadata and parameter names are returned, never the
+Redash credential, parameter defaults or cached query results. Other QMs cannot
+gain access by joining the same project or navigating directly to the endpoint.
+
 Job polling uses expiring encrypted handles so it works across Vercel instances.
 The page waits up to approximately 90 seconds, then directs you to Redash for
 long-running jobs. Results are transient in the page and are not sent to Gemini

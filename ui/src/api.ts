@@ -3,6 +3,7 @@ import { AUTH_SESSION_INVALID_EVENT } from "@/auth-events";
 
 const BASE = '/api';
 export interface RedashQuery { id: string; name: string; queryId: number; diagnosticRole?: 'identity' | 'status' | 'unified'; diagnosticProjectId?: string; diagnosticEnabled?: boolean; diagnosticAutoReply?: boolean; diagnosticVersion?: number }
+export interface RedashSqlSource { id: string; name: string; queryId: number; sql: string; parameters: string[] }
 export interface DiagnosticPreview { status: 'pending' | 'complete'; stage?: 'identity' | 'status'; token?: string; draft?: { reply: string; reason: string; draftOnly: true; action: 'human' } }
 export interface RedashRun { job?: string; pending?: boolean; result?: { columns: Array<{ name: string }>; rows: Array<Record<string, unknown>>; retrieved_at?: string } }
 export interface TaskAvailabilityResult {
@@ -1100,6 +1101,7 @@ export const api = {
   getProjectGuidelineBrief: () => request<ProjectGuidelineBrief>('/memory/guideline-brief'),
   setProjectGuidelineBriefEnabled: (enabled: boolean) => request<ProjectGuidelineBrief>('/memory/guideline-brief/enabled', { method: 'PUT', body: JSON.stringify({ enabled }) }),
   getRedash: () => request<{ connected: boolean; queries: RedashQuery[] }>('/redash'),
+  getRedashQuerySql: (id: string, signal?: AbortSignal) => request<RedashSqlSource>(`/redash/queries/${encodeURIComponent(id)}/sql`, { signal }),
   checkTaskAvailability: (projectId: string, signal?: AbortSignal) => request<TaskAvailabilityResult>('/redash/availability/check', {
     signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(60000)]) : AbortSignal.timeout(60000),
     method: 'POST', headers: { 'X-Project-Id': projectId },

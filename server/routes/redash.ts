@@ -174,6 +174,24 @@ router.delete('/queries/:id', async (req, res) => {
   catch (error) { safeError(res, error); }
 });
 
+router.get('/queries/:id/sql', async (req, res) => {
+  try {
+    const row = await load();
+    const query = row?.queries.find(item => item.id === req.params.id);
+    if (!query) { res.status(404).json({ error: 'Query not found.' }); return; }
+    const definition = await redashRequest(credentials(row), `queries/${redashId(query.queryId)}`);
+    if (typeof definition.query !== 'string' || !definition.query.trim() || definition.query.length > 200000) {
+      throw new Error('Redash did not return a valid SQL definition.');
+    }
+    const parameters = Array.isArray(definition.options?.parameters)
+      ? [...new Set<string>(definition.options.parameters
+        .filter((item: any) => typeof item?.name === 'string' && /^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(item.name))
+        .map((item: any) => item.name))] : [];
+    // Do not return Redash's full definition: it can contain keys, defaults and cached results.
+    res.json({ id: query.id, queryId: query.queryId, name: query.name, sql: definition.query, parameters });
+  } catch (error) { safeError(res, error); }
+});
+
 // Job handles stay server-side and are bound to this owner and the selected query.
 router.post('/queries/:id/run', async (req, res) => {
   try {
