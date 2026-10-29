@@ -5,13 +5,19 @@ import { api, type RedashQuery, type RedashRun, type DiagnosticPreview } from '@
 import { useAuth } from '@/auth'
 import { usePlatform } from '@/platform'
 import { Checkbox } from '@/components/ui/checkbox'
-import { canUseRedash } from '@/lib/redash-access'
+import { canUseRedash, isDemoDiagnosticsUser } from '@/lib/redash-access'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import RedashSqlSource from '@/components/RedashSqlSource'
+import DemoDiagnostics from './DemoDiagnostics'
 
-export default function RedashDebugger() {
+export default function DiagnosticsPage() {
+  const { user } = useAuth()
+  return isDemoDiagnosticsUser(user) ? <DemoDiagnostics /> : <RedashDebugger />
+}
+
+function RedashDebugger() {
   const { user } = useAuth()
   const { currentProject } = usePlatform()
   const allowed = canUseRedash(user)

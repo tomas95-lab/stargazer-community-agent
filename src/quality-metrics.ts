@@ -1,6 +1,8 @@
 import { readOperationLog, OperationLogEntry } from './operations-log';
 import { getReviewQueue, ReviewQueueResult } from './review-queue';
 import { getAiUsageSummary } from './usage-guardrails';
+import { getProjectContext } from './project-context';
+import { demoQualityInputs } from './demo-quality';
 
 export interface QualityDay {
   date: string;
@@ -11,6 +13,7 @@ export interface QualityDay {
 }
 
 export interface QualityMetrics {
+  simulated?: boolean;
   generatedAt: string;
   windowDays: number;
   totals: {
@@ -147,10 +150,16 @@ export function aggregateQualityMetrics(
 }
 
 export async function getQualityMetrics(windowDays = 14): Promise<QualityMetrics> {
+  const days = Number.isFinite(windowDays) ? Math.max(1, Math.min(90, Math.floor(windowDays))) : 14;
+  if (getProjectContext().demoMode) {
+    const now = new Date();
+    const fixture = demoQualityInputs(days, now);
+    return { ...aggregateQualityMetrics(fixture.entries, fixture.queue, days, now, fixture.aiTokensToday), simulated: true };
+  }
   const [entries, queue, usage] = await Promise.all([
     readOperationLog(500),
     getReviewQueue(500, { includeResolved: true }),
     getAiUsageSummary(),
   ]);
-  return aggregateQualityMetrics(entries, queue, windowDays, new Date(), usage.today.totalTokens);
+  return aggregateQualityMetrics(entries, queue, days, new Date(), usage.today.totalTokens);
 }

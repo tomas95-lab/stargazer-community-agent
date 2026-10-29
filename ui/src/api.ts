@@ -2,6 +2,14 @@ import { getSupabaseAccessToken, refreshSupabaseAccessToken } from "@/lib/supaba
 import { AUTH_SESSION_INVALID_EVENT } from "@/auth-events";
 
 const BASE = '/api';
+export interface DemoDiagnosticProfile { id: string; username: string; name: string; scenario: string }
+export interface DemoDiagnosticResult {
+  status: 'complete'; simulated: true;
+  draft: { action: 'human'; draftOnly: true; reply: string; reason: string };
+  evidence: { contributor: string; project: string; accountStatus: string; projectHasTasks: boolean;
+    activeThrottle: boolean; taskLimit: number | null; windowHours: number | null; submittedInWindow: number;
+    resetsAt: string | null; overallQms: number; recentQms: number; recentScores: number[]; pdrPercent: number };
+}
 export interface RedashQuery { id: string; name: string; queryId: number; diagnosticRole?: 'identity' | 'status' | 'unified'; diagnosticProjectId?: string; diagnosticEnabled?: boolean; diagnosticAutoReply?: boolean; diagnosticVersion?: number }
 export interface RedashSqlSource { id: string; name: string; queryId: number; sql: string; parameters: string[] }
 export interface DiagnosticPreview { status: 'pending' | 'complete'; stage?: 'identity' | 'status'; token?: string; draft?: { reply: string; reason: string; draftOnly: true; action: 'human' } }
@@ -861,6 +869,7 @@ export interface GuidelineVersion extends GuidelineVersionSummary {
 }
 
 export interface QualityMetrics {
+  simulated?: boolean;
   generatedAt: string;
   windowDays: number;
   totals: {
@@ -1188,6 +1197,10 @@ export const api = {
       remainingProjectConnections: number;
     }>(`/platform/projects/${id}`, { method: 'DELETE' }),
   getQualityMetrics: (days = 14) => request<QualityMetrics>(`/quality?days=${days}`),
+  getDemoDiagnostics: () => request<{ simulated: true; profiles: DemoDiagnosticProfile[] }>('/demo-diagnostics'),
+  previewDemoDiagnostic: (username: string, message: string) => request<DemoDiagnosticResult>('/demo-diagnostics/preview', {
+    method: 'POST', body: JSON.stringify({ username, message }),
+  }),
   getPushStatus: () => request<PushStatus>('/push/status'),
   subscribePush: (subscription: PushSubscriptionJSON) => request<{ ok: boolean }>('/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
   unsubscribePush: (endpoint: string) => request<{ ok: boolean }>('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),

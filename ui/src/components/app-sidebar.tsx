@@ -16,7 +16,7 @@ import {
 import { useAuth } from "@/auth"
 import { usePlatform } from "@/platform"
 import { workspaceGuides } from "@/lib/workspace-guides"
-import { canUseRedash } from "@/lib/redash-access"
+import { canUseDiagnostics } from "@/lib/redash-access"
 import { Database } from "lucide-react"
 
 const sidebarSections = [
@@ -67,7 +67,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent className="overflow-x-hidden py-2">
-        {canUseRedash(user) && <SidebarMenu className="px-3"><SidebarMenuItem><SidebarMenuButton asChild tooltip="Contributor diagnostics"><Link to="/diagnostics"><Database /><span>Diagnostics</span></Link></SidebarMenuButton></SidebarMenuItem></SidebarMenu>}
+        {canUseDiagnostics(user) && <SidebarMenu className="px-3"><SidebarMenuItem><SidebarMenuButton asChild tooltip="Contributor diagnostics"><Link to="/diagnostics"><Database /><span>Diagnostics</span></Link></SidebarMenuButton></SidebarMenuItem></SidebarMenu>}
         {sidebarSections.map((section, index) => (
           <div key={section.label || "overview"}>
             {index === sidebarSections.length - 1 ? <SidebarSeparator className="mx-3 w-auto" /> : null}

@@ -65,6 +65,7 @@ export default function QualityDashboard() {
       </div>
 
       {error ? <div className="sg-status-danger rounded-lg border p-4 text-sm">{error}</div> : null}
+      {metrics?.simulated && <div className="flex flex-wrap items-center gap-2 border-b pb-3 text-sm text-muted-foreground"><Badge variant="secondary">Simulated data</Badge><span>Fictional Aurora activity. No real messages, runs, or token usage.</span></div>}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Metric label="Messages analyzed" value={metrics ? metrics.totals.messages.toLocaleString() : "-"} detail={`${metrics?.totals.runs || 0} agent runs, ${metrics?.totals.candidates || 0} candidates`} icon={Activity} />
